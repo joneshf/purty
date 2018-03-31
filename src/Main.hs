@@ -8,9 +8,12 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , LayoutOptions
     , defaultLayoutOptions
     , enclose
+    , indent
     , layoutSmart
     , line
+    , parens
     , pretty
+    , sep
     , tupled
     , vsep
     , (<+>)
@@ -18,15 +21,19 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderIO)
 import "purescript" Language.PureScript
     ( Comment(BlockComment, LineComment)
-    , Declaration(ImportDeclaration)
+    , DataDeclType(Data, Newtype)
+    , Declaration(DataDeclaration, ImportDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
     , ImportDeclarationType(Explicit, Hiding, Implicit)
+    , Kind
     , Module(Module)
     , ModuleName
     , ProperName
     , ProperNameType(ConstructorName)
     , isImportDecl
     , parseModuleFromFile
+    , prettyPrintKind
+    , prettyPrintType
     , runIdent
     , runModuleName
     , runProperName
@@ -54,6 +61,8 @@ import "path" Path
     , fromAbsFile
     , parseAbsFile
     )
+
+import qualified "purescript" Language.PureScript
 
 main :: IO ()
 main = do
@@ -97,11 +106,30 @@ docFromComment = \case
   BlockComment comment -> enclose "{-" "-}" (pretty comment) <> line
   LineComment comment -> "--" <> pretty comment <> line
 
+docFromDataConstructors :: [(ProperName 'ConstructorName, [Language.PureScript.Type])] -> Doc a
+docFromDataConstructors =
+  vsep . zipWith (<+>) ("=" : repeat "|") . map docFromDataConstructor
+
+docFromDataConstructor :: (ProperName 'ConstructorName, [Language.PureScript.Type]) -> Doc a
+docFromDataConstructor (name, types) =
+  pretty (runProperName name) <+> sep (map (pretty . prettyPrintType) types)
+
+docFromDataType :: DataDeclType -> Doc a
+docFromDataType = \case
+  Data -> "data"
+  Newtype -> "newtype"
+
 docFromDeclarations :: [Declaration] -> Doc a
 docFromDeclarations = vsep . map docFromDeclaration
 
 docFromDeclaration :: Declaration -> Doc a
 docFromDeclaration = \case
+  DataDeclaration _ dataType name parameters constructors ->
+    docFromDataType dataType
+      <+> pretty (runProperName name)
+      <+> foldMap docFromParameter parameters
+      <> line
+      <> indent 2 (docFromDataConstructors constructors)
   _ -> mempty
 
 docFromExports :: [DeclarationRef] -> Doc a
@@ -126,6 +154,9 @@ docFromConstructors [] = mempty
 docFromConstructors constructors =
   tupled $ map (pretty . runProperName) constructors
 
+docFromKind :: Kind -> Doc a
+docFromKind = pretty . prettyPrintKind
+
 docFromImports :: [Declaration] -> Doc a
 docFromImports = vsep . map docFromImport
 
@@ -146,6 +177,11 @@ docFromImportType = \case
   Explicit declarationRefs -> docFromExports declarationRefs
   Hiding declarationRefs -> "hiding" <+> docFromExports declarationRefs
   Implicit -> mempty
+
+docFromParameter :: (Text, Maybe Kind) -> Doc a
+docFromParameter (parameter, Nothing) = pretty parameter
+docFromParameter (parameter, Just k) =
+  parens (pretty parameter <+> "::" <+> docFromKind k)
 
 data Args
   = Args
