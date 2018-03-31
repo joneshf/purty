@@ -22,7 +22,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderIO)
 import "purescript" Language.PureScript
     ( Comment(BlockComment, LineComment)
     , DataDeclType(Data, Newtype)
-    , Declaration(TypeSynonymDeclaration, DataBindingGroupDeclaration, DataDeclaration, ImportDeclaration)
+    , Declaration(DataBindingGroupDeclaration, DataDeclaration, ImportDeclaration, TypeDeclaration, TypeSynonymDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
     , ImportDeclarationType(Explicit, Hiding, Implicit)
     , Kind
@@ -30,6 +30,7 @@ import "purescript" Language.PureScript
     , ModuleName
     , ProperName
     , ProperNameType(ConstructorName)
+    , TypeDeclarationData(TypeDeclarationData)
     , isImportDecl
     , parseModuleFromFile
     , prettyPrintKind
@@ -38,6 +39,8 @@ import "purescript" Language.PureScript
     , runModuleName
     , runProperName
     , showOp
+    , tydeclIdent
+    , tydeclType
     )
 import "microlens-platform" Lens.Micro.Platform              (Lens', view)
 import "optparse-applicative" Options.Applicative
@@ -132,6 +135,10 @@ docFromDeclaration = \case
       <+> foldMap docFromParameter parameters
       <> line
       <> indent 2 (docFromDataConstructors constructors)
+  TypeDeclaration TypeDeclarationData { tydeclIdent, tydeclType } ->
+    pretty (runIdent tydeclIdent)
+      <+> "::"
+      <+> pretty (prettyPrintType tydeclType)
   TypeSynonymDeclaration _ name parameters underlyingType ->
     "type"
       <+> pretty (runProperName name)
