@@ -22,7 +22,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderIO)
 import "purescript" Language.PureScript
     ( Comment(BlockComment, LineComment)
     , DataDeclType(Data, Newtype)
-    , Declaration(DataDeclaration, ImportDeclaration)
+    , Declaration(DataBindingGroupDeclaration, DataDeclaration, ImportDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
     , ImportDeclarationType(Explicit, Hiding, Implicit)
     , Kind
@@ -124,6 +124,8 @@ docFromDeclarations = vsep . map docFromDeclaration
 
 docFromDeclaration :: Declaration -> Doc a
 docFromDeclaration = \case
+  DataBindingGroupDeclaration (declarations) ->
+    vsep (toList $ map docFromDeclaration declarations)
   DataDeclaration _ dataType name parameters constructors ->
     docFromDataType dataType
       <+> pretty (runProperName name)
