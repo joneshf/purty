@@ -81,7 +81,8 @@ docFromExport = \case
   ModuleRef _ name -> "module" <+> pretty (runModuleName name)
   ReExportRef _ _ _ -> mempty
   TypeRef _ name constructors ->
-    pretty (runProperName name) <+> foldMap docFromConstructors constructors
+    -- N.B. `Nothing` means everything
+    pretty (runProperName name) <> maybe "(..)" docFromConstructors constructors
   TypeClassRef _ name -> "class" <+> pretty (runProperName name)
   TypeInstanceRef _ _ -> mempty
   TypeOpRef _ name -> "type" <+> pretty (showOp name)
@@ -89,7 +90,9 @@ docFromExport = \case
   ValueOpRef _ name -> pretty (showOp name)
 
 docFromConstructors :: [ProperName 'ConstructorName] -> Doc a
-docFromConstructors = tupled . map (pretty . runProperName)
+docFromConstructors [] = mempty
+docFromConstructors constructors =
+  tupled $ map (pretty . runProperName) constructors
 
 data Args
   = Args
