@@ -22,7 +22,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderIO)
 import "purescript" Language.PureScript
     ( Comment(BlockComment, LineComment)
     , DataDeclType(Data, Newtype)
-    , Declaration(DataBindingGroupDeclaration, DataDeclaration, ImportDeclaration)
+    , Declaration(TypeSynonymDeclaration, DataBindingGroupDeclaration, DataDeclaration, ImportDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
     , ImportDeclarationType(Explicit, Hiding, Implicit)
     , Kind
@@ -132,6 +132,12 @@ docFromDeclaration = \case
       <+> foldMap docFromParameter parameters
       <> line
       <> indent 2 (docFromDataConstructors constructors)
+  TypeSynonymDeclaration _ name parameters underlyingType ->
+    "type"
+      <+> pretty (runProperName name)
+      <+> foldMap docFromParameter parameters
+      <> line
+      <> indent 2 ("=" <+> pretty (prettyPrintType underlyingType))
   _ -> mempty
 
 docFromExports :: [DeclarationRef] -> Doc a
