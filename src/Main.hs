@@ -6,6 +6,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , LayoutOptions
     , defaultLayoutOptions
+    , enclose
     , layoutSmart
     , line
     , pretty
@@ -14,7 +15,8 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     )
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderIO)
 import "purescript" Language.PureScript
-    ( DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
+    ( Comment(BlockComment, LineComment)
+    , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
     , Module(Module)
     , ProperName
     , ProperNameType(ConstructorName)
@@ -68,9 +70,18 @@ purty = do
       liftIO $ renderIO stdout $ layoutSmart layoutOptions (docFromModule m)
 
 docFromModule :: Module -> Doc a
-docFromModule (Module _ _comments name _declarations exports) =
-  "module" <+> pretty (runModuleName name) <+> foldMap docFromExports exports <+> "where"
+docFromModule (Module _ comments name _declarations exports) =
+  foldMap docFromComment comments
+    <> "module"
+    <+> pretty (runModuleName name)
+    <+> foldMap docFromExports exports
+    <+> "where"
     <> line
+
+docFromComment :: Comment -> Doc a
+docFromComment = \case
+  BlockComment comment -> enclose "{-" "-}" (pretty comment) <> line
+  LineComment comment -> "--" <> pretty comment <> line
 
 docFromExports :: [DeclarationRef] -> Doc a
 docFromExports = tupled . map docFromExport
