@@ -2,6 +2,7 @@ module Main where
 
 import "protolude" Protolude
 
+import "base" Data.List                                      (span)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , LayoutOptions
@@ -11,15 +12,20 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , line
     , pretty
     , tupled
+    , vsep
     , (<+>)
     )
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderIO)
 import "purescript" Language.PureScript
     ( Comment(BlockComment, LineComment)
+    , Declaration(ImportDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
+    , ImportDeclarationType(Explicit, Hiding, Implicit)
     , Module(Module)
+    , ModuleName
     , ProperName
     , ProperNameType(ConstructorName)
+    , isImportDecl
     , parseModuleFromFile
     , runIdent
     , runModuleName
@@ -70,18 +76,33 @@ purty = do
       liftIO $ renderIO stdout $ layoutSmart layoutOptions (docFromModule m)
 
 docFromModule :: Module -> Doc a
-docFromModule (Module _ comments name _declarations exports) =
+docFromModule (Module _ comments name declarations' exports) =
   foldMap docFromComment comments
     <> "module"
     <+> pretty (runModuleName name)
     <+> foldMap docFromExports exports
     <+> "where"
     <> line
+    <> line
+    <> docFromImports imports
+    <> line
+    <> line
+    <> docFromDeclarations declarations
+    <> line
+  where
+  (imports, declarations) = span isImportDecl declarations'
 
 docFromComment :: Comment -> Doc a
 docFromComment = \case
   BlockComment comment -> enclose "{-" "-}" (pretty comment) <> line
   LineComment comment -> "--" <> pretty comment <> line
+
+docFromDeclarations :: [Declaration] -> Doc a
+docFromDeclarations = vsep . map docFromDeclaration
+
+docFromDeclaration :: Declaration -> Doc a
+docFromDeclaration = \case
+  _ -> mempty
 
 docFromExports :: [DeclarationRef] -> Doc a
 docFromExports = tupled . map docFromExport
@@ -104,6 +125,27 @@ docFromConstructors :: [ProperName 'ConstructorName] -> Doc a
 docFromConstructors [] = mempty
 docFromConstructors constructors =
   tupled $ map (pretty . runProperName) constructors
+
+docFromImports :: [Declaration] -> Doc a
+docFromImports = vsep . map docFromImport
+
+docFromImport :: Declaration -> Doc a
+docFromImport = \case
+  ImportDeclaration _ name importType qualified ->
+    "import"
+      <+> pretty (runModuleName name)
+      <+> docFromImportType importType
+      <+> foldMap docFromImportQualified qualified
+  _ -> mempty
+
+docFromImportQualified :: ModuleName -> Doc a
+docFromImportQualified name = "as" <+> pretty (runModuleName name)
+
+docFromImportType :: ImportDeclarationType -> Doc a
+docFromImportType = \case
+  Explicit declarationRefs -> docFromExports declarationRefs
+  Hiding declarationRefs -> "hiding" <+> docFromExports declarationRefs
+  Implicit -> mempty
 
 data Args
   = Args
