@@ -79,9 +79,7 @@ docFromExport :: DeclarationRef -> Doc a
 docFromExport = \case
   KindRef _ name -> "kind" <+> pretty (runProperName name)
   ModuleRef _ name -> "module" <+> pretty (runModuleName name)
-  ReExportRef _ _name declaration ->
-    -- HACK: This probably doesn't work since the module name is not used.
-    docFromExport declaration
+  ReExportRef _ _ _ -> mempty
   TypeRef _ name constructors ->
     pretty (runProperName name) <+> foldMap docFromConstructors constructors
   TypeClassRef _ name -> "class" <+> pretty (runProperName name)
