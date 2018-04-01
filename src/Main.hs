@@ -58,6 +58,7 @@ import "purescript" Language.PureScript
     , runAssocList
     , runIdent
     , runModuleName
+    , runOpName
     , runProperName
     , showOp
     , showQualified
@@ -236,8 +237,7 @@ docFromExpr = \case
   Accessor key expr -> docFromExpr expr <> "." <> pretty (prettyPrintString key)
   AnonymousArgument -> "_"
   App expr1 expr2 -> docFromExpr expr1 <+> docFromExpr expr2
-  BinaryNoParens left op right ->
-    -- XXX: Verify this is correct.
+  BinaryNoParens op left right ->
     docFromExpr left <+> docFromExpr op <+> docFromExpr right
   Case exprs alternatives ->
     "case"
@@ -275,7 +275,7 @@ docFromExpr = \case
     docFromExpr expr <+> object (map (docFromObjectUpdate . map docFromExpr) obj)
   ObjectUpdateNested expr pathTree ->
     docFromExpr expr <+> docFromPathTree pathTree
-  Op op -> pretty (showQualified showOp op)
+  Op op -> pretty (showQualified runOpName op)
   Parens expr -> parens (docFromExpr expr)
   PositionedValue _ comments expr ->
     foldMap docFromComment comments <> docFromExpr expr
