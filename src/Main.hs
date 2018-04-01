@@ -116,10 +116,7 @@ purty = do
 docFromModule :: Module -> Doc a
 docFromModule (Module _ comments name declarations' exports) =
   foldMap docFromComment comments
-    <> "module"
-    <+> pretty (runModuleName name)
-    <+> foldMap docFromExports exports
-    <+> "where"
+    <> docFromModuleExports name exports
     <> line
     <> line
     <> docFromDeclarations imports
@@ -127,6 +124,15 @@ docFromModule (Module _ comments name declarations' exports) =
     <> docFromDeclarations declarations
   where
   (imports, declarations) = span isImportDecl declarations'
+
+docFromModuleExports :: ModuleName -> Maybe [DeclarationRef] -> Doc ann
+docFromModuleExports name Nothing =
+  "module" <+> pretty (runModuleName name) <+> "where"
+docFromModuleExports name (Just exports) =
+  "module"
+    <+> pretty (runModuleName name)
+    <> line
+    <> indent 2 (docFromExports exports <> line <> "where")
 
 docFromBinder :: Binder -> Doc a
 docFromBinder = pretty . prettyPrintBinder
