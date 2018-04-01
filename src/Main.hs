@@ -16,6 +16,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , indent
     , layoutSmart
     , line
+    , nest
     , parens
     , pretty
     , punctuate
@@ -261,16 +262,8 @@ docFromExpr = \case
       <> line
       <> indent 2 (docFromExpr f)
   Let declarations expr ->
-    line
-      <> indent 2
-        ( "let"
-        <> line
-        <> indent 2 (foldMap docFromDeclaration declarations)
-        <> line
-        <> "in"
-        <> line
-        <> indent 2 (docFromExpr expr)
-        )
+    nest 2 ("let" <+> foldMap docFromDeclaration declarations)
+      <> nest 2 ("in" <+> docFromExpr expr)
   Literal literal -> docFromLiteral (map docFromExpr literal)
   ObjectUpdate expr obj ->
     docFromExpr expr <+> braces (map (docFromObjectUpdate . map docFromExpr) obj)
