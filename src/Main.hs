@@ -1,11 +1,12 @@
 module Main where
 
-import "protolude" Protolude hiding (group, list)
+import "protolude" Protolude hiding (group)
 
 import "base" Data.List                                      (span)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , LayoutOptions
+    , align
     , comma
     , defaultLayoutOptions
     , enclose
@@ -15,12 +16,11 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , indent
     , layoutSmart
     , line
-    , list
     , parens
     , pretty
     , punctuate
     , sep
-    , tupled
+    , space
     , vsep
     , (<+>)
     )
@@ -212,7 +212,7 @@ docFromDoElement = \case
     foldMap docFromComment comments <> docFromDoElement element
 
 docFromExports :: [DeclarationRef] -> Doc a
-docFromExports = tupled . map docFromExport
+docFromExports = parentheses . map docFromExport
 
 docFromExport :: DeclarationRef -> Doc a
 docFromExport = \case
@@ -273,7 +273,7 @@ docFromExpr = \case
         )
   Literal literal -> docFromLiteral (map docFromExpr literal)
   ObjectUpdate expr obj ->
-    docFromExpr expr <+> object (map (docFromObjectUpdate . map docFromExpr) obj)
+    docFromExpr expr <+> braces (map (docFromObjectUpdate . map docFromExpr) obj)
   ObjectUpdateNested expr pathTree ->
     docFromExpr expr <+> docFromPathTree pathTree
   Op op -> pretty (showQualified runOpName op)
@@ -315,19 +315,19 @@ docFromGuardedExpr' separator (GuardedExpr guards expr) =
 docFromConstructors :: [ProperName 'ConstructorName] -> Doc a
 docFromConstructors [] = mempty
 docFromConstructors constructors =
-  tupled $ map (pretty . runProperName) constructors
+  parentheses $ map (pretty . runProperName) constructors
 
 docFromKind :: Kind -> Doc a
 docFromKind = pretty . prettyPrintKind
 
 docFromLiteral :: Literal (Doc a) -> Doc a
 docFromLiteral = \case
-  ArrayLiteral xs -> list xs
+  ArrayLiteral xs -> brackets xs
   BooleanLiteral b -> pretty b
   CharLiteral c -> pretty c
   NumericLiteral (Left x) -> pretty x
   NumericLiteral (Right x) -> pretty x
-  ObjectLiteral obj -> object (map docFromObject obj)
+  ObjectLiteral obj -> braces (map docFromObject obj)
   StringLiteral str -> pretty (prettyPrintString str)
 
 docFromImportQualified :: ModuleName -> Doc a
@@ -352,7 +352,7 @@ docFromParameter (parameter, Just k) =
 
 docFromPathTree :: PathTree Expr -> Doc a
 docFromPathTree (PathTree paths) =
-  object (map docFromPathNode $ runAssocList paths)
+  braces (map docFromPathNode $ runAssocList paths)
 
 docFromPathNode :: (PSString, PathNode Expr) -> Doc a
 docFromPathNode (key, Leaf expr) =
@@ -360,8 +360,23 @@ docFromPathNode (key, Leaf expr) =
 docFromPathNode (key, Branch path) =
   pretty (prettyPrintString key) <+> docFromPathTree path
 
-object :: [Doc a] -> Doc a
-object = group . encloseSep (flatAlt "{ " "{") (flatAlt " }" "}") ", "
+braces :: [Doc a] -> Doc a
+braces = enclosedWith "{" "}"
+
+brackets :: [Doc a] -> Doc a
+brackets = enclosedWith "[" "]"
+
+enclosedWith :: Doc a -> Doc a -> [Doc a] -> Doc a
+enclosedWith open close =
+  align
+    . group
+    . encloseSep
+      (flatAlt (open <> space) open)
+      (flatAlt (line <> close) close)
+      ", "
+
+parentheses :: [Doc a] -> Doc a
+parentheses = enclosedWith "(" ")"
 
 data Args
   = Args
