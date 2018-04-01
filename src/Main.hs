@@ -13,6 +13,8 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , encloseSep
     , flatAlt
     , group
+    , hcat
+    , hsep
     , indent
     , layoutSmart
     , line
@@ -30,6 +32,7 @@ import "purescript" Language.PureScript
     ( Binder
     , CaseAlternative(CaseAlternative)
     , Comment(BlockComment, LineComment)
+    , Constraint(Constraint)
     , DataDeclType(Data, Newtype)
     , Declaration(DataBindingGroupDeclaration, DataDeclaration, ImportDeclaration, TypeDeclaration, TypeSynonymDeclaration, ValueDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
@@ -46,10 +49,15 @@ import "purescript" Language.PureScript
     , PathTree(PathTree)
     , ProperName
     , ProperNameType(ConstructorName)
+    , Type(BinaryNoParensType, ConstrainedType, ForAll, KindedType, ParensInType, PrettyPrintForAll, PrettyPrintFunction, PrettyPrintObject, RCons, REmpty, Skolem, TUnknown, TypeApp, TypeConstructor, TypeLevelString, TypeOp, TypeVar, TypeWildcard)
     , TypeDeclarationData(TypeDeclarationData)
     , ValueDeclarationData(ValueDeclarationData)
     , caseAlternativeBinders
     , caseAlternativeResult
+    , constraintArgs
+    , constraintClass
+    , everywhereOnTypes
+    , everywhereOnTypesTopDown
     , isImportDecl
     , parseModuleFromFile
     , prettyPrintBinder
@@ -63,12 +71,15 @@ import "purescript" Language.PureScript
     , runProperName
     , showOp
     , showQualified
+    , tyFunction
+    , tyRecord
     , tydeclIdent
     , tydeclType
     , valdeclBinders
     , valdeclExpression
     , valdeclIdent
     )
+import "purescript" Language.PureScript.Label                (runLabel)
 import "purescript" Language.PureScript.PSString             (PSString)
 import "microlens-platform" Lens.Micro.Platform              (Lens', view)
 import "optparse-applicative" Options.Applicative
@@ -92,8 +103,6 @@ import "path" Path
     , fromAbsFile
     , parseAbsFile
     )
-
-import qualified "purescript" Language.PureScript
 
 main :: IO ()
 main = do
@@ -149,6 +158,11 @@ docFromComment = \case
   BlockComment comment -> enclose "{-" "-}" (pretty comment) <> line
   LineComment comment -> "--" <> pretty comment <> line
 
+docFromConstraint :: Language.PureScript.Constraint -> Doc a
+docFromConstraint Constraint { constraintArgs, constraintClass } =
+  pretty (showQualified runProperName constraintClass)
+    <+> foldMap docFromType constraintArgs
+
 docFromDataConstructors :: [(ProperName 'ConstructorName, [Language.PureScript.Type])] -> Doc a
 docFromDataConstructors =
   vsep . zipWith (<+>) ("=" : repeat "|") . map docFromDataConstructor
@@ -186,7 +200,9 @@ docFromDeclaration = \case
   TypeDeclaration TypeDeclarationData { tydeclIdent, tydeclType } ->
     pretty (runIdent tydeclIdent)
       <+> "::"
-      <+> pretty (prettyPrintType tydeclType)
+      <> line
+      <> indent 2 (align $ docFromType tydeclType)
+      <> line
   TypeSynonymDeclaration _ name parameters underlyingType ->
     "type"
       <+> pretty (runProperName name)
@@ -308,7 +324,10 @@ docFromGuardedExpr' separator (GuardedExpr guards expr) =
 docFromConstructors :: [ProperName 'ConstructorName] -> Doc a
 docFromConstructors [] = mempty
 docFromConstructors constructors =
-  parentheses $ map (pretty . runProperName) constructors
+  parentheses $ map docFromConstructor constructors
+
+docFromConstructor :: ProperName 'ConstructorName -> Doc a
+docFromConstructor = pretty . runProperName
 
 docFromKind :: Kind -> Doc a
 docFromKind = pretty . prettyPrintKind
@@ -353,6 +372,79 @@ docFromPathNode (key, Leaf expr) =
   pretty (prettyPrintString key) <+> "=" <+> docFromExpr expr
 docFromPathNode (key, Branch path) =
   pretty (prettyPrintString key) <+> docFromPathTree path
+
+docFromType :: Language.PureScript.Type -> Doc a
+docFromType =
+  go . everywhereOnTypesTopDown (convertForAlls []) . everywhereOnTypes convertTypeApps
+  where
+  go = \case
+    BinaryNoParensType op left right ->
+      docFromType left <+> docFromType op <+> docFromType right
+    ConstrainedType constraint type' ->
+      docFromConstraint constraint <+> "=>" <> line <> docFromType type'
+    ForAll var type' _ ->
+      "forall" <+> pretty var <> "." <> line <> docFromType type'
+    KindedType type' kind ->
+      parens (docFromType type' <+> "::" <+> docFromKind kind)
+    ParensInType type' -> parens (docFromType type')
+    PrettyPrintForAll [] type' -> docFromType type'
+    PrettyPrintForAll vars type' ->
+      "forall"
+        <+> hcat (punctuate space $ map pretty vars)
+        <> "."
+        <> line
+        <> docFromType type'
+    PrettyPrintFunction f x -> docFromType f <+> "->" <> line <> docFromType x
+    type'@PrettyPrintObject {} -> "{" <> hsep (convertRow [] type') <> "}"
+    type'@RCons {} -> "(" <> hsep (convertRow [] type') <> ")"
+    REmpty -> "()"
+    Skolem _ _ _ _ -> mempty
+    TUnknown _ -> mempty
+    TypeApp f x -> docFromType f <+> docFromType x
+    TypeConstructor constructor ->
+      pretty (showQualified runProperName constructor)
+    TypeLevelString str -> pretty (prettyPrintString str)
+    TypeOp op -> pretty (showQualified runOpName op)
+    TypeVar var -> pretty var
+    TypeWildcard _ -> "_"
+  convertRow rest = \case
+    RCons label type' tail@REmpty ->
+      convertRow
+        ( pretty (prettyPrintString $ runLabel label)
+        <+> "::"
+        <+> docFromType type'
+        : rest
+        )
+        tail
+    RCons label type' tail@RCons{} ->
+      convertRow
+        ( pretty (prettyPrintString $ runLabel label)
+        <+> "::"
+        <+> docFromType type'
+        <> ","
+        : rest
+        )
+        tail
+    RCons label type' tail ->
+      convertRow
+        ( pretty (prettyPrintString $ runLabel label)
+        <+> "::"
+        <+> docFromType type'
+        <+> "|"
+        : rest
+        )
+        tail
+    REmpty -> reverse rest
+    x -> reverse (docFromType x : rest)
+  convertTypeApps = \case
+    TypeApp (TypeApp f g) x | f == tyFunction -> PrettyPrintFunction g x
+    TypeApp o r | o == tyRecord -> PrettyPrintObject r
+    x -> x
+  convertForAlls vars = \case
+    ForAll var (quantifiedType@ForAll {}) _ ->
+      convertForAlls (var : vars) quantifiedType
+    ForAll var quantifiedType _ -> PrettyPrintForAll (var : vars) quantifiedType
+    other -> other
 
 braces :: [Doc a] -> Doc a
 braces = enclosedWith "{" "}"
