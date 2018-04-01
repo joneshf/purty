@@ -29,7 +29,7 @@ import "purescript" Language.PureScript
     , Comment(BlockComment, LineComment)
     , Constraint(Constraint)
     , DataDeclType(Data, Newtype)
-    , Declaration(BindingGroupDeclaration, BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ExternDataDeclaration, ExternDeclaration, ImportDeclaration, TypeDeclaration, TypeSynonymDeclaration, ValueDeclaration)
+    , Declaration(BindingGroupDeclaration, BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ExternDataDeclaration, ExternDeclaration, ExternKindDeclaration, ImportDeclaration, TypeDeclaration, TypeSynonymDeclaration, ValueDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
     , DoNotationElement(DoNotationBind, DoNotationLet, DoNotationValue, PositionedDoNotationElement)
     , Expr(Abs, Accessor, AnonymousArgument, App, BinaryNoParens, Case, Constructor, DeferredDictionary, Do, Hole, IfThenElse, Let, Literal, ObjectUpdate, ObjectUpdateNested, Op, Parens, PositionedValue, TypeClassDictionary, TypeClassDictionaryAccessor, TypeClassDictionaryConstructorApp, TypedValue, UnaryMinus, Var)
@@ -167,6 +167,8 @@ fromDeclaration = \case
       <> indent 2 (align $ fromType type')
       <> line
       <> line
+  ExternKindDeclaration _ name ->
+    "foreign import kind" <+> pretty (runProperName name) <> line <> line
   ImportDeclaration _ name importType qualified ->
     "import"
       <+> pretty (runModuleName name)
