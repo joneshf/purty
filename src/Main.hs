@@ -158,7 +158,7 @@ docFromDataType = \case
   Newtype -> "newtype"
 
 docFromDeclarations :: [Declaration] -> Doc a
-docFromDeclarations = vsep . map docFromDeclaration
+docFromDeclarations = foldMap docFromDeclaration
 
 docFromDeclaration :: Declaration -> Doc a
 docFromDeclaration = \case
@@ -170,6 +170,8 @@ docFromDeclaration = \case
       <+> foldMap docFromParameter parameters
       <> line
       <> indent 2 (docFromDataConstructors constructors)
+      <> line
+      <> line
   TypeDeclaration TypeDeclarationData { tydeclIdent, tydeclType } ->
     pretty (runIdent tydeclIdent)
       <+> "::"
@@ -180,11 +182,13 @@ docFromDeclaration = \case
       <+> foldMap docFromParameter parameters
       <> line
       <> indent 2 ("=" <+> pretty (prettyPrintType underlyingType))
+      <> line
   ValueDeclaration ValueDeclarationData { valdeclBinders, valdeclExpression, valdeclIdent } ->
     pretty (runIdent valdeclIdent)
       <+> sep (map docFromBinder valdeclBinders)
       <> line
       <> indent 2 (vsep $ map docFromGuardedExpr valdeclExpression)
+      <> line
       <> line
   _ -> mempty
 
