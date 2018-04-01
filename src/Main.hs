@@ -122,8 +122,7 @@ docFromModule (Module _ comments name declarations' exports) =
     <+> "where"
     <> line
     <> line
-    <> docFromImports imports
-    <> line
+    <> docFromDeclarations imports
     <> line
     <> docFromDeclarations declarations
     <> line
@@ -171,6 +170,12 @@ docFromDeclaration = \case
       <> line
       <> indent 2 (docFromDataConstructors constructors)
       <> line
+      <> line
+  ImportDeclaration _ name importType qualified ->
+    "import"
+      <+> pretty (runModuleName name)
+      <+> docFromImportType importType
+      <+> foldMap docFromImportQualified qualified
       <> line
   TypeDeclaration TypeDeclarationData { tydeclIdent, tydeclType } ->
     pretty (runIdent tydeclIdent)
@@ -312,18 +317,6 @@ docFromLiteral = \case
   NumericLiteral (Right x) -> pretty x
   ObjectLiteral obj -> object (map docFromObject obj)
   StringLiteral str -> pretty (prettyPrintString str)
-
-docFromImports :: [Declaration] -> Doc a
-docFromImports = vsep . map docFromImport
-
-docFromImport :: Declaration -> Doc a
-docFromImport = \case
-  ImportDeclaration _ name importType qualified ->
-    "import"
-      <+> pretty (runModuleName name)
-      <+> docFromImportType importType
-      <+> foldMap docFromImportQualified qualified
-  _ -> mempty
 
 docFromImportQualified :: ModuleName -> Doc a
 docFromImportQualified name = "as" <+> pretty (runModuleName name)
