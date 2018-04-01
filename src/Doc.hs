@@ -29,21 +29,24 @@ import "purescript" Language.PureScript
     , Comment(BlockComment, LineComment)
     , Constraint(Constraint)
     , DataDeclType(Data, Newtype)
-    , Declaration(BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ImportDeclaration, TypeDeclaration, TypeSynonymDeclaration, ValueDeclaration)
+    , Declaration(BindingGroupDeclaration, BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ImportDeclaration, TypeDeclaration, TypeSynonymDeclaration, ValueDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
     , DoNotationElement(DoNotationBind, DoNotationLet, DoNotationValue, PositionedDoNotationElement)
     , Expr(Abs, Accessor, AnonymousArgument, App, BinaryNoParens, Case, Constructor, DeferredDictionary, Do, Hole, IfThenElse, Let, Literal, ObjectUpdate, ObjectUpdateNested, Op, Parens, PositionedValue, TypeClassDictionary, TypeClassDictionaryAccessor, TypeClassDictionaryConstructorApp, TypedValue, UnaryMinus, Var)
     , Guard(ConditionGuard, PatternGuard)
     , GuardedExpr(GuardedExpr)
+    , Ident
     , ImportDeclarationType(Explicit, Hiding, Implicit)
     , Kind
     , Literal(ArrayLiteral, BooleanLiteral, CharLiteral, NumericLiteral, ObjectLiteral, StringLiteral)
     , Module(Module)
     , ModuleName
+    , NameKind
     , PathNode(Branch, Leaf)
     , PathTree(PathTree)
     , ProperName
     , ProperNameType(ConstructorName)
+    , SourceAnn
     , Type(BinaryNoParensType, ConstrainedType, ForAll, KindedType, ParensInType, PrettyPrintForAll, PrettyPrintFunction, PrettyPrintObject, RCons, REmpty, Skolem, TUnknown, TypeApp, TypeConstructor, TypeLevelString, TypeOp, TypeVar, TypeWildcard)
     , TypeDeclarationData(TypeDeclarationData)
     , ValueDeclarationData(ValueDeclarationData)
@@ -72,6 +75,8 @@ import "purescript" Language.PureScript
     , valdeclBinders
     , valdeclExpression
     , valdeclIdent
+    , valdeclName
+    , valdeclSourceAnn
     )
 import "purescript" Language.PureScript.Label    (runLabel)
 import "purescript" Language.PureScript.PSString (PSString)
@@ -132,6 +137,8 @@ fromDataType = \case
 
 fromDeclaration :: Declaration -> Doc a
 fromDeclaration = \case
+  BindingGroupDeclaration declarations ->
+    vsep (toList $ map (fromDeclaration . ValueDeclaration . valueDeclarationFromAnonymousDeclaration) declarations)
   BoundValueDeclaration _ binder expr ->
     fromBinder binder <+> "=" <+> fromExpr expr
   DataBindingGroupDeclaration (declarations) ->
@@ -425,3 +432,18 @@ fromType =
 
 parentheses :: [Doc a] -> Doc a
 parentheses = enclosedWith "(" ")"
+
+valueDeclarationFromAnonymousDeclaration ::
+  ((SourceAnn, Ident), NameKind, Expr) ->
+  ValueDeclarationData [GuardedExpr]
+valueDeclarationFromAnonymousDeclaration ((valdeclSourceAnn, valdeclIdent), valdeclName, expr) =
+  ValueDeclarationData
+    { valdeclBinders
+    , valdeclExpression
+    , valdeclIdent
+    , valdeclName
+    , valdeclSourceAnn
+    }
+  where
+  valdeclBinders = []
+  valdeclExpression = [GuardedExpr [] expr]
