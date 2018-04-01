@@ -29,7 +29,7 @@ import "purescript" Language.PureScript
     , Comment(BlockComment, LineComment)
     , Constraint(Constraint)
     , DataDeclType(Data, Newtype)
-    , Declaration(BindingGroupDeclaration, BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ExternDeclaration, ImportDeclaration, TypeDeclaration, TypeSynonymDeclaration, ValueDeclaration)
+    , Declaration(BindingGroupDeclaration, BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ExternDataDeclaration, ExternDeclaration, ImportDeclaration, TypeDeclaration, TypeSynonymDeclaration, ValueDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
     , DoNotationElement(DoNotationBind, DoNotationLet, DoNotationValue, PositionedDoNotationElement)
     , Expr(Abs, Accessor, AnonymousArgument, App, BinaryNoParens, Case, Constructor, DeferredDictionary, Do, Hole, IfThenElse, Let, Literal, ObjectUpdate, ObjectUpdateNested, Op, Parens, PositionedValue, TypeClassDictionary, TypeClassDictionaryAccessor, TypeClassDictionaryConstructorApp, TypedValue, UnaryMinus, Var)
@@ -149,6 +149,14 @@ fromDeclaration = \case
       <+> foldMap fromParameter parameters
       <> line
       <> indent 2 (fromDataConstructors constructors)
+      <> line
+      <> line
+  ExternDataDeclaration _ name kind ->
+    "foreign import data"
+      <+> pretty (runProperName name)
+      <+> "::"
+      <> line
+      <> indent 2 (align $ fromKind kind)
       <> line
       <> line
   ExternDeclaration _ ident type' ->
