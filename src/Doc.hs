@@ -2,10 +2,12 @@ module Doc where
 
 import "protolude" Protolude hiding (group)
 
+import "containers" Data.IntMap.Strict           (findWithDefault, fromList)
 import "base" Data.List                          (span)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , align
+    , cat
     , comma
     , enclose
     , encloseSep
@@ -29,11 +31,12 @@ import "purescript" Language.PureScript
     , Comment(BlockComment, LineComment)
     , Constraint(Constraint)
     , DataDeclType(Data, Newtype)
-    , Declaration(BindingGroupDeclaration, BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ExternDataDeclaration, ExternDeclaration, ExternKindDeclaration, FixityDeclaration, ImportDeclaration, TypeDeclaration, TypeSynonymDeclaration, ValueDeclaration)
+    , Declaration(BindingGroupDeclaration, BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ExternDataDeclaration, ExternDeclaration, ExternKindDeclaration, FixityDeclaration, ImportDeclaration, TypeClassDeclaration, TypeDeclaration, TypeSynonymDeclaration, ValueDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
     , DoNotationElement(DoNotationBind, DoNotationLet, DoNotationValue, PositionedDoNotationElement)
     , Expr(Abs, Accessor, AnonymousArgument, App, BinaryNoParens, Case, Constructor, DeferredDictionary, Do, Hole, IfThenElse, Let, Literal, ObjectUpdate, ObjectUpdateNested, Op, Parens, PositionedValue, TypeClassDictionary, TypeClassDictionaryAccessor, TypeClassDictionaryConstructorApp, TypedValue, UnaryMinus, Var)
     , Fixity(Fixity)
+    , FunctionalDependency(FunctionalDependency)
     , Guard(ConditionGuard, PatternGuard)
     , GuardedExpr(GuardedExpr)
     , Ident
@@ -46,7 +49,7 @@ import "purescript" Language.PureScript
     , PathNode(Branch, Leaf)
     , PathTree(PathTree)
     , ProperName
-    , ProperNameType(ConstructorName)
+    , ProperNameType(ClassName, ConstructorName)
     , SourceAnn
     , Type(BinaryNoParensType, ConstrainedType, ForAll, KindedType, ParensInType, PrettyPrintForAll, PrettyPrintFunction, PrettyPrintObject, RCons, REmpty, Skolem, TUnknown, TypeApp, TypeConstructor, TypeLevelString, TypeOp, TypeVar, TypeWildcard)
     , TypeDeclarationData(TypeDeclarationData)
@@ -59,6 +62,8 @@ import "purescript" Language.PureScript
     , constraintClass
     , everywhereOnTypes
     , everywhereOnTypesTopDown
+    , fdDetermined
+    , fdDeterminers
     , isImportDecl
     , prettyPrintBinder
     , prettyPrintKind
@@ -200,6 +205,15 @@ fromDeclaration = \case
       <> line
       <> indent 2 (align $ fromType tydeclType)
       <> line
+  TypeClassDeclaration _ name parameters [] funDeps declarations ->
+    "class"
+      <+> fromTypeClassWithoutConstraints name parameters funDeps declarations
+      <> line
+  TypeClassDeclaration _ name parameters constraints funDeps declarations ->
+    "class"
+      <+> fromTypeClassConstraints constraints
+      <> indent 2 (fromTypeClassWithoutConstraints name parameters funDeps declarations)
+      <> line
   TypeSynonymDeclaration _ name parameters underlyingType ->
     "type"
       <+> pretty (runProperName name)
@@ -308,6 +322,20 @@ fromExpr = \case
 fromFixity :: Language.PureScript.Fixity -> Doc a
 fromFixity (Fixity associativity precedence) =
   pretty (showAssoc associativity) <+> pretty precedence
+
+fromFunctionalDependencies :: IntMap Text -> [FunctionalDependency] -> Doc a
+fromFunctionalDependencies vars = \case
+  [] -> mempty
+  funDeps ->
+    space
+      <> "|"
+      <+> hsep (punctuate comma $ map (fromFunctionalDependency vars) funDeps)
+
+fromFunctionalDependency :: IntMap Text -> FunctionalDependency -> Doc a
+fromFunctionalDependency vars FunctionalDependency { fdDetermined, fdDeterminers } =
+  hsep (map (pretty . flip (findWithDefault mempty) vars) fdDeterminers)
+    <+> "->"
+    <+> hsep (map (pretty . flip (findWithDefault mempty) vars) fdDetermined)
 
 fromGuard :: Guard -> Doc a
 fromGuard = \case
@@ -470,6 +498,27 @@ fromType =
       convertForAlls (var : vars) quantifiedType
     ForAll var quantifiedType _ -> PrettyPrintForAll (var : vars) quantifiedType
     other -> other
+
+fromTypeClassConstraints :: [Language.PureScript.Constraint] -> Doc a
+fromTypeClassConstraints constraints =
+  line
+    <> indent 2 (align (cat (zipWith (<>) ("(" <> space : repeat ", ") (map fromConstraint constraints)) <> line <> ")"))
+    <+> "<="
+    <> line
+
+fromTypeClassWithoutConstraints ::
+  ProperName 'ClassName ->
+  [(Text, Maybe Kind)] ->
+  [FunctionalDependency] ->
+  [Declaration] ->
+  Doc a
+fromTypeClassWithoutConstraints name parameters funDeps declarations =
+  pretty (runProperName name)
+    <+> foldMap fromParameter parameters
+    <> fromFunctionalDependencies (fromList $ zip [0..] $ map fst parameters) funDeps
+    <+> "where"
+    <> line
+    <> indent 2 (vsep $ map fromDeclaration declarations)
 
 parentheses :: [Doc a] -> Doc a
 parentheses = enclosedWith "(" ")"

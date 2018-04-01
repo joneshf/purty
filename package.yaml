@@ -44,6 +44,7 @@ executables:
   purty:
     dependencies:
       - base == 4.10.0.0
+      - containers == 0.5.10.2
       - microlens-platform == 0.3.9.0
       - mtl == 2.2.1
       - optparse-applicative == 0.14.0.0
