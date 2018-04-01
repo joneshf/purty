@@ -486,7 +486,7 @@ fromType =
       "forall" <+> pretty var <> "." <> line <> fromType type'
     KindedType type' kind ->
       parens (fromType type' <+> "::" <+> fromKind kind)
-    ParensInType type' -> parens (fromType type')
+    ParensInType type' -> parens (fromTypeWithParens type')
     PrettyPrintForAll [] type' -> fromType type'
     PrettyPrintForAll vars type' ->
       "forall"
@@ -507,44 +507,87 @@ fromType =
     TypeOp op -> pretty (showQualified runOpName op)
     TypeVar var -> pretty var
     TypeWildcard _ -> "_"
-  convertRow rest = \case
-    RCons label type' tail@REmpty ->
-      convertRow
-        ( pretty (prettyPrintString $ runLabel label)
-        <+> "::"
-        <+> fromType type'
-        : rest
-        )
-        tail
-    RCons label type' tail@RCons{} ->
-      convertRow
-        ( pretty (prettyPrintString $ runLabel label)
-        <+> "::"
-        <+> fromType type'
-        <> ","
-        : rest
-        )
-        tail
-    RCons label type' tail ->
-      convertRow
-        ( pretty (prettyPrintString $ runLabel label)
-        <+> "::"
-        <+> fromType type'
-        <+> "|"
-        : rest
-        )
-        tail
-    REmpty -> reverse rest
-    x -> reverse (fromType x : rest)
-  convertTypeApps = \case
-    TypeApp (TypeApp f g) x | f == tyFunction -> PrettyPrintFunction g x
-    TypeApp o r | o == tyRecord -> PrettyPrintObject r
-    x -> x
-  convertForAlls vars = \case
-    ForAll var (quantifiedType@ForAll {}) _ ->
-      convertForAlls (var : vars) quantifiedType
-    ForAll var quantifiedType _ -> PrettyPrintForAll (var : vars) quantifiedType
-    other -> other
+
+fromTypeWithParens :: Language.PureScript.Type -> Doc a
+fromTypeWithParens =
+  go . everywhereOnTypesTopDown (convertForAlls []) . everywhereOnTypes convertTypeApps
+  where
+  go = \case
+    BinaryNoParensType op left right ->
+      fromTypeWithParens left
+        <+> fromTypeWithParens op
+        <+> fromTypeWithParens right
+    ConstrainedType constraint type' ->
+      fromConstraint constraint <+> "=>" <+> fromTypeWithParens type'
+    ForAll var type' _ ->
+      "forall" <+> pretty var <> "." <+> fromTypeWithParens type'
+    KindedType type' kind ->
+      parens (fromTypeWithParens type' <+> "::" <+> fromKind kind)
+    ParensInType type' -> parens (fromTypeWithParens type')
+    PrettyPrintForAll [] type' -> fromTypeWithParens type'
+    PrettyPrintForAll vars type' ->
+      "forall"
+        <+> hcat (punctuate space $ map pretty vars)
+        <> "."
+        <+> fromTypeWithParens type'
+    PrettyPrintFunction f x ->
+      fromTypeWithParens f <+> "->" <+> fromTypeWithParens x
+    type'@PrettyPrintObject {} -> "{" <> hsep (convertRow [] type') <> "}"
+    type'@RCons {} -> "(" <> hsep (convertRow [] type') <> ")"
+    REmpty -> "()"
+    Skolem _ _ _ _ -> mempty
+    TUnknown _ -> mempty
+    TypeApp f x -> fromTypeWithParens f <+> fromTypeWithParens x
+    TypeConstructor constructor ->
+      pretty (showQualified runProperName constructor)
+    TypeLevelString str -> pretty (prettyPrintString str)
+    TypeOp op -> pretty (showQualified runOpName op)
+    TypeVar var -> pretty var
+    TypeWildcard _ -> "_"
+
+convertRow :: [Doc a] -> Language.PureScript.Type -> [Doc a]
+convertRow rest = \case
+  RCons label type' tail@REmpty ->
+    convertRow
+      ( pretty (prettyPrintString $ runLabel label)
+      <+> "::"
+      <+> fromType type'
+      : rest
+      )
+      tail
+  RCons label type' tail@RCons{} ->
+    convertRow
+      ( pretty (prettyPrintString $ runLabel label)
+      <+> "::"
+      <+> fromType type'
+      <> ","
+      : rest
+      )
+      tail
+  RCons label type' tail ->
+    convertRow
+      ( pretty (prettyPrintString $ runLabel label)
+      <+> "::"
+      <+> fromType type'
+      <+> "|"
+      : rest
+      )
+      tail
+  REmpty -> reverse rest
+  x -> reverse (fromType x : rest)
+
+convertTypeApps :: Language.PureScript.Type -> Language.PureScript.Type
+convertTypeApps = \case
+  TypeApp (TypeApp f g) x | f == tyFunction -> PrettyPrintFunction g x
+  TypeApp o r | o == tyRecord -> PrettyPrintObject r
+  x -> x
+
+convertForAlls :: [Text] -> Language.PureScript.Type -> Language.PureScript.Type
+convertForAlls vars = \case
+  ForAll var (quantifiedType@ForAll {}) _ ->
+    convertForAlls (var : vars) quantifiedType
+  ForAll var quantifiedType _ -> PrettyPrintForAll (var : vars) quantifiedType
+  other -> other
 
 fromTypeClassConstraints :: Doc a -> [Language.PureScript.Constraint] -> Doc a
 fromTypeClassConstraints arrow = \case
