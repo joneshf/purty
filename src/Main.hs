@@ -335,8 +335,9 @@ docFromImportQualified name = "as" <+> pretty (runModuleName name)
 
 docFromImportType :: ImportDeclarationType -> Doc a
 docFromImportType = \case
-  Explicit declarationRefs -> docFromExports declarationRefs
-  Hiding declarationRefs -> "hiding" <+> docFromExports declarationRefs
+  Explicit declarationRefs -> line <> indent 2 (docFromExports declarationRefs)
+  Hiding declarationRefs ->
+    line <> indent 2 ("hiding" <+> docFromExports declarationRefs)
   Implicit -> mempty
 
 docFromObject :: (PSString, Doc a) -> Doc a
