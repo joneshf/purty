@@ -125,7 +125,6 @@ docFromModule (Module _ comments name declarations' exports) =
     <> docFromDeclarations imports
     <> line
     <> docFromDeclarations declarations
-    <> line
   where
   (imports, declarations) = span isImportDecl declarations'
 
