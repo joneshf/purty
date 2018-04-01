@@ -242,6 +242,7 @@ docFromExpr = \case
   Case exprs alternatives ->
     "case"
       <+> sep (punctuate comma $ map docFromExpr exprs)
+      <+> "of"
       <> line
       <> indent 2 (vsep $ map docFromCaseAlternative alternatives)
   Constructor name -> pretty (showQualified runProperName name)
