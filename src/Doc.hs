@@ -226,6 +226,7 @@ fromDeclaration = \case
                   <+> hsep (map fromType types)
                   )
       <> line
+      <> line
   TypeInstanceDeclaration _ ident constraints name types (ExplicitInstance declarations) ->
     "instance"
       <+> pretty (runIdent ident)
@@ -249,6 +250,7 @@ fromDeclaration = \case
                   <+> hsep (map fromType types)
                   )
       <> line
+      <> line
   TypeInstanceDeclaration _ ident constraints name types (NewtypeInstanceWithDictionary _) ->
     "derive newtype instance"
       <+> pretty (runIdent ident)
@@ -258,6 +260,7 @@ fromDeclaration = \case
       <> indent 2 ( pretty (showQualified runProperName name)
                   <+> hsep (map fromType types)
                   )
+      <> line
       <> line
   TypeSynonymDeclaration _ name parameters underlyingType ->
     "type"
