@@ -111,7 +111,7 @@ fromBinder = pretty . prettyPrintBinder
 
 fromCaseAlternative :: CaseAlternative -> Doc a
 fromCaseAlternative CaseAlternative {caseAlternativeBinders, caseAlternativeResult} =
-  sep (punctuate comma $ map fromBinder caseAlternativeBinders)
+  hsep (punctuate comma $ map fromBinder caseAlternativeBinders)
     <+> foldMap fromGuardedExprCase caseAlternativeResult
 
 fromComment :: Comment -> Doc a
@@ -268,7 +268,7 @@ fromDeclaration = \case
       <> line
   ValueDeclaration ValueDeclarationData { valdeclBinders, valdeclExpression, valdeclIdent } ->
     pretty (runIdent valdeclIdent)
-      <+> sep (map fromBinder valdeclBinders)
+      <+> hsep (map fromBinder valdeclBinders)
       <+> foldMap fromGuardedExpr valdeclExpression
       <> line
       <> line
@@ -314,7 +314,7 @@ fromExpr = \case
     fromExpr left <+> fromExpr op <+> fromExpr right
   Case exprs alternatives ->
     "case"
-      <+> sep (punctuate comma $ map fromExpr exprs)
+      <+> hsep (punctuate comma $ map fromExpr exprs)
       <+> "of"
       <> line
       <> indent 2 (vsep $ map fromCaseAlternative alternatives)
@@ -400,7 +400,7 @@ fromGuardedExpr' separator (GuardedExpr guards expr) =
   where
   guardedExpr =
     "|"
-      <+> sep (punctuate comma (map fromGuard guards))
+      <+> hsep (punctuate comma (map fromGuard guards))
       <+> separator
       <> line
       <> indent 2 (fromExpr expr)
