@@ -156,7 +156,7 @@ fromDeclaration = \case
   DataDeclaration _ dataType name parameters constructors ->
     fromDataType dataType
       <+> pretty (runProperName name)
-      <+> foldMap fromParameter parameters
+      <+> fromParameters parameters
       <> line
       <> indent 2 (fromDataConstructors constructors)
       <> line
@@ -265,7 +265,7 @@ fromDeclaration = \case
   TypeSynonymDeclaration _ name parameters underlyingType ->
     "type"
       <+> pretty (runProperName name)
-      <+> foldMap fromParameter parameters
+      <+> fromParameters parameters
       <> line
       <> indent 2 ("=" <+> pretty (prettyPrintType underlyingType))
       <> line
@@ -463,6 +463,9 @@ fromParameter (parameter, Nothing) = pretty parameter
 fromParameter (parameter, Just k) =
   parens (pretty parameter <+> "::" <+> fromKind k)
 
+fromParameters :: [(Text, Maybe Kind)] -> Doc a
+fromParameters = hsep . map fromParameter
+
 fromPathNode :: (PSString, PathNode Expr) -> Doc a
 fromPathNode (key, Leaf expr) =
   pretty (prettyPrintString key) <+> "=" <+> fromExpr expr
@@ -606,7 +609,7 @@ fromTypeClassWithoutConstraints ::
   Doc a
 fromTypeClassWithoutConstraints name parameters funDeps declarations =
   pretty (runProperName name)
-    <+> foldMap fromParameter parameters
+    <+> fromParameters parameters
     <> fromFunctionalDependencies (fromList $ zip [0..] $ map fst parameters) funDeps
     <+> "where"
     <> line
