@@ -31,7 +31,7 @@ import "purescript" Language.PureScript
     , Comment(BlockComment, LineComment)
     , Constraint(Constraint)
     , DataDeclType(Data, Newtype)
-    , Declaration(BindingGroupDeclaration, BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ExternDataDeclaration, ExternDeclaration, ExternKindDeclaration, FixityDeclaration, ImportDeclaration, TypeClassDeclaration, TypeDeclaration, TypeSynonymDeclaration, ValueDeclaration)
+    , Declaration(BindingGroupDeclaration, BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ExternDataDeclaration, ExternDeclaration, ExternKindDeclaration, FixityDeclaration, ImportDeclaration, TypeClassDeclaration, TypeDeclaration, TypeInstanceDeclaration, TypeSynonymDeclaration, ValueDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
     , DoNotationElement(DoNotationBind, DoNotationLet, DoNotationValue, PositionedDoNotationElement)
     , Expr(Abs, Accessor, AnonymousArgument, App, BinaryNoParens, Case, Constructor, DeferredDictionary, Do, Hole, IfThenElse, Let, Literal, ObjectUpdate, ObjectUpdateNested, Op, Parens, PositionedValue, TypeClassDictionary, TypeClassDictionaryAccessor, TypeClassDictionaryConstructorApp, TypedValue, UnaryMinus, Var)
@@ -54,6 +54,7 @@ import "purescript" Language.PureScript
     , Type(BinaryNoParensType, ConstrainedType, ForAll, KindedType, ParensInType, PrettyPrintForAll, PrettyPrintFunction, PrettyPrintObject, RCons, REmpty, Skolem, TUnknown, TypeApp, TypeConstructor, TypeLevelString, TypeOp, TypeVar, TypeWildcard)
     , TypeDeclarationData(TypeDeclarationData)
     , TypeFixity(TypeFixity)
+    , TypeInstanceBody(DerivedInstance, ExplicitInstance, NewtypeInstance, NewtypeInstanceWithDictionary)
     , ValueDeclarationData(ValueDeclarationData)
     , ValueFixity(ValueFixity)
     , caseAlternativeBinders
@@ -211,8 +212,52 @@ fromDeclaration = \case
       <> line
   TypeClassDeclaration _ name parameters constraints funDeps declarations ->
     "class"
-      <+> fromTypeClassConstraints constraints
+      <> fromTypeClassConstraints "<=" constraints
+      <> line
       <> indent 2 (fromTypeClassWithoutConstraints name parameters funDeps declarations)
+      <> line
+  TypeInstanceDeclaration _ ident constraints name types DerivedInstance ->
+    "derive instance"
+      <+> pretty (runIdent ident)
+      <+> "::"
+      <> fromTypeClassConstraints "=>" constraints
+      <> line
+      <> indent 2 ( pretty (showQualified runProperName name)
+                  <+> hsep (map fromType types)
+                  )
+      <> line
+  TypeInstanceDeclaration _ ident constraints name types (ExplicitInstance declarations) ->
+    "instance"
+      <+> pretty (runIdent ident)
+      <+> "::"
+      <> fromTypeClassConstraints "=>" constraints
+      <> line
+      <> indent 2 ( pretty (showQualified runProperName name)
+                  <+> hsep (map fromType types)
+                  <+> "where"
+                  <> line
+                  <> indent 2 (vsep $ map fromDeclaration declarations)
+                  )
+      <> line
+  TypeInstanceDeclaration _ ident constraints name types NewtypeInstance ->
+    "derive newtype instance"
+      <+> pretty (runIdent ident)
+      <+> "::"
+      <> fromTypeClassConstraints "=>" constraints
+      <> line
+      <> indent 2 ( pretty (showQualified runProperName name)
+                  <+> hsep (map fromType types)
+                  )
+      <> line
+  TypeInstanceDeclaration _ ident constraints name types (NewtypeInstanceWithDictionary _) ->
+    "derive newtype instance"
+      <+> pretty (runIdent ident)
+      <+> "::"
+      <> fromTypeClassConstraints "=>" constraints
+      <> line
+      <> indent 2 ( pretty (showQualified runProperName name)
+                  <+> hsep (map fromType types)
+                  )
       <> line
   TypeSynonymDeclaration _ name parameters underlyingType ->
     "type"
@@ -227,7 +272,6 @@ fromDeclaration = \case
       <+> foldMap fromGuardedExpr valdeclExpression
       <> line
       <> line
-  _ -> mempty
 
 fromDeclarations :: [Declaration] -> Doc a
 fromDeclarations = foldMap fromDeclaration
@@ -499,12 +543,14 @@ fromType =
     ForAll var quantifiedType _ -> PrettyPrintForAll (var : vars) quantifiedType
     other -> other
 
-fromTypeClassConstraints :: [Language.PureScript.Constraint] -> Doc a
-fromTypeClassConstraints constraints =
-  line
-    <> indent 2 (align (cat (zipWith (<>) ("(" <> space : repeat ", ") (map fromConstraint constraints)) <> line <> ")"))
-    <+> "<="
-    <> line
+fromTypeClassConstraints :: Doc a -> [Language.PureScript.Constraint] -> Doc a
+fromTypeClassConstraints arrow = \case
+  [] -> mempty
+  constraints ->
+    space
+      <> line
+      <> indent 2 (align (cat (zipWith (<>) ("(" <> space : repeat ", ") (map fromConstraint constraints)) <> line <> ")"))
+      <+> arrow
 
 fromTypeClassWithoutConstraints ::
   ProperName 'ClassName ->
