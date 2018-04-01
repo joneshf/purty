@@ -29,10 +29,11 @@ import "purescript" Language.PureScript
     , Comment(BlockComment, LineComment)
     , Constraint(Constraint)
     , DataDeclType(Data, Newtype)
-    , Declaration(BindingGroupDeclaration, BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ExternDataDeclaration, ExternDeclaration, ExternKindDeclaration, ImportDeclaration, TypeDeclaration, TypeSynonymDeclaration, ValueDeclaration)
+    , Declaration(BindingGroupDeclaration, BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ExternDataDeclaration, ExternDeclaration, ExternKindDeclaration, FixityDeclaration, ImportDeclaration, TypeDeclaration, TypeSynonymDeclaration, ValueDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
     , DoNotationElement(DoNotationBind, DoNotationLet, DoNotationValue, PositionedDoNotationElement)
     , Expr(Abs, Accessor, AnonymousArgument, App, BinaryNoParens, Case, Constructor, DeferredDictionary, Do, Hole, IfThenElse, Let, Literal, ObjectUpdate, ObjectUpdateNested, Op, Parens, PositionedValue, TypeClassDictionary, TypeClassDictionaryAccessor, TypeClassDictionaryConstructorApp, TypedValue, UnaryMinus, Var)
+    , Fixity(Fixity)
     , Guard(ConditionGuard, PatternGuard)
     , GuardedExpr(GuardedExpr)
     , Ident
@@ -49,7 +50,9 @@ import "purescript" Language.PureScript
     , SourceAnn
     , Type(BinaryNoParensType, ConstrainedType, ForAll, KindedType, ParensInType, PrettyPrintForAll, PrettyPrintFunction, PrettyPrintObject, RCons, REmpty, Skolem, TUnknown, TypeApp, TypeConstructor, TypeLevelString, TypeOp, TypeVar, TypeWildcard)
     , TypeDeclarationData(TypeDeclarationData)
+    , TypeFixity(TypeFixity)
     , ValueDeclarationData(ValueDeclarationData)
+    , ValueFixity(ValueFixity)
     , caseAlternativeBinders
     , caseAlternativeResult
     , constraintArgs
@@ -66,6 +69,7 @@ import "purescript" Language.PureScript
     , runModuleName
     , runOpName
     , runProperName
+    , showAssoc
     , showOp
     , showQualified
     , tyFunction
@@ -169,6 +173,21 @@ fromDeclaration = \case
       <> line
   ExternKindDeclaration _ name ->
     "foreign import kind" <+> pretty (runProperName name) <> line <> line
+  FixityDeclaration _ (Left (ValueFixity fixity name op)) ->
+    fromFixity fixity
+      <+> pretty (showQualified (either runIdent runProperName) name)
+      <+> "as"
+      <+> pretty (runOpName op)
+      <> line
+      <> line
+  FixityDeclaration _ (Right (TypeFixity fixity name op)) ->
+    fromFixity fixity
+      <+> "type"
+      <+> pretty (showQualified runProperName name)
+      <+> "as"
+      <+> pretty (runOpName op)
+      <> line
+      <> line
   ImportDeclaration _ name importType qualified ->
     "import"
       <+> pretty (runModuleName name)
@@ -285,6 +304,10 @@ fromExpr = \case
     fromExpr expr <+> "::" <+> pretty (prettyPrintType exprType)
   UnaryMinus expr -> "-" <> fromExpr expr
   Var ident -> pretty (showQualified runIdent ident)
+
+fromFixity :: Language.PureScript.Fixity -> Doc a
+fromFixity (Fixity associativity precedence) =
+  pretty (showAssoc associativity) <+> pretty precedence
 
 fromGuard :: Guard -> Doc a
 fromGuard = \case
