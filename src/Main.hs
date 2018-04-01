@@ -141,8 +141,7 @@ docFromBinder = pretty . prettyPrintBinder
 docFromCaseAlternative :: CaseAlternative -> Doc a
 docFromCaseAlternative CaseAlternative {caseAlternativeBinders, caseAlternativeResult} =
   sep (punctuate comma $ map docFromBinder caseAlternativeBinders)
-    <> line
-    <> indent 2 (vsep $ map docFromGuardedExprCase caseAlternativeResult)
+    <+> foldMap docFromGuardedExprCase caseAlternativeResult
 
 docFromComment :: Comment -> Doc a
 docFromComment = \case
@@ -197,8 +196,7 @@ docFromDeclaration = \case
   ValueDeclaration ValueDeclarationData { valdeclBinders, valdeclExpression, valdeclIdent } ->
     pretty (runIdent valdeclIdent)
       <+> sep (map docFromBinder valdeclBinders)
-      <> line
-      <> indent 2 (vsep $ map docFromGuardedExpr valdeclExpression)
+      <+> foldMap docFromGuardedExpr valdeclExpression
       <> line
       <> line
   _ -> mempty
@@ -263,13 +261,16 @@ docFromExpr = \case
       <> line
       <> indent 2 (docFromExpr f)
   Let declarations expr ->
-    "let"
-      <> line
-      <> indent 4 (vsep $ map docFromDeclaration declarations)
-      <> line
-      <> indent (-4) "in"
-      <> line
-      <> indent 4 (docFromExpr expr)
+    line
+      <> indent 2
+        ( "let"
+        <> line
+        <> indent 2 (foldMap docFromDeclaration declarations)
+        <> line
+        <> "in"
+        <> line
+        <> indent 2 (docFromExpr expr)
+        )
   Literal literal -> docFromLiteral (map docFromExpr literal)
   ObjectUpdate expr obj ->
     docFromExpr expr <+> object (map (docFromObjectUpdate . map docFromExpr) obj)
@@ -293,18 +294,23 @@ docFromGuard = \case
   PatternGuard binder expr -> docFromBinder binder <+> "<-" <+> docFromExpr expr
 
 docFromGuardedExpr :: GuardedExpr -> Doc a
-docFromGuardedExpr (GuardedExpr guards expr) =
-  sep (punctuate comma (map docFromGuard guards))
-    <+> "="
-    <> line
-    <> indent 2 (docFromExpr expr)
+docFromGuardedExpr = docFromGuardedExpr' "="
 
 docFromGuardedExprCase :: GuardedExpr -> Doc a
-docFromGuardedExprCase (GuardedExpr guards expr) =
-  sep (punctuate comma (map docFromGuard guards))
-    <+> "->"
-    <> line
-    <> indent 2 (docFromExpr expr)
+docFromGuardedExprCase = docFromGuardedExpr' "->"
+
+docFromGuardedExpr' :: Doc a -> GuardedExpr -> Doc a
+docFromGuardedExpr' separator (GuardedExpr [] expr) =
+  separator <+> docFromExpr expr
+docFromGuardedExpr' separator (GuardedExpr guards expr) =
+  line <> indent 2 guardedExpr
+  where
+  guardedExpr =
+    "|"
+      <+> sep (punctuate comma (map docFromGuard guards))
+      <+> separator
+      <> line
+      <> indent 2 (docFromExpr expr)
 
 docFromConstructors :: [ProperName 'ConstructorName] -> Doc a
 docFromConstructors [] = mempty
