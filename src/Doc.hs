@@ -98,6 +98,50 @@ braces = enclosedWith "{" "}"
 brackets :: [Doc a] -> Doc a
 brackets = enclosedWith "[" "]"
 
+convertForAlls :: [Text] -> Language.PureScript.Type -> Language.PureScript.Type
+convertForAlls vars = \case
+  ForAll var (quantifiedType@ForAll {}) _ ->
+    convertForAlls (var : vars) quantifiedType
+  ForAll var quantifiedType _ -> PrettyPrintForAll (var : vars) quantifiedType
+  other -> other
+
+convertRow :: [Doc a] -> Language.PureScript.Type -> [Doc a]
+convertRow rest = \case
+  RCons label type' tail@REmpty ->
+    convertRow
+      ( pretty (prettyPrintString $ runLabel label)
+      <+> "::"
+      <+> fromType type'
+      : rest
+      )
+      tail
+  RCons label type' tail@RCons{} ->
+    convertRow
+      ( pretty (prettyPrintString $ runLabel label)
+      <+> "::"
+      <+> fromType type'
+      <> ","
+      : rest
+      )
+      tail
+  RCons label type' tail ->
+    convertRow
+      ( pretty (prettyPrintString $ runLabel label)
+      <+> "::"
+      <+> fromType type'
+      <+> "|"
+      : rest
+      )
+      tail
+  REmpty -> reverse rest
+  x -> reverse (fromType x : rest)
+
+convertTypeApps :: Language.PureScript.Type -> Language.PureScript.Type
+convertTypeApps = \case
+  TypeApp (TypeApp f g) x | f == tyFunction -> PrettyPrintFunction g x
+  TypeApp o r | o == tyRecord -> PrettyPrintObject r
+  x -> x
+
 enclosedWith :: Doc a -> Doc a -> [Doc a] -> Doc a
 enclosedWith open close =
   align
@@ -574,50 +618,6 @@ fromTypeWithParens =
     TypeOp op -> pretty (showQualified runOpName op)
     TypeVar var -> pretty var
     TypeWildcard _ -> "_"
-
-convertRow :: [Doc a] -> Language.PureScript.Type -> [Doc a]
-convertRow rest = \case
-  RCons label type' tail@REmpty ->
-    convertRow
-      ( pretty (prettyPrintString $ runLabel label)
-      <+> "::"
-      <+> fromType type'
-      : rest
-      )
-      tail
-  RCons label type' tail@RCons{} ->
-    convertRow
-      ( pretty (prettyPrintString $ runLabel label)
-      <+> "::"
-      <+> fromType type'
-      <> ","
-      : rest
-      )
-      tail
-  RCons label type' tail ->
-    convertRow
-      ( pretty (prettyPrintString $ runLabel label)
-      <+> "::"
-      <+> fromType type'
-      <+> "|"
-      : rest
-      )
-      tail
-  REmpty -> reverse rest
-  x -> reverse (fromType x : rest)
-
-convertTypeApps :: Language.PureScript.Type -> Language.PureScript.Type
-convertTypeApps = \case
-  TypeApp (TypeApp f g) x | f == tyFunction -> PrettyPrintFunction g x
-  TypeApp o r | o == tyRecord -> PrettyPrintObject r
-  x -> x
-
-convertForAlls :: [Text] -> Language.PureScript.Type -> Language.PureScript.Type
-convertForAlls vars = \case
-  ForAll var (quantifiedType@ForAll {}) _ ->
-    convertForAlls (var : vars) quantifiedType
-  ForAll var quantifiedType _ -> PrettyPrintForAll (var : vars) quantifiedType
-  other -> other
 
 fromTypeClassConstraints :: Doc a -> [Language.PureScript.Constraint] -> Doc a
 fromTypeClassConstraints arrow = \case
