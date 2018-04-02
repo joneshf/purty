@@ -17,6 +17,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , hsep
     , indent
     , line
+    , nest
     , parens
     , pretty
     , punctuate
@@ -329,7 +330,7 @@ fromDeclaration = \case
     fromComments comments
       <> pretty (runIdent valdeclIdent)
       <> fromBinders valdeclBinders
-      <+> foldMap fromGuardedExpr valdeclExpression
+      <+> nest 2 (foldMap fromGuardedExpr valdeclExpression)
       <> line
 
 fromDeclarations :: [Declaration] -> Doc a
