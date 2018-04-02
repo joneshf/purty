@@ -214,7 +214,6 @@ fromDeclaration = \case
       <> line
       <> indent 2 (fromDataConstructors constructors)
       <> line
-      <> line
   ExternDataDeclaration (_, comments) name kind ->
     fromComments comments
       <> "foreign import data"
@@ -222,7 +221,6 @@ fromDeclaration = \case
       <+> "::"
       <> line
       <> indent 2 (align $ fromKind kind)
-      <> line
       <> line
   ExternDeclaration (_, comments) ident type' ->
     fromComments comments
@@ -232,12 +230,10 @@ fromDeclaration = \case
       <> line
       <> indent 2 (align $ fromType type')
       <> line
-      <> line
   ExternKindDeclaration (_, comments) name ->
     fromComments comments
       <> "foreign import kind"
       <+> pretty (runProperName name)
-      <> line
       <> line
   FixityDeclaration (_, comments) (Left (ValueFixity fixity name op)) ->
     fromComments comments
@@ -245,7 +241,6 @@ fromDeclaration = \case
       <+> pretty (showQualified (either runIdent runProperName) name)
       <+> "as"
       <+> pretty (runOpName op)
-      <> line
       <> line
   FixityDeclaration (_, comments) (Right (TypeFixity fixity name op)) ->
     fromComments comments
@@ -255,33 +250,28 @@ fromDeclaration = \case
       <+> "as"
       <+> pretty (runOpName op)
       <> line
-      <> line
   ImportDeclaration (_, comments) name importType qualified ->
     fromComments comments
       <> "import"
       <+> pretty (runModuleName name)
       <+> fromImportType importType
       <+> foldMap fromImportQualified qualified
-      <> line
   TypeDeclaration TypeDeclarationData { tydeclIdent, tydeclSourceAnn = (_, comments), tydeclType } ->
     fromComments comments
       <> pretty (runIdent tydeclIdent)
       <+> "::"
       <> line
       <> indent 2 (align $ fromType tydeclType)
-      <> line
   TypeClassDeclaration (_, comments) name parameters [] funDeps declarations ->
     fromComments comments
       <> "class"
       <+> fromTypeClassWithoutConstraints name parameters funDeps declarations
-      <> line
   TypeClassDeclaration (_, comments) name parameters constraints funDeps declarations ->
     fromComments comments
       <> "class"
       <> fromTypeClassConstraints "<=" constraints
       <> line
       <> indent 2 (fromTypeClassWithoutConstraints name parameters funDeps declarations)
-      <> line
   TypeInstanceDeclaration (_, comments) ident constraints name types DerivedInstance ->
     fromComments comments
       <> "derive instance"
@@ -292,7 +282,6 @@ fromDeclaration = \case
       <> indent 2 ( pretty (showQualified runProperName name)
                   <+> hsep (map fromType types)
                   )
-      <> line
       <> line
   TypeInstanceDeclaration (_, comments) ident constraints name types (ExplicitInstance declarations) ->
     fromComments comments
@@ -307,7 +296,6 @@ fromDeclaration = \case
                   <> line
                   <> indent 2 (vsep $ map fromDeclaration declarations)
                   )
-      <> line
   TypeInstanceDeclaration (_, comments) ident constraints name types NewtypeInstance ->
     fromComments comments
       <> "derive newtype instance"
@@ -318,7 +306,6 @@ fromDeclaration = \case
       <> indent 2 ( pretty (showQualified runProperName name)
                   <+> hsep (map fromType types)
                   )
-      <> line
       <> line
   TypeInstanceDeclaration (_, comments) ident constraints name types (NewtypeInstanceWithDictionary _) ->
     fromComments comments
@@ -331,7 +318,6 @@ fromDeclaration = \case
                   <+> hsep (map fromType types)
                   )
       <> line
-      <> line
   TypeSynonymDeclaration (_, comments) name parameters underlyingType ->
     fromComments comments
       <> "type"
@@ -339,13 +325,11 @@ fromDeclaration = \case
       <+> fromParameters parameters
       <> line
       <> indent 2 ("=" <+> pretty (prettyPrintType underlyingType))
-      <> line
   ValueDeclaration ValueDeclarationData { valdeclBinders, valdeclExpression, valdeclIdent, valdeclSourceAnn = (_, comments) } ->
     fromComments comments
       <> pretty (runIdent valdeclIdent)
       <> fromBinders valdeclBinders
       <+> foldMap fromGuardedExpr valdeclExpression
-      <> line
       <> line
 
 fromDeclarations :: [Declaration] -> Doc a
@@ -508,9 +492,10 @@ fromModule (Module _ comments name declarations' exports) =
     <> fromModuleExports name exports
     <> line
     <> line
-    <> fromDeclarations imports
+    <> vsep (map fromDeclaration imports)
     <> line
-    <> fromDeclarations declarations
+    <> line
+    <> vsep (map fromDeclaration declarations)
   where
   (imports, declarations) = span isImportDecl declarations'
 
