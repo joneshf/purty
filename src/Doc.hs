@@ -20,7 +20,6 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , parens
     , pretty
     , punctuate
-    , sep
     , space
     , vsep
     , (<+>)
@@ -186,8 +185,9 @@ fromConstructors constructors =
   parentheses $ map fromConstructor constructors
 
 fromDataConstructor :: (ProperName 'ConstructorName, [Language.PureScript.Type]) -> Doc a
-fromDataConstructor (name, types) =
-  pretty (runProperName name) <+> sep (map (pretty . prettyPrintType) types)
+fromDataConstructor = \case
+  (name, []) -> pretty (runProperName name)
+  (name, types) -> pretty (runProperName name) <+> hsep (map fromType types)
 
 fromDataConstructors :: [(ProperName 'ConstructorName, [Language.PureScript.Type])] -> Doc a
 fromDataConstructors =
