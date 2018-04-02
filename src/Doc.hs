@@ -109,6 +109,11 @@ enclosedWith open close =
 fromBinder :: Binder -> Doc a
 fromBinder = pretty . prettyPrintBinder
 
+fromBinders :: [Binder] -> Doc a
+fromBinders = \case
+  [] -> mempty
+  binders -> space <> hsep (map fromBinder binders)
+
 fromCaseAlternative :: CaseAlternative -> Doc a
 fromCaseAlternative CaseAlternative {caseAlternativeBinders, caseAlternativeResult} =
   hsep (punctuate comma $ map fromBinder caseAlternativeBinders)
@@ -271,7 +276,7 @@ fromDeclaration = \case
       <> line
   ValueDeclaration ValueDeclarationData { valdeclBinders, valdeclExpression, valdeclIdent } ->
     pretty (runIdent valdeclIdent)
-      <+> hsep (map fromBinder valdeclBinders)
+      <> fromBinders valdeclBinders
       <+> foldMap fromGuardedExpr valdeclExpression
       <> line
       <> line
