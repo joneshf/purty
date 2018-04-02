@@ -386,24 +386,15 @@ fromExpr = \case
       <> indent 2 (vsep $ map fromDoElement elements)
   Hole hole -> "?" <> pretty hole
   IfThenElse b t f ->
-    "if"
-      <+> fromExpr b
-      <+> "then"
-      <> line
-      <> indent 2 (fromExpr t)
-      <> line
-      <> indent (-2) "else"
-      <> line
-      <> indent 2 (fromExpr f)
+    align $ vsep
+      [ "if" <+> fromExpr b <+> "then" <> line <> indent 2 (fromExpr t)
+      , "else" <> line <> indent 2 (fromExpr f)
+      ]
   Let declarations expr ->
-    line
-      <> indent 2
-        ( "let"
-        <+> align (fromDeclarations declarations)
-        <> line
-        <> "in"
-        <+> fromExpr expr
-        )
+    align $ vsep
+      [ "let" <+> align (fromDeclarations declarations)
+      , "in" <+> fromExpr expr
+      ]
   Literal literal -> fromLiteral (map fromExpr literal)
   ObjectUpdate expr obj ->
     fromExpr expr <+> braces (map (fromObjectUpdate . map fromExpr) obj)
