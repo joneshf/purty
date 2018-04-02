@@ -340,7 +340,7 @@ fromDoElement = \case
   DoNotationBind binder expr ->
     fromBinder binder <+> "<-" <+> fromExpr expr
   DoNotationLet declarations ->
-    "let" <> line <> indent 4 (fromDeclarations declarations)
+    "let" <+> align (fromDeclarations declarations)
   DoNotationValue expr -> fromExpr expr
   PositionedDoNotationElement _ comments element ->
     fromComments comments <> fromDoElement element
@@ -398,12 +398,10 @@ fromExpr = \case
     line
       <> indent 2
         ( "let"
-        <> line
-        <> indent 2 (foldMap fromDeclaration declarations)
+        <+> align (fromDeclarations declarations)
         <> line
         <> "in"
-        <> line
-        <> indent 2 (fromExpr expr)
+        <+> fromExpr expr
         )
   Literal literal -> fromLiteral (map fromExpr literal)
   ObjectUpdate expr obj ->
