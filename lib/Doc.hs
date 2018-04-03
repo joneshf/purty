@@ -254,7 +254,7 @@ fromDeclaration = \case
     fromComments comments
       <> "import"
       <+> pretty (runModuleName name)
-      <+> fromImportType importType
+      <> fromImportType importType
       <+> foldMap fromImportQualified qualified
   TypeDeclaration TypeDeclarationData { tydeclIdent, tydeclSourceAnn = (_, comments), tydeclType } ->
     fromComments comments

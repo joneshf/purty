@@ -1,6 +1,6 @@
 module SProxy where
 
-import Data.Symbol 
+import Data.Symbol
   (SProxy(SProxy)) 
 
 foo = SProxy :: SProxy "foo"
