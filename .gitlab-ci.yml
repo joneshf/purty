@@ -1,6 +1,7 @@
-image: fpco/stack-build:lts-10.10
+image: haskell:8.2.1
 
 cache:
+  key: purty
   paths:
     - .stack-root
     - .stack-work
@@ -14,13 +15,13 @@ stages:
   - test
 
 Install Haskell dependencies:
-  script: stack setup
+  script: stack --system-ghc setup
   stage: install
 
 Compile Haskell:
-  script: stack build --no-run-tests --test
+  script: stack --system-ghc build --no-run-tests --test
   stage: build
 
 Run golden tests:
-  script: stack build --test
+  script: stack --system-ghc build --test
   stage: test
