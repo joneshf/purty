@@ -83,6 +83,13 @@ data Env
     , envPrettyPrintConfig :: !PrettyPrintConfig
     }
 
+defaultEnv :: Path Abs File -> Env
+defaultEnv filePath = Env { envArgs, envPrettyPrintConfig }
+  where
+  envArgs = Args { filePath }
+  envPrettyPrintConfig =
+    PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
+
 class HasEnv env where
   envL :: Lens' env Env
 
