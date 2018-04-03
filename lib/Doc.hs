@@ -211,7 +211,7 @@ fromDeclaration = \case
     fromComments comments
       <> fromDataType dataType
       <+> pretty (runProperName name)
-      <+> fromParameters parameters
+      <> fromParameters parameters
       <> line
       <> indent 2 (fromDataConstructors constructors)
       <> line
@@ -510,7 +510,9 @@ fromParameter (parameter, Just k) =
   parens (pretty parameter <+> "::" <+> fromKind k)
 
 fromParameters :: [(Text, Maybe Kind)] -> Doc a
-fromParameters = hsep . map fromParameter
+fromParameters = \case
+  [] -> mempty
+  parameters -> space <> hsep (map fromParameter parameters)
 
 fromPathNode :: (PSString, PathNode Expr) -> Doc a
 fromPathNode (key, Leaf expr) =

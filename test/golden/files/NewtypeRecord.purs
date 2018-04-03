@@ -2,5 +2,5 @@ module NewtypeRecord where
 
 
 
-newtype Foo 
+newtype Foo
   = Foo {}
