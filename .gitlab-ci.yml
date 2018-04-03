@@ -7,15 +7,20 @@ cache:
 
 variables:
   STACK_ROOT: .stack-root
+  
+stages:
+  - install
+  - build
+  - test
 
-install:
-  script:
-    - stack setup
+Install Haskell dependencies:
+  script: stack setup
+  stage: install
 
-build:
-  script:
-    - stack build --no-run-tests --test
+Compile Haskell:
+  script: stack build --no-run-tests --test
+  stage: build
 
-test:
-  script:
-    - stack build --test
+Run golden tests:
+  script: stack build --test
+  stage: test
