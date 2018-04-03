@@ -17,5 +17,5 @@ build:
     - stack build --no-run-tests --test
 
 test:
-  script
+  script:
     - stack build --test
