@@ -1,6 +1,7 @@
 image: haskell:8.2.1
 
 cache:
+  key: purty
   paths:
     - .stack-root
     - .stack-work
