@@ -6,7 +6,7 @@ cache:
     - .stack-work
 
 variables:
-  STACK_ROOT: .stack-root
+  STACK_ROOT: $CI_PROJECT_DIR/.stack-root
   
 stages:
   - install
