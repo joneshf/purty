@@ -9,9 +9,14 @@ variables:
   STACK_ROOT: $CI_PROJECT_DIR/.stack-root
   
 stages:
+  - wipe cache
   - install
   - build
   - test
+
+Clear the cache:
+  script: stack clean --full
+  stage: wipe cache
 
 Install Haskell dependencies:
   script: stack setup
