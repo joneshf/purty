@@ -1,4 +1,4 @@
-image: fpco/stack-build:lts-10.10
+image: haskell:8.2.1
 
 cache:
   paths:
