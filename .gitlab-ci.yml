@@ -1,0 +1,21 @@
+image: fpco/stack-build:lts-10.10
+
+cache:
+  paths:
+    - .stack-root
+    - .stack-work
+
+variables:
+  STACK_ROOT: .stack-root
+
+install:
+  script:
+    - stack setup
+
+build:
+  script:
+    - stack build --no-run-tests --test
+
+test:
+  script
+    - stack build --test
