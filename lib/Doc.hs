@@ -544,7 +544,7 @@ fromType =
         <> line
         <> fromType type'
     PrettyPrintFunction f x -> fromType f <+> "->" <> line <> fromType x
-    type'@PrettyPrintObject {} -> "{" <> hsep (convertRow [] type') <> "}"
+    PrettyPrintObject type' -> "{" <> hsep (convertRow [] type') <> "}"
     type'@RCons {} -> "(" <> hsep (convertRow [] type') <> ")"
     REmpty -> "()"
     Skolem _ _ _ _ -> mempty
@@ -581,7 +581,7 @@ fromTypeWithParens =
         <+> fromTypeWithParens type'
     PrettyPrintFunction f x ->
       fromTypeWithParens f <+> "->" <+> fromTypeWithParens x
-    type'@PrettyPrintObject {} -> "{" <> hsep (convertRow [] type') <> "}"
+    PrettyPrintObject type' -> "{" <> hsep (convertRow [] type') <> "}"
     type'@RCons {} -> "(" <> hsep (convertRow [] type') <> ")"
     REmpty -> "()"
     Skolem _ _ _ _ -> mempty
