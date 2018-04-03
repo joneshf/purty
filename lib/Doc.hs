@@ -325,7 +325,7 @@ fromDeclaration = \case
       <+> pretty (runProperName name)
       <> fromParameters parameters
       <> line
-      <> indent 2 ("=" <+> pretty (prettyPrintType underlyingType))
+      <> indent 2 ("=" <+> fromType underlyingType)
   ValueDeclaration ValueDeclarationData { valdeclBinders, valdeclExpression, valdeclIdent, valdeclSourceAnn = (_, comments) } ->
     fromComments comments
       <> pretty (runIdent valdeclIdent)
