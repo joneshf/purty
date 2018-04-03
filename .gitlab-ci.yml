@@ -14,13 +14,13 @@ stages:
   - test
 
 Install Haskell dependencies:
-  script: stack clean --full
+  script: stack --system-ghc setup
   stage: install
 
-.Compile Haskell:
-  script: stack build --no-run-tests --test
+Compile Haskell:
+  script: stack --system-ghc build --no-run-tests --test
   stage: build
 
-.Run golden tests:
-  script: stack build --test
+Run golden tests:
+  script: stack --system-ghc build --test
   stage: test
