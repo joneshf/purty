@@ -44,14 +44,10 @@ executables:
   purty:
     dependencies:
       - base == 4.10.0.0
-      - containers == 0.5.10.2
-      - microlens-platform == 0.3.9.0
-      - mtl == 2.2.1
       - optparse-applicative == 0.14.0.0
-      - path == 0.6.1
       - prettyprinter == 1.1.1
       - protolude == 0.2.1
-      - purescript == 0.11.7
+      - purty
     main: Main.hs
     source-dirs: src
 extra-source-files:
@@ -65,6 +61,18 @@ ghc-options:
   - -Wmissing-methods
   - -Wredundant-constraints
 homepage: https://github.com/joneshf/purty#readme
+library:
+  dependencies:
+    - base == 4.10.0.0
+    - containers == 0.5.10.2
+    - microlens-platform == 0.3.9.0
+    - optparse-applicative == 0.14.0.0
+    - parsec == 3.1.11
+    - path == 0.6.1
+    - prettyprinter == 1.1.1
+    - protolude == 0.2.1
+    - purescript == 0.11.7
+  source-dirs: lib
 license: BSD3
 maintainer: jones3.hardy@gmail.com
 name: purty
