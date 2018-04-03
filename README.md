@@ -4,4 +4,4 @@
 
 For examples of how `purty` prints, see the [golden tests][].
 
-[golden tests]: ./test/golden
+[golden tests]: ./test/golden/files
