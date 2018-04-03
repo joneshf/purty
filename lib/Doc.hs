@@ -69,7 +69,6 @@ import "purescript" Language.PureScript
     , prettyPrintBinder
     , prettyPrintKind
     , prettyPrintString
-    , prettyPrintType
     , runAssocList
     , runIdent
     , runModuleName
@@ -406,8 +405,7 @@ fromExpr = \case
   TypeClassDictionary _ _ _ -> mempty
   TypeClassDictionaryAccessor _ _ -> mempty
   TypeClassDictionaryConstructorApp _ _ -> mempty
-  TypedValue _ expr exprType ->
-    fromExpr expr <+> "::" <+> pretty (prettyPrintType exprType)
+  TypedValue _ expr exprType -> fromExpr expr <+> "::" <+> fromType exprType
   UnaryMinus expr -> "-" <> fromExpr expr
   Var ident -> pretty (showQualified runIdent ident)
 
