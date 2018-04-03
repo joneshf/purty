@@ -323,7 +323,7 @@ fromDeclaration = \case
     fromComments comments
       <> "type"
       <+> pretty (runProperName name)
-      <+> fromParameters parameters
+      <> fromParameters parameters
       <> line
       <> indent 2 ("=" <+> pretty (prettyPrintType underlyingType))
   ValueDeclaration ValueDeclarationData { valdeclBinders, valdeclExpression, valdeclIdent, valdeclSourceAnn = (_, comments) } ->
@@ -613,7 +613,7 @@ fromTypeClassWithoutConstraints ::
   Doc a
 fromTypeClassWithoutConstraints name parameters funDeps declarations =
   pretty (runProperName name)
-    <+> fromParameters parameters
+    <> fromParameters parameters
     <> fromFunctionalDependencies (fromList $ zip [0..] $ map fst parameters) funDeps
     <+> "where"
     <> line
