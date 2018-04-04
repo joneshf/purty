@@ -478,14 +478,15 @@ fromModule :: Module -> Doc a
 fromModule (Module _ comments name declarations' exports) =
   fromComments comments
     <> fromModuleExports name exports
-    <> line
-    <> line
-    <> vsep (map fromDeclaration imports)
-    <> line
-    <> line
-    <> vsep (map fromDeclaration declarations)
+    <> fromModuleImports imports
+    <> fromModuleDeclarations declarations
   where
   (imports, declarations) = span isImportDecl declarations'
+
+fromModuleDeclarations :: [Declaration] -> Doc a
+fromModuleDeclarations = \case
+  [] -> mempty
+  declarations -> line <> line <> vsep (map fromDeclaration declarations)
 
 fromModuleExports :: ModuleName -> Maybe [DeclarationRef] -> Doc ann
 fromModuleExports name Nothing =
@@ -495,6 +496,11 @@ fromModuleExports name (Just exports) =
     <+> pretty (runModuleName name)
     <> line
     <> indent 2 (fromExports exports <> line <> "where")
+
+fromModuleImports :: [Declaration] -> Doc a
+fromModuleImports = \case
+  [] -> mempty
+  imports -> line <> line <> vsep (map fromDeclaration imports)
 
 fromObject :: (PSString, Doc a) -> Doc a
 fromObject (key, val) = pretty (prettyPrintString key) <> ":" <+> val
