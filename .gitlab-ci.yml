@@ -19,7 +19,11 @@ Install Haskell dependencies:
   stage: install
 
 Compile Haskell:
-  script: stack --system-ghc build --no-run-tests --test
+  artifacts:
+    name: purty
+    paths:
+      - bin
+  script: stack --system-ghc build --copy-bins --local-bin-path bin --no-run-tests --test
   stage: build
 
 Run golden tests:
