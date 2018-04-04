@@ -174,7 +174,7 @@ fromComments = foldMap fromComment
 fromConstraint :: Language.PureScript.Constraint -> Doc a
 fromConstraint Constraint { constraintArgs, constraintClass } =
   pretty (showQualified runProperName constraintClass)
-    <+> foldMap fromType constraintArgs
+    <+> hsep (map fromType constraintArgs)
 
 fromConstructor :: ProperName 'ConstructorName -> Doc a
 fromConstructor = pretty . runProperName
