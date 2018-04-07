@@ -52,7 +52,7 @@ pushd "${DIR}"
 
 # End Boilerplate
 
-stack build purty:exe:purty
+stack "${SYSTEM_GHC}" build purty:exe:purty
 
 echo 'Absolute file paths work'
 stack "${SYSTEM_GHC}" exec purty "$(pwd)/Test.purs" > /dev/null
