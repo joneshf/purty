@@ -9,11 +9,13 @@ import "path" Path
     , Path
     , Rel
     , relfile
+    , toFilePath
     , (</>)
     )
 import "path-io" Path.IO                                     (getCurrentDir)
 import "tasty" Test.Tasty
-    ( TestTree
+    ( TestName
+    , TestTree
     , defaultMain
     , testGroup
     )
@@ -29,19 +31,23 @@ main = defaultMain goldenTests
 diff :: FilePath -> FilePath -> [[Char]]
 diff old new = ["diff", "--unified", old, new]
 
+golden :: TestName -> Path Rel File -> TestTree
+golden testName goldenFile = do
+  goldenVsStringDiff testName diff (toFilePath goldenFile) (testPurty goldenFile)
+
 goldenTests :: TestTree
 goldenTests =
   testGroup
     "golden"
-    [ goldenVsStringDiff "newtype record" diff "test/golden/files/NewtypeRecord.purs" (testPurty [relfile|test/golden/files/NewtypeRecord.purs|])
-    , goldenVsStringDiff "data with parameters" diff "test/golden/files/DataWithParameters.purs" (testPurty [relfile|test/golden/files/DataWithParameters.purs|])
-    , goldenVsStringDiff "empty data" diff "test/golden/files/EmptyData.purs" (testPurty [relfile|test/golden/files/EmptyData.purs|])
-    , goldenVsStringDiff "multi-parameter type class instance head" diff "test/golden/files/MPTCHead.purs" (testPurty [relfile|test/golden/files/MPTCHead.purs|])
-    , goldenVsStringDiff "module header" diff "test/golden/files/ModuleHeader.purs" (testPurty [relfile|test/golden/files/ModuleHeader.purs|])
-    , goldenVsStringDiff "sproxy" diff "test/golden/files/SProxy.purs" (testPurty [relfile|test/golden/files/SProxy.purs|])
-    , goldenVsStringDiff "typeclass" diff "test/golden/files/TypeClass.purs" (testPurty [relfile|test/golden/files/TypeClass.purs|])
-    , goldenVsStringDiff "type synonym" diff "test/golden/files/TypeSynonym.purs" (testPurty [relfile|test/golden/files/TypeSynonym.purs|])
-    , goldenVsStringDiff "type synonym newline" diff "test/golden/files/TypeSynonymNewline.purs" (testPurty [relfile|test/golden/files/TypeSynonymNewline.purs|])
+    [ golden "newtype record" [relfile|test/golden/files/NewtypeRecord.purs|]
+    , golden "data with parameters" [relfile|test/golden/files/DataWithParameters.purs|]
+    , golden "empty data" [relfile|test/golden/files/EmptyData.purs|]
+    , golden "multi-parameter type class instance head" [relfile|test/golden/files/MPTCHead.purs|]
+    , golden "module header" [relfile|test/golden/files/ModuleHeader.purs|]
+    , golden "sproxy" [relfile|test/golden/files/SProxy.purs|]
+    , golden "typeclass" [relfile|test/golden/files/TypeClass.purs|]
+    , golden "type synonym" [relfile|test/golden/files/TypeSynonym.purs|]
+    , golden "type synonym newline" [relfile|test/golden/files/TypeSynonymNewline.purs|]
     ]
 
 testPurty :: Path Rel File -> IO LByteString
