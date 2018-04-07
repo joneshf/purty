@@ -42,13 +42,13 @@ goldenTests :: TestTree
 goldenTests =
   testGroup
     "golden"
-    [ golden "newtype record" [relfile|test/golden/files/NewtypeRecord.purs|]
-    , golden "data with parameters" [relfile|test/golden/files/DataWithParameters.purs|]
+    [ golden "data with parameters" [relfile|test/golden/files/DataWithParameters.purs|]
     , golden "empty data" [relfile|test/golden/files/EmptyData.purs|]
-    , golden "multi-parameter type class instance head" [relfile|test/golden/files/MPTCHead.purs|]
     , golden "module header" [relfile|test/golden/files/ModuleHeader.purs|]
+    , golden "multi-parameter type class instance head" [relfile|test/golden/files/MPTCHead.purs|]
+    , golden "newtype record" [relfile|test/golden/files/NewtypeRecord.purs|]
     , golden "sproxy" [relfile|test/golden/files/SProxy.purs|]
-    , golden "typeclass" [relfile|test/golden/files/TypeClass.purs|]
-    , golden "type synonym" [relfile|test/golden/files/TypeSynonym.purs|]
     , golden "type synonym newline" [relfile|test/golden/files/TypeSynonymNewline.purs|]
+    , golden "type synonym" [relfile|test/golden/files/TypeSynonym.purs|]
+    , golden "typeclass" [relfile|test/golden/files/TypeClass.purs|]
     ]
