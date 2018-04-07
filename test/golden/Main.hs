@@ -1,7 +1,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Main where
 
-import "protolude" Protolude
+import "protolude" Protolude hiding (diff)
 
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderLazy)
 import "path" Path
@@ -17,26 +17,31 @@ import "tasty" Test.Tasty
     , defaultMain
     , testGroup
     )
-import "tasty-golden" Test.Tasty.Golden                      (goldenVsString)
+import "tasty-golden" Test.Tasty.Golden
+    ( goldenVsStringDiff
+    )
 
 import "purty" Purty (defaultEnv, purty, runPurty)
 
 main :: IO ()
 main = defaultMain goldenTests
 
+diff :: FilePath -> FilePath -> [[Char]]
+diff old new = ["diff", "--unified", old, new]
+
 goldenTests :: TestTree
 goldenTests =
   testGroup
     "golden"
-    [ goldenVsString "newtype record" "test/golden/files/NewtypeRecord.purs" (testPurty [relfile|test/golden/files/NewtypeRecord.purs|])
-    , goldenVsString "data with parameters" "test/golden/files/DataWithParameters.purs" (testPurty [relfile|test/golden/files/DataWithParameters.purs|])
-    , goldenVsString "empty data" "test/golden/files/EmptyData.purs" (testPurty [relfile|test/golden/files/EmptyData.purs|])
-    , goldenVsString "multi-parameter type class instance head" "test/golden/files/MPTCHead.purs" (testPurty [relfile|test/golden/files/MPTCHead.purs|])
-    , goldenVsString "module header" "test/golden/files/ModuleHeader.purs" (testPurty [relfile|test/golden/files/ModuleHeader.purs|])
-    , goldenVsString "sproxy" "test/golden/files/SProxy.purs" (testPurty [relfile|test/golden/files/SProxy.purs|])
-    , goldenVsString "typeclass" "test/golden/files/TypeClass.purs" (testPurty [relfile|test/golden/files/TypeClass.purs|])
-    , goldenVsString "type synonym" "test/golden/files/TypeSynonym.purs" (testPurty [relfile|test/golden/files/TypeSynonym.purs|])
-    , goldenVsString "type synonym newline" "test/golden/files/TypeSynonymNewline.purs" (testPurty [relfile|test/golden/files/TypeSynonymNewline.purs|])
+    [ goldenVsStringDiff "newtype record" diff "test/golden/files/NewtypeRecord.purs" (testPurty [relfile|test/golden/files/NewtypeRecord.purs|])
+    , goldenVsStringDiff "data with parameters" diff "test/golden/files/DataWithParameters.purs" (testPurty [relfile|test/golden/files/DataWithParameters.purs|])
+    , goldenVsStringDiff "empty data" diff "test/golden/files/EmptyData.purs" (testPurty [relfile|test/golden/files/EmptyData.purs|])
+    , goldenVsStringDiff "multi-parameter type class instance head" diff "test/golden/files/MPTCHead.purs" (testPurty [relfile|test/golden/files/MPTCHead.purs|])
+    , goldenVsStringDiff "module header" diff "test/golden/files/ModuleHeader.purs" (testPurty [relfile|test/golden/files/ModuleHeader.purs|])
+    , goldenVsStringDiff "sproxy" diff "test/golden/files/SProxy.purs" (testPurty [relfile|test/golden/files/SProxy.purs|])
+    , goldenVsStringDiff "typeclass" diff "test/golden/files/TypeClass.purs" (testPurty [relfile|test/golden/files/TypeClass.purs|])
+    , goldenVsStringDiff "type synonym" diff "test/golden/files/TypeSynonym.purs" (testPurty [relfile|test/golden/files/TypeSynonym.purs|])
+    , goldenVsStringDiff "type synonym newline" diff "test/golden/files/TypeSynonymNewline.purs" (testPurty [relfile|test/golden/files/TypeSynonymNewline.purs|])
     ]
 
 testPurty :: Path Rel File -> IO LByteString
