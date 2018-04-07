@@ -4,6 +4,7 @@ import "protolude" Protolude hiding (group)
 
 import "containers" Data.IntMap.Strict           (findWithDefault, fromList)
 import "base" Data.List                          (span)
+import "text" Data.Text                          (dropAround)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , align
@@ -91,6 +92,9 @@ import "purescript" Language.PureScript
 import "purescript" Language.PureScript.Label    (runLabel)
 import "purescript" Language.PureScript.PSString (PSString)
 
+ppStringWithoutQuotes :: PSString -> Text
+ppStringWithoutQuotes = dropAround (== '"') . prettyPrintString
+
 braces :: [Doc a] -> Doc a
 braces = enclosedWith "{" "}"
 
@@ -108,32 +112,28 @@ convertRow :: [Doc a] -> Language.PureScript.Type -> [Doc a]
 convertRow rest = \case
   RCons label type' tail@REmpty ->
     convertRow
-      ( pretty (prettyPrintString $ runLabel label)
-      <+> "::"
-      <+> fromType type'
+      ( printRowPair label type'
       : rest
       )
       tail
   RCons label type' tail@RCons{} ->
     convertRow
-      ( pretty (prettyPrintString $ runLabel label)
-      <+> "::"
-      <+> fromType type'
+      ( printRowPair label type'
       <> ","
       : rest
       )
       tail
   RCons label type' tail ->
     convertRow
-      ( pretty (prettyPrintString $ runLabel label)
-      <+> "::"
-      <+> fromType type'
+      ( printRowPair label type'
       <+> "|"
       : rest
       )
       tail
   REmpty -> reverse rest
   x -> reverse (fromType x : rest)
+  where
+    printRowPair l t = pretty (ppStringWithoutQuotes $ runLabel l) <+> "::" <+> fromType t
 
 convertTypeApps :: Language.PureScript.Type -> Language.PureScript.Type
 convertTypeApps = \case
@@ -366,7 +366,7 @@ fromExpr :: Expr -> Doc a
 fromExpr = \case
   Abs binder expr ->
     "\\" <> fromBinder binder <+> "->" <> line <> indent 2 (fromExpr expr)
-  Accessor key expr -> fromExpr expr <> "." <> pretty (prettyPrintString key)
+  Accessor key expr -> fromExpr expr <> "." <> pretty (ppStringWithoutQuotes key)
   AnonymousArgument -> "_"
   App expr1 expr2 -> fromExpr expr1 <+> fromExpr expr2
   BinaryNoParens op left right ->
@@ -497,10 +497,10 @@ fromModuleExports name (Just exports) =
     <> indent 2 (fromExports exports <> line <> "where")
 
 fromObject :: (PSString, Doc a) -> Doc a
-fromObject (key, val) = pretty (prettyPrintString key) <> ":" <+> val
+fromObject (key, val) = pretty (ppStringWithoutQuotes key) <> ":" <+> val
 
 fromObjectUpdate :: (PSString, Doc a) -> Doc a
-fromObjectUpdate (key, val) = pretty (prettyPrintString key) <+> "=" <+> val
+fromObjectUpdate (key, val) = pretty (ppStringWithoutQuotes key) <+> "=" <+> val
 
 fromParameter :: (Text, Maybe Kind) -> Doc a
 fromParameter (parameter, Nothing) = pretty parameter
@@ -514,9 +514,9 @@ fromParameters = \case
 
 fromPathNode :: (PSString, PathNode Expr) -> Doc a
 fromPathNode (key, Leaf expr) =
-  pretty (prettyPrintString key) <+> "=" <+> fromExpr expr
+  pretty (ppStringWithoutQuotes key) <+> "=" <+> fromExpr expr
 fromPathNode (key, Branch path) =
-  pretty (prettyPrintString key) <+> fromPathTree path
+  pretty (ppStringWithoutQuotes key) <+> fromPathTree path
 
 fromPathTree :: PathTree Expr -> Doc a
 fromPathTree (PathTree paths) =
