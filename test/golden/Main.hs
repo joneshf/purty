@@ -3,13 +3,23 @@ module Main where
 
 import "protolude" Protolude
 
-import "path" Path (Path, Rel, File, (</>), relfile)
-import "tasty" Test.Tasty (TestTree, testGroup, defaultMain)
-import "tasty-golden" Test.Tasty.Golden (goldenVsString)
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderLazy)
-import "path-io" Path.IO (getCurrentDir)
+import "path" Path
+    ( File
+    , Path
+    , Rel
+    , relfile
+    , (</>)
+    )
+import "path-io" Path.IO                                     (getCurrentDir)
+import "tasty" Test.Tasty
+    ( TestTree
+    , defaultMain
+    , testGroup
+    )
+import "tasty-golden" Test.Tasty.Golden                      (goldenVsString)
 
-import "purty" Purty (purty, runPurty, defaultEnv)
+import "purty" Purty (defaultEnv, purty, runPurty)
 
 main :: IO ()
 main = defaultMain goldenTests

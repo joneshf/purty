@@ -27,16 +27,16 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     )
 import "purescript" Language.PureScript
     ( Binder
-    , CaseAlternative(CaseAlternative)
+    , CaseAlternative(CaseAlternative, caseAlternativeBinders, caseAlternativeResult)
     , Comment(BlockComment, LineComment)
-    , Constraint(Constraint)
+    , Constraint(Constraint, constraintArgs, constraintClass)
     , DataDeclType(Data, Newtype)
     , Declaration(BindingGroupDeclaration, BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ExternDataDeclaration, ExternDeclaration, ExternKindDeclaration, FixityDeclaration, ImportDeclaration, TypeClassDeclaration, TypeDeclaration, TypeInstanceDeclaration, TypeSynonymDeclaration, ValueDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
     , DoNotationElement(DoNotationBind, DoNotationLet, DoNotationValue, PositionedDoNotationElement)
     , Expr(Abs, Accessor, AnonymousArgument, App, BinaryNoParens, Case, Constructor, DeferredDictionary, Do, Hole, IfThenElse, Let, Literal, ObjectUpdate, ObjectUpdateNested, Op, Parens, PositionedValue, TypeClassDictionary, TypeClassDictionaryAccessor, TypeClassDictionaryConstructorApp, TypedValue, UnaryMinus, Var)
     , Fixity(Fixity)
-    , FunctionalDependency(FunctionalDependency)
+    , FunctionalDependency(FunctionalDependency, fdDetermined, fdDeterminers)
     , Guard(ConditionGuard, PatternGuard)
     , GuardedExpr(GuardedExpr)
     , Ident
@@ -52,19 +52,13 @@ import "purescript" Language.PureScript
     , ProperNameType(ClassName, ConstructorName)
     , SourceAnn
     , Type(BinaryNoParensType, ConstrainedType, ForAll, KindedType, ParensInType, PrettyPrintForAll, PrettyPrintFunction, PrettyPrintObject, RCons, REmpty, Skolem, TUnknown, TypeApp, TypeConstructor, TypeLevelString, TypeOp, TypeVar, TypeWildcard)
-    , TypeDeclarationData(TypeDeclarationData)
+    , TypeDeclarationData(TypeDeclarationData, tydeclIdent, tydeclSourceAnn, tydeclType)
     , TypeFixity(TypeFixity)
     , TypeInstanceBody(DerivedInstance, ExplicitInstance, NewtypeInstance, NewtypeInstanceWithDictionary)
-    , ValueDeclarationData(ValueDeclarationData)
+    , ValueDeclarationData(ValueDeclarationData, valdeclBinders, valdeclExpression, valdeclIdent, valdeclName, valdeclSourceAnn)
     , ValueFixity(ValueFixity)
-    , caseAlternativeBinders
-    , caseAlternativeResult
-    , constraintArgs
-    , constraintClass
     , everywhereOnTypes
     , everywhereOnTypesTopDown
-    , fdDetermined
-    , fdDeterminers
     , isImportDecl
     , prettyPrintBinder
     , prettyPrintKind
@@ -79,14 +73,6 @@ import "purescript" Language.PureScript
     , showQualified
     , tyFunction
     , tyRecord
-    , tydeclIdent
-    , tydeclSourceAnn
-    , tydeclType
-    , valdeclBinders
-    , valdeclExpression
-    , valdeclIdent
-    , valdeclName
-    , valdeclSourceAnn
     )
 import "purescript" Language.PureScript.Label    (runLabel)
 import "purescript" Language.PureScript.PSString (PSString)
