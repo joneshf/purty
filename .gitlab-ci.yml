@@ -26,6 +26,10 @@ Compile Haskell:
   script: stack --system-ghc build --copy-bins --local-bin-path bin --no-run-tests --test
   stage: build
 
+Run acceptance tests:
+  script: bash -x ./test/acceptance/filepath.sh --system-ghc
+  stage: test
+
 Run golden tests:
   script: stack --system-ghc build --test
   stage: test
