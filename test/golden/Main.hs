@@ -36,6 +36,7 @@ goldenTests =
     , goldenVsString "sproxy" "test/golden/files/SProxy.purs" (testPurty [relfile|test/golden/files/SProxy.purs|])
     , goldenVsString "typeclass" "test/golden/files/TypeClass.purs" (testPurty [relfile|test/golden/files/TypeClass.purs|])
     , goldenVsString "type synonym" "test/golden/files/TypeSynonym.purs" (testPurty [relfile|test/golden/files/TypeSynonym.purs|])
+    , goldenVsString "type synonym newline" "test/golden/files/TypeSynonymNewline.purs" (testPurty [relfile|test/golden/files/TypeSynonymNewline.purs|])
     ]
 
 testPurty :: Path Rel File -> IO LByteString

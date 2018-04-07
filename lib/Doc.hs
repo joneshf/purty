@@ -311,6 +311,7 @@ fromDeclaration = \case
       <> fromParameters parameters
       <> line
       <> indent 2 ("=" <+> fromType underlyingType)
+      <> line
   ValueDeclaration ValueDeclarationData { valdeclBinders, valdeclExpression, valdeclIdent, valdeclSourceAnn = (_, comments) } ->
     fromComments comments
       <> pretty (runIdent valdeclIdent)
