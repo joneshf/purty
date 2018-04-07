@@ -27,9 +27,12 @@ import "path" Path
     ( Abs
     , File
     , Path
+    , Rel
     , fromAbsFile
     , parseAbsFile
+    , parseRelFile
     )
+import "path-io" Path.IO                          (makeAbsolute)
 import "parsec" Text.Parsec                       (ParseError)
 
 import qualified "this" Doc
@@ -38,14 +41,15 @@ purty :: (HasArgs env, HasPrettyPrintConfig env) => Purty env (Either ParseError
 purty = do
   Args { filePath } <- view argsL
   PrettyPrintConfig { layoutOptions } <- view prettyPrintConfigL
-  contents <- liftIO $ readFile (fromAbsFile filePath)
+  absFilePath <- either pure makeAbsolute filePath
+  contents <- liftIO $ readFile (fromAbsFile absFilePath)
   pure $ do
-    (_, m) <- parseModuleFromFile identity (fromAbsFile filePath, contents)
+    (_, m) <- parseModuleFromFile identity (fromAbsFile absFilePath, contents)
     pure (layoutSmart layoutOptions $ Doc.fromModule m)
 
 data Args
   = Args
-    { filePath :: !(Path Abs File)
+    { filePath :: !(Either (Path Abs File) (Path Rel File))
     }
 
 class HasArgs env where
@@ -55,7 +59,9 @@ args :: Parser Args
 args =
   Args
     <$> argument
-      (maybeReader parseAbsFile)
+      ( map Left (maybeReader parseAbsFile)
+      <|> map Right (maybeReader parseRelFile)
+      )
       ( help "PureScript file to pretty print"
       <> metavar "FILE"
       )
@@ -86,7 +92,7 @@ data Env
 defaultEnv :: Path Abs File -> Env
 defaultEnv filePath = Env { envArgs, envPrettyPrintConfig }
   where
-  envArgs = Args { filePath }
+  envArgs = Args { filePath = Left filePath }
   envPrettyPrintConfig =
     PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
 
