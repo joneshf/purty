@@ -10,9 +10,8 @@ import "path" Path
     , Rel
     , relfile
     , toFilePath
-    , (</>)
     )
-import "path-io" Path.IO                                     (getCurrentDir)
+import "path-io" Path.IO                                     (makeAbsolute)
 import "tasty" Test.Tasty
     ( TestName
     , TestTree
@@ -32,8 +31,12 @@ diff :: FilePath -> FilePath -> [[Char]]
 diff old new = ["diff", "--unified", old, new]
 
 golden :: TestName -> Path Rel File -> TestTree
-golden testName goldenFile = do
-  goldenVsStringDiff testName diff (toFilePath goldenFile) (testPurty goldenFile)
+golden testName goldenFile =
+  goldenVsStringDiff testName diff (toFilePath goldenFile) $ do
+    absFile <- makeAbsolute goldenFile
+    result <- runPurty (defaultEnv absFile) purty
+    stream <- hush result
+    pure (toS $ renderLazy stream)
 
 goldenTests :: TestTree
 goldenTests =
@@ -49,10 +52,3 @@ goldenTests =
     , golden "type synonym" [relfile|test/golden/files/TypeSynonym.purs|]
     , golden "type synonym newline" [relfile|test/golden/files/TypeSynonymNewline.purs|]
     ]
-
-testPurty :: Path Rel File -> IO LByteString
-testPurty filePath = do
-  cwd <- getCurrentDir
-  result <- runPurty (defaultEnv $ cwd </> filePath) purty
-  stream <- hush result
-  pure (toS $ renderLazy stream)
