@@ -23,7 +23,7 @@ Compile Haskell:
     name: purty
     paths:
       - bin
-  script: stack --system-ghc build --copy-bins --local-bin-path bin --no-run-tests --test
+  script: stack --system-ghc build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
   stage: build
 
 Run acceptance tests:
@@ -31,5 +31,5 @@ Run acceptance tests:
   stage: test
 
 Run golden tests:
-  script: stack --system-ghc build --test
+  script: stack --system-ghc build --coverage --test
   stage: test

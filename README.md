@@ -1,4 +1,6 @@
 # purty
+[![pipeline status](https://gitlab.com/joneshf/purty/badges/master/pipeline.svg)](https://gitlab.com/joneshf/purty/commits/master)
+[![coverage report](https://gitlab.com/joneshf/purty/badges/master/coverage.svg)](https://gitlab.com/joneshf/purty/commits/master)
 
 ## What is it?
 
