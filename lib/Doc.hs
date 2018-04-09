@@ -3,8 +3,6 @@ module Doc where
 import "rio" RIO
 
 import "containers" Data.IntMap.Strict           (findWithDefault, fromList)
-import "base" Data.List                          (span)
-import "text" Data.Text                          (dropAround)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , align
@@ -78,6 +76,7 @@ import "purescript" Language.PureScript
 import "purescript" Language.PureScript.Label    (runLabel)
 import "purescript" Language.PureScript.PSString (PSString)
 import "rio" RIO.List                            (repeat, zipWith)
+import "rio" RIO.Text                            (dropAround)
 
 ppStringWithoutQuotes :: PSString -> Text
 ppStringWithoutQuotes = dropAround (== '"') . prettyPrintString
