@@ -26,12 +26,17 @@ main = do
   let envPrettyPrintConfig =
         PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
   logOptions <- logOptionsHandle stderr verbose
-  withLogFunc logOptions $ \envLogFunc ->
-    runRIO Env { envArgs, envLogFunc, envPrettyPrintConfig } $ do
+  withLogFunc logOptions $ \envLogFunc -> do
+    let env = Env { envArgs, envLogFunc, envPrettyPrintConfig }
+    runRIO env $ do
+      logDebug ("Env: " <> display env)
+      logDebug "Running main `purty` program"
       stream' <- purty
       case stream' of
         Left err -> do
           logError "Problem parsing module"
           logError (displayShow err)
         Right stream -> do
+          logDebug "Successfully created stream for rendering"
+          logDebug (displayShow $ void stream)
           liftIO $ renderIO stdout stream

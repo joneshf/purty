@@ -4,8 +4,10 @@ import "rio" RIO
 
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( LayoutOptions
+    , PageWidth(AvailablePerLine, Unbounded)
     , SimpleDocStream
     , defaultLayoutOptions
+    , layoutPageWidth
     , layoutSmart
     )
 import "purescript" Language.PureScript           (parseModuleFromFile)
@@ -38,12 +40,17 @@ import "parsec" Text.Parsec                       (ParseError)
 
 import qualified "this" Doc
 
-purty :: (HasArgs env, HasPrettyPrintConfig env) => RIO env (Either ParseError (SimpleDocStream a))
+purty ::
+  (HasArgs env, HasLogFunc env, HasPrettyPrintConfig env) =>
+  RIO env (Either ParseError (SimpleDocStream a))
 purty = do
   Args { filePath } <- view argsL
   PrettyPrintConfig { layoutOptions } <- view prettyPrintConfigL
   absFilePath <- either pure makeAbsolute filePath
+  logDebug ("Converted file to absolute: " <> displayShow absFilePath)
   contents <- readFileUtf8 (fromAbsFile absFilePath)
+  logDebug "Read file contents:"
+  logDebug (display contents)
   pure $ do
     (_, m) <- parseModuleFromFile id (fromAbsFile absFilePath, contents)
     pure (layoutSmart layoutOptions $ Doc.fromModule m)
@@ -53,6 +60,17 @@ data Args
     { filePath :: !(Either (Path Abs File) (Path Rel File))
     , verbose  :: !Bool
     }
+
+instance Display Args where
+  display Args { filePath, verbose } =
+    "{"  <> displayFilePath filePath <> ", " <> displayVerbose verbose <> "}"
+      where
+      displayFilePath = \case
+        Left absFile -> "Absolute file: " <> displayShow absFile
+        Right relFile -> "Relative file: " <> displayShow relFile
+      displayVerbose = \case
+        True -> "Verbose"
+        False -> "Not verbose"
 
 class HasArgs env where
   argsL :: Lens' env Args
@@ -86,6 +104,17 @@ data PrettyPrintConfig
     { layoutOptions :: !LayoutOptions
     }
 
+instance Display PrettyPrintConfig where
+  display PrettyPrintConfig { layoutOptions } =
+    case layoutPageWidth layoutOptions of
+      AvailablePerLine width ribbon ->
+        "{Page width: "
+          <> display width
+          <> ", Ribbon width: "
+          <> display (truncate (ribbon * fromIntegral width) :: Int)
+          <> "}"
+      Unbounded -> "Unbounded"
+
 class HasPrettyPrintConfig env where
   prettyPrintConfigL :: Lens' env PrettyPrintConfig
 
@@ -95,6 +124,14 @@ data Env
     , envLogFunc           :: !LogFunc
     , envPrettyPrintConfig :: !PrettyPrintConfig
     }
+
+instance Display Env where
+  display Env { envArgs, envPrettyPrintConfig } =
+    "{Args: "
+      <> display envArgs
+      <> ", PrettyPrintConfig: "
+      <> display envPrettyPrintConfig
+      <> "}"
 
 defaultEnv :: LogFunc -> Path Abs File -> Env
 defaultEnv envLogFunc filePath =
