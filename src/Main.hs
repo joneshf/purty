@@ -9,7 +9,8 @@ import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderIO)
 import "optparse-applicative" Options.Applicative            (execParser)
 
 import "purty" Purty
-    ( Env(Env)
+    ( Args(Args, verbose)
+    , Env(Env)
     , PrettyPrintConfig(PrettyPrintConfig)
     , argsInfo
     , envArgs
@@ -21,10 +22,10 @@ import "purty" Purty
 
 main :: IO ()
 main = do
-  envArgs <- execParser argsInfo
+  envArgs@Args{ verbose } <- execParser argsInfo
   let envPrettyPrintConfig =
         PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
-  logOptions <- logOptionsHandle stderr False
+  logOptions <- logOptionsHandle stderr verbose
   withLogFunc logOptions $ \envLogFunc ->
     runRIO Env { envArgs, envLogFunc, envPrettyPrintConfig } $ do
       stream' <- purty

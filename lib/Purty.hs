@@ -18,9 +18,11 @@ import "optparse-applicative" Options.Applicative
     , help
     , helper
     , info
+    , long
     , maybeReader
     , metavar
     , progDesc
+    , switch
     )
 import "path" Path
     ( Abs
@@ -49,6 +51,7 @@ purty = do
 data Args
   = Args
     { filePath :: !(Either (Path Abs File) (Path Rel File))
+    , verbose  :: !Bool
     }
 
 class HasArgs env where
@@ -63,6 +66,10 @@ args =
       )
       ( help "PureScript file to pretty print"
       <> metavar "FILE"
+      )
+    <*> switch
+      ( help "Print debugging information to STDERR while running"
+      <> long "verbose"
       )
 
 argsInfo :: ParserInfo Args
@@ -93,7 +100,7 @@ defaultEnv :: LogFunc -> Path Abs File -> Env
 defaultEnv envLogFunc filePath =
   Env { envArgs, envLogFunc, envPrettyPrintConfig }
     where
-    envArgs = Args { filePath = Left filePath }
+    envArgs = Args { verbose = True, filePath = Left filePath }
     envPrettyPrintConfig =
       PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
 
