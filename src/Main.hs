@@ -1,6 +1,6 @@
 module Main where
 
-import "protolude" Protolude
+import "rio" RIO
 
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( defaultLayoutOptions
@@ -9,25 +9,34 @@ import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderIO)
 import "optparse-applicative" Options.Applicative            (execParser)
 
 import "purty" Purty
-    ( Env(Env)
+    ( Args(Args, verbose)
+    , Env(Env)
     , PrettyPrintConfig(PrettyPrintConfig)
     , argsInfo
     , envArgs
+    , envLogFunc
     , envPrettyPrintConfig
     , layoutOptions
     , purty
-    , runPurty
     )
 
 main :: IO ()
 main = do
-  envArgs <- execParser argsInfo
+  envArgs@Args{ verbose } <- execParser argsInfo
   let envPrettyPrintConfig =
         PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
-  stream' <- runPurty Env { envArgs, envPrettyPrintConfig } purty
-  case stream' of
-    Left error -> do
-      putErrText "Problem parsing module"
-      putErrText (show error)
-    Right stream -> do
-      liftIO $ renderIO stdout stream
+  logOptions <- logOptionsHandle stderr verbose
+  withLogFunc logOptions $ \envLogFunc -> do
+    let env = Env { envArgs, envLogFunc, envPrettyPrintConfig }
+    runRIO env $ do
+      logDebug ("Env: " <> display env)
+      logDebug "Running main `purty` program"
+      stream' <- purty
+      case stream' of
+        Left err -> do
+          logError "Problem parsing module"
+          logError (displayShow err)
+        Right stream -> do
+          logDebug "Successfully created stream for rendering"
+          logDebug (displayShow $ void stream)
+          liftIO $ renderIO stdout stream
