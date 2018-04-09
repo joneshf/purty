@@ -22,7 +22,7 @@ Compile Haskell:
   artifacts:
     name: purty
     paths:
-      - bin
+      - bin/purty
   script: stack --system-ghc build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
   stage: build
 
