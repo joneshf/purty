@@ -8,7 +8,7 @@ cache:
 
 variables:
   STACK_ROOT: $CI_PROJECT_DIR/.stack-root
-  
+
 stages:
   - install
   - build
@@ -24,6 +24,12 @@ Compile Haskell:
     paths:
       - bin
   script: stack --system-ghc build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
+  stage: build
+
+External CI:
+  only:
+    - external
+  script: echo 'external CI'
   stage: build
 
 Run acceptance tests:
