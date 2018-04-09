@@ -1,9 +1,10 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Main where
 
-import "protolude" Protolude hiding (diff)
+import "rio" RIO
 
-import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderLazy)
+import "base" Control.Applicative                            (empty)
+import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 import "path" Path
     ( File
     , Path
@@ -22,7 +23,7 @@ import "tasty-golden" Test.Tasty.Golden
     ( goldenVsStringDiff
     )
 
-import "purty" Purty (defaultEnv, purty, runPurty)
+import "purty" Purty (defaultEnv, purty)
 
 main :: IO ()
 main = defaultMain goldenTests
@@ -34,9 +35,11 @@ golden :: TestName -> Path Rel File -> TestTree
 golden testName goldenFile =
   goldenVsStringDiff testName diff (toFilePath goldenFile) $ do
     absFile <- makeAbsolute goldenFile
-    result <- runPurty (defaultEnv absFile) purty
-    stream <- hush result
-    pure (toS $ renderLazy stream)
+    (_, logOptions) <- logOptionsMemory
+    withLogFunc logOptions $ \logFunc -> do
+      result <- runRIO (defaultEnv logFunc absFile) purty
+      stream <- either (const empty) pure result
+      pure (fromStrictBytes $ encodeUtf8 $ renderStrict stream)
 
 goldenTests :: TestTree
 goldenTests =

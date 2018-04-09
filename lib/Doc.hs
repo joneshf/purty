@@ -1,6 +1,6 @@
 module Doc where
 
-import "protolude" Protolude hiding (group)
+import "rio" RIO
 
 import "containers" Data.IntMap.Strict           (findWithDefault, fromList)
 import "base" Data.List                          (span)
@@ -77,6 +77,7 @@ import "purescript" Language.PureScript
     )
 import "purescript" Language.PureScript.Label    (runLabel)
 import "purescript" Language.PureScript.PSString (PSString)
+import "rio" RIO.List                            (repeat, zipWith)
 
 ppStringWithoutQuotes :: PSString -> Text
 ppStringWithoutQuotes = dropAround (== '"') . prettyPrintString
@@ -142,11 +143,11 @@ fromBinder = pretty . prettyPrintBinder
 fromBinders :: [Binder] -> Doc a
 fromBinders = \case
   [] -> mempty
-  binders -> space <> hsep (map fromBinder binders)
+  binders -> space <> hsep (fmap fromBinder binders)
 
 fromCaseAlternative :: CaseAlternative -> Doc a
 fromCaseAlternative CaseAlternative {caseAlternativeBinders, caseAlternativeResult} =
-  hsep (punctuate comma $ map fromBinder caseAlternativeBinders)
+  hsep (punctuate comma $ fmap fromBinder caseAlternativeBinders)
     <+> foldMap fromGuardedExprCase caseAlternativeResult
 
 fromComment :: Comment -> Doc a
@@ -160,7 +161,7 @@ fromComments = foldMap fromComment
 fromConstraint :: Language.PureScript.Constraint -> Doc a
 fromConstraint Constraint { constraintArgs, constraintClass } =
   pretty (showQualified runProperName constraintClass)
-    <+> hsep (map fromType constraintArgs)
+    <+> hsep (fmap fromType constraintArgs)
 
 fromConstructor :: ProperName 'ConstructorName -> Doc a
 fromConstructor = pretty . runProperName
@@ -168,16 +169,16 @@ fromConstructor = pretty . runProperName
 fromConstructors :: [ProperName 'ConstructorName] -> Doc a
 fromConstructors [] = mempty
 fromConstructors constructors =
-  parentheses $ map fromConstructor constructors
+  parentheses $ fmap fromConstructor constructors
 
 fromDataConstructor :: (ProperName 'ConstructorName, [Language.PureScript.Type]) -> Doc a
 fromDataConstructor = \case
   (name, []) -> pretty (runProperName name)
-  (name, types) -> pretty (runProperName name) <+> hsep (map fromType types)
+  (name, types) -> pretty (runProperName name) <+> hsep (fmap fromType types)
 
 fromDataConstructors :: [(ProperName 'ConstructorName, [Language.PureScript.Type])] -> Doc a
 fromDataConstructors =
-  vsep . zipWith (<+>) ("=" : repeat "|") . map fromDataConstructor
+  vsep . zipWith (<+>) ("=" : repeat "|") . fmap fromDataConstructor
 
 fromDataType :: DataDeclType -> Doc a
 fromDataType = \case
@@ -187,11 +188,11 @@ fromDataType = \case
 fromDeclaration :: Declaration -> Doc a
 fromDeclaration = \case
   BindingGroupDeclaration declarations ->
-    vsep (toList $ map (fromDeclaration . ValueDeclaration . valueDeclarationFromAnonymousDeclaration) declarations)
+    vsep (toList $ fmap (fromDeclaration . ValueDeclaration . valueDeclarationFromAnonymousDeclaration) declarations)
   BoundValueDeclaration (_, comments) binder expr ->
     fromComments comments <> fromBinder binder <+> "=" <+> fromExpr expr
   DataBindingGroupDeclaration (declarations) ->
-    vsep (toList $ map fromDeclaration declarations)
+    vsep (toList $ fmap fromDeclaration declarations)
   DataDeclaration (_, comments) dataType name parameters constructors ->
     fromComments comments
       <> fromDataType dataType
@@ -266,7 +267,7 @@ fromDeclaration = \case
       <> fromTypeClassConstraints "=>" constraints
       <> line
       <> indent 2 ( pretty (showQualified runProperName name)
-                  <+> hsep (map fromType types)
+                  <+> hsep (fmap fromType types)
                   )
       <> line
   TypeInstanceDeclaration (_, comments) ident constraints name types (ExplicitInstance declarations) ->
@@ -277,10 +278,10 @@ fromDeclaration = \case
       <> fromTypeClassConstraints "=>" constraints
       <> line
       <> indent 2 ( pretty (showQualified runProperName name)
-                  <+> hsep (map fromType types)
+                  <+> hsep (fmap fromType types)
                   <+> "where"
                   <> line
-                  <> indent 2 (vsep $ map fromDeclaration declarations)
+                  <> indent 2 (vsep $ fmap fromDeclaration declarations)
                   )
   TypeInstanceDeclaration (_, comments) ident constraints name types NewtypeInstance ->
     fromComments comments
@@ -290,7 +291,7 @@ fromDeclaration = \case
       <> fromTypeClassConstraints "=>" constraints
       <> line
       <> indent 2 ( pretty (showQualified runProperName name)
-                  <+> hsep (map fromType types)
+                  <+> hsep (fmap fromType types)
                   )
       <> line
   TypeInstanceDeclaration (_, comments) ident constraints name types (NewtypeInstanceWithDictionary _) ->
@@ -301,7 +302,7 @@ fromDeclaration = \case
       <> fromTypeClassConstraints "=>" constraints
       <> line
       <> indent 2 ( pretty (showQualified runProperName name)
-                  <+> hsep (map fromType types)
+                  <+> hsep (fmap fromType types)
                   )
       <> line
   TypeSynonymDeclaration (_, comments) name parameters underlyingType ->
@@ -347,7 +348,7 @@ fromExport = \case
   ValueOpRef _ name -> pretty (showOp name)
 
 fromExports :: [DeclarationRef] -> Doc a
-fromExports = parentheses . map fromExport
+fromExports = parentheses . fmap fromExport
 
 fromExpr :: Expr -> Doc a
 fromExpr = \case
@@ -360,16 +361,16 @@ fromExpr = \case
     fromExpr left <+> fromExpr op <+> fromExpr right
   Case exprs alternatives ->
     "case"
-      <+> hsep (punctuate comma $ map fromExpr exprs)
+      <+> hsep (punctuate comma $ fmap fromExpr exprs)
       <+> "of"
       <> line
-      <> indent 2 (vsep $ map fromCaseAlternative alternatives)
+      <> indent 2 (vsep $ fmap fromCaseAlternative alternatives)
   Constructor name -> pretty (showQualified runProperName name)
   DeferredDictionary _ _ -> mempty
   Do elements ->
     "do"
       <> line
-      <> indent 2 (vsep $ map fromDoElement elements)
+      <> indent 2 (vsep $ fmap fromDoElement elements)
   Hole hole -> "?" <> pretty hole
   IfThenElse b t f ->
     align $ vsep
@@ -381,9 +382,9 @@ fromExpr = \case
       [ "let" <+> align (fromDeclarations declarations)
       , "in" <+> fromExpr expr
       ]
-  Literal literal -> fromLiteral (map fromExpr literal)
+  Literal literal -> fromLiteral (fmap fromExpr literal)
   ObjectUpdate expr obj ->
-    fromExpr expr <+> braces (map (fromObjectUpdate . map fromExpr) obj)
+    fromExpr expr <+> braces (fmap (fromObjectUpdate . fmap fromExpr) obj)
   ObjectUpdateNested expr pathTree ->
     fromExpr expr <+> fromPathTree pathTree
   Op op -> pretty (showQualified runOpName op)
@@ -406,13 +407,13 @@ fromFunctionalDependencies vars = \case
   funDeps ->
     space
       <> "|"
-      <+> hsep (punctuate comma $ map (fromFunctionalDependency vars) funDeps)
+      <+> hsep (punctuate comma $ fmap (fromFunctionalDependency vars) funDeps)
 
 fromFunctionalDependency :: IntMap Text -> FunctionalDependency -> Doc a
 fromFunctionalDependency vars FunctionalDependency { fdDetermined, fdDeterminers } =
-  hsep (map (pretty . flip (findWithDefault mempty) vars) fdDeterminers)
+  hsep (fmap (pretty . flip (findWithDefault mempty) vars) fdDeterminers)
     <+> "->"
-    <+> hsep (map (pretty . flip (findWithDefault mempty) vars) fdDetermined)
+    <+> hsep (fmap (pretty . flip (findWithDefault mempty) vars) fdDetermined)
 
 fromGuard :: Guard -> Doc a
 fromGuard = \case
@@ -433,7 +434,7 @@ fromGuardedExpr' separator (GuardedExpr guards expr) =
   where
   guardedExpr =
     "|"
-      <+> hsep (punctuate comma (map fromGuard guards))
+      <+> hsep (punctuate comma (fmap fromGuard guards))
       <+> separator
       <> line
       <> indent 2 (fromExpr expr)
@@ -458,7 +459,7 @@ fromLiteral = \case
   CharLiteral c -> pretty c
   NumericLiteral (Left x) -> pretty x
   NumericLiteral (Right x) -> pretty x
-  ObjectLiteral obj -> braces (map fromObject obj)
+  ObjectLiteral obj -> braces (fmap fromObject obj)
   StringLiteral str -> pretty (prettyPrintString str)
 
 fromModule :: Module -> Doc a
@@ -473,7 +474,7 @@ fromModule (Module _ comments name declarations' exports) =
 fromModuleDeclarations :: [Declaration] -> Doc a
 fromModuleDeclarations = \case
   [] -> mempty
-  declarations -> line <> line <> vsep (map fromDeclaration declarations)
+  declarations -> line <> line <> vsep (fmap fromDeclaration declarations)
 
 fromModuleExports :: ModuleName -> Maybe [DeclarationRef] -> Doc ann
 fromModuleExports name Nothing =
@@ -487,7 +488,7 @@ fromModuleExports name (Just exports) =
 fromModuleImports :: [Declaration] -> Doc a
 fromModuleImports = \case
   [] -> mempty
-  imports -> line <> line <> vsep (map fromDeclaration imports)
+  imports -> line <> line <> vsep (fmap fromDeclaration imports)
 
 fromObject :: (PSString, Doc a) -> Doc a
 fromObject (key, val) = pretty (ppStringWithoutQuotes key) <> ":" <+> val
@@ -503,7 +504,7 @@ fromParameter (parameter, Just k) =
 fromParameters :: [(Text, Maybe Kind)] -> Doc a
 fromParameters = \case
   [] -> mempty
-  parameters -> space <> hsep (map fromParameter parameters)
+  parameters -> space <> hsep (fmap fromParameter parameters)
 
 fromPathNode :: (PSString, PathNode Expr) -> Doc a
 fromPathNode (key, Leaf expr) =
@@ -513,7 +514,7 @@ fromPathNode (key, Branch path) =
 
 fromPathTree :: PathTree Expr -> Doc a
 fromPathTree (PathTree paths) =
-  braces (map fromPathNode $ runAssocList paths)
+  braces (fmap fromPathNode $ runAssocList paths)
 
 fromType :: Language.PureScript.Type -> Doc a
 fromType =
@@ -532,7 +533,7 @@ fromType =
     PrettyPrintForAll [] type' -> fromType type'
     PrettyPrintForAll vars type' ->
       "forall"
-        <+> hcat (punctuate space $ map pretty vars)
+        <+> hcat (punctuate space $ fmap pretty vars)
         <> "."
         <> line
         <> fromType type'
@@ -569,7 +570,7 @@ fromTypeWithParens =
     PrettyPrintForAll [] type' -> fromTypeWithParens type'
     PrettyPrintForAll vars type' ->
       "forall"
-        <+> hcat (punctuate space $ map pretty vars)
+        <+> hcat (punctuate space $ fmap pretty vars)
         <> "."
         <+> fromTypeWithParens type'
     PrettyPrintFunction f x ->
@@ -593,7 +594,7 @@ fromTypeClassConstraints arrow = \case
   constraints ->
     space
       <> line
-      <> indent 2 (align (cat (zipWith (<>) ("(" <> space : repeat ", ") (map fromConstraint constraints)) <> line <> ")"))
+      <> indent 2 (align (cat (zipWith (<>) ("(" <> space : repeat ", ") (fmap fromConstraint constraints)) <> line <> ")"))
       <+> arrow
 
 fromTypeClassWithoutConstraints ::
@@ -605,10 +606,10 @@ fromTypeClassWithoutConstraints ::
 fromTypeClassWithoutConstraints name parameters funDeps declarations =
   pretty (runProperName name)
     <> fromParameters parameters
-    <> fromFunctionalDependencies (fromList $ zip [0..] $ map fst parameters) funDeps
+    <> fromFunctionalDependencies (fromList $ zip [0..] $ fmap fst parameters) funDeps
     <+> "where"
     <> line
-    <> indent 2 (vsep $ map fromDeclaration declarations)
+    <> indent 2 (vsep $ fmap fromDeclaration declarations)
 
 parentheses :: [Doc a] -> Doc a
 parentheses = enclosedWith "(" ")"

@@ -1,6 +1,6 @@
 module Main where
 
-import "protolude" Protolude
+import "rio" RIO
 
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( defaultLayoutOptions
@@ -13,10 +13,10 @@ import "purty" Purty
     , PrettyPrintConfig(PrettyPrintConfig)
     , argsInfo
     , envArgs
+    , envLogFunc
     , envPrettyPrintConfig
     , layoutOptions
     , purty
-    , runPurty
     )
 
 main :: IO ()
@@ -24,10 +24,13 @@ main = do
   envArgs <- execParser argsInfo
   let envPrettyPrintConfig =
         PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
-  stream' <- runPurty Env { envArgs, envPrettyPrintConfig } purty
-  case stream' of
-    Left error -> do
-      putErrText "Problem parsing module"
-      putErrText (show error)
-    Right stream -> do
-      liftIO $ renderIO stdout stream
+  logOptions <- logOptionsHandle stderr False
+  withLogFunc logOptions $ \envLogFunc ->
+    runRIO Env { envArgs, envLogFunc, envPrettyPrintConfig } $ do
+      stream' <- purty
+      case stream' of
+        Left err -> do
+          logError "Problem parsing module"
+          logError (displayShow err)
+        Right stream -> do
+          liftIO $ renderIO stdout stream
