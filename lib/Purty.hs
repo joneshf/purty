@@ -76,21 +76,21 @@ class HasArgs env where
   argsL :: Lens' env Args
 
 parserFilePath :: Parser (Either (Path Abs File) (Path Rel File))
-parserFilePath =
-  argument
-    ( fmap Left (maybeReader parseAbsFile)
-    <|> fmap Right (maybeReader parseRelFile)
-    )
-    ( help "PureScript file to pretty print"
-    <> metavar "FILE"
-    )
+parserFilePath = argument parser meta
+  where
+  meta =
+    help "PureScript file to pretty print"
+      <> metavar "FILE"
+  parser =
+    fmap Left (maybeReader parseAbsFile)
+      <|> fmap Right (maybeReader parseRelFile)
 
 parserVerbose :: Parser Bool
-parserVerbose =
-  switch
-    ( help "Print debugging information to STDERR while running"
-    <> long "verbose"
-    )
+parserVerbose = switch meta
+  where
+  meta =
+    help "Print debugging information to STDERR while running"
+      <> long "verbose"
 
 args :: Parser Args
 args =
