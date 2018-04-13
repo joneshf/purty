@@ -19,10 +19,30 @@ In this process, it's better to be consistent with release dates than it is to h
 We release a new version every Tuesday at 9AM Pacific.
 The date and time were chosen arbitrarily and will probably change in the future as development slows down.
 
+The Monday before release we freeze the code at 9AM Pacific.
+This is to prevent a last-minute dash to get something in without checking it over.
+The rest of the time between freeze and release is dedicated to making release notes, testing the version and preparing distributions.
+
 ## How do we release a new version?
 
-TODO
+1. Freeze the code at 9AM Pacific the Monday prior.
+1. Find all of the issues between the previous release and the current release.
+1. Add an entry to the [CHANGELOG.md][] that has the new version and all changes.
+    * Separate the changes into additions, [breaking] changes, and deletions.
+    * Even if the change is a "bug fix" it fits into one of these categories.
+1. Merge the [CHANGELOG.md][] into `master`.
+2. Create a tag with the version being released.
+    * This will kick off builds of the Linux, OSX and Windows binaries and upload them to our [Bintray package][].
+1. Download a binary on your machine and test a few files.
+2. If you notice any problems, issue them like normal.
+    * Show stopping issues will turn into patch fixes and be released ASAP.
+    * Normal issues will be prioritized like any other issue and released when it makes sense.
+    * You are not on the hook to fix a problem just because you found it.
+1. Celebrate! :tada:
+    * Releasing software is a great thing, and no small effort. Be proud of your accomplishment.
 
+[Bintray package]: https://bintray.com/joneshf/generic/purty
+[CHANGELOG.md]: ./CHANGELOG.md
 [GitLab release process]: https://about.gitlab.com/2015/12/17/gitlab-release-process/
 [GNOME's Time-Based Release Schedule]: https://wiki.gnome.org/ReleasePlanning/TimeBased
 [Ubuntu's TimeBasedReleases]: https://wiki.ubuntu.com/TimeBasedReleases
