@@ -1,0 +1,26 @@
+before_install:
+  - script/install-stack.sh --os ${TRAVIS_OS_NAME} --verbose
+
+cache:
+  directories:
+    - ${HOME}/.local/bin
+    - .stack-root
+    - .stack-work
+
+env:
+  global:
+    - CASHER_TIME_OUT=1000
+    - STACK_ROOT=${TRAVIS_BUILD_DIR}/.stack-root
+
+language: c
+
+os:
+  - osx
+
+sudo: false
+
+script:
+  - stack setup
+  - stack build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
+  - stack build --coverage --test
+  - test/acceptance/filepath.sh
