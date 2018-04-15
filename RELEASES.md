@@ -32,7 +32,12 @@ The rest of the time between freeze and release is dedicated to making release n
     * Even if the change is a "bug fix" it fits into one of these categories.
 1. Merge the [CHANGELOG.md][] into `master`.
 2. Create a tag with the version being released.
-    * This will kick off builds of the Linux, OSX and Windows binaries and upload them to our [Bintray package][].
+    * This will kick off builds of the OSX and Windows binaries and upload them to our [Bintray package][].
+    * The Linux binary has to be manually added to our [Bintray package][].
+        1. Download the binary from the pipeline.
+        2. Add the version to our [Bintray package][].
+            * If there is already a version for this release, add the Linux binary to the version.
+            * If there is not a version for this release, [create a new version][] with the appropriate details.
 1. Download a binary on your machine and test a few files.
 2. If you notice any problems, issue them like normal.
     * Show stopping issues will turn into patch fixes and be released ASAP.
@@ -43,6 +48,7 @@ The rest of the time between freeze and release is dedicated to making release n
 
 [Bintray package]: https://bintray.com/joneshf/generic/purty
 [CHANGELOG.md]: ./CHANGELOG.md
+[create a new version]: https://bintray.com/joneshf/generic/purty/new/version
 [GitLab release process]: https://about.gitlab.com/2015/12/17/gitlab-release-process/
 [GNOME's Time-Based Release Schedule]: https://wiki.gnome.org/ReleasePlanning/TimeBased
 [Ubuntu's TimeBasedReleases]: https://wiki.ubuntu.com/TimeBasedReleases
