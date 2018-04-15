@@ -1,5 +1,4 @@
 before_install:
-  - brew reinstall coreutils --with-default-names || true
   - ci/install-stack.sh --os ${TRAVIS_OS_NAME} --verbose
 
 cache:
@@ -11,6 +10,7 @@ cache:
 env:
   global:
     - CASHER_TIME_OUT=1000
+    - PATH=/usr/local/opt/coreutils/libexec/gnubin:${PATH}
     - STACK_ROOT=${TRAVIS_BUILD_DIR}/.stack-root
 
 language: c
