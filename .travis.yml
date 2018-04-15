@@ -1,4 +1,7 @@
 before_install:
+  - if [ osx = ${TRAVIS_OS_NAME} ]; then
+      brew update && brew install coreutils --with-default-names
+    fi
   - ci/install-stack.sh --os ${TRAVIS_OS_NAME} --verbose
 
 cache:
