@@ -1,5 +1,5 @@
 before_install:
-  - script/install-stack.sh --os ${TRAVIS_OS_NAME} --verbose
+  - ci/install-stack.sh --os ${TRAVIS_OS_NAME} --verbose
 
 cache:
   directories:
