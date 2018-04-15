@@ -7,14 +7,13 @@ readonly DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly THIS_SCRIPT="${0}"
 readonly LOG_FILE="/tmp/$(basename "${THIS_SCRIPT}").log"
 
-SYSTEM_GHC=''
+PURTY='../../bin/purty'
 
 #/ Run an acceptance test
 #/
 #/ Options:
 #/       --help     display this help and exit
-#/       --system-ghc
-#/                  Use the GHC version install outside of stack
+#/       --purty    path to the purty binary
 usage() {
     grep '^#/' "${THIS_SCRIPT}" | cut --characters 4-
     exit 0
@@ -24,7 +23,9 @@ while [[ $# -gt 0 ]]; do
     option="${1}"
     case "${option}" in
         --help) usage;;
-        --system-ghc) SYSTEM_GHC='--system-ghc';;
+        --purty)
+            shift
+            PURTY="${1}";;
         *)
             echo "${THIS_SCRIPT}: unrecognized option '${option}'"
             echo "Try '${THIS_SCRIPT} --help' for more information"
@@ -52,10 +53,8 @@ pushd "${DIR}"
 
 # End Boilerplate
 
-stack "${SYSTEM_GHC}" build purty:exe:purty
-
 echo 'Absolute file paths work'
-stack "${SYSTEM_GHC}" exec purty "$(pwd)/Test.purs" > /dev/null
+"${PURTY}" "$(pwd)/Test.purs" > /dev/null
 
 echo 'Relative file paths work'
-stack "${SYSTEM_GHC}" exec purty "./Test.purs" > /dev/null
+"${PURTY}" "./Test.purs" > /dev/null
