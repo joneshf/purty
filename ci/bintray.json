@@ -1,0 +1,21 @@
+{
+  "files": [
+    {
+      "includePattern": "bin/purty",
+      "uploadPattern": "osx/purty"
+    }
+  ],
+  "package": {
+    "licenses": [
+      "BSD 3-Clause"
+    ],
+    "name": "purty",
+    "repo": "generic",
+    "subject": "joneshf",
+    "vcs_url": "https://gitlab.com/joneshf/purty.git"
+  },
+  "version": {
+    "name": "v0.1.0-rc1",
+    "released": "2018-04-15"
+  }
+}
