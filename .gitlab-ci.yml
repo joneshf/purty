@@ -27,7 +27,7 @@ Compile Haskell:
   stage: build
 
 Run acceptance tests:
-  script: bash -x ./test/acceptance/filepath.sh --system-ghc
+  script: bash -x ./test/acceptance/filepath.sh
   stage: test
 
 Run golden tests:
