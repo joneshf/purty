@@ -1,3 +1,6 @@
+before_deploy:
+  - tar --create --file purty-${TRAVIS_OS_NAME}-${TRAVIS_TAG}.tar.gz --directory bin --gzip purty
+
 before_install:
   - ci/install-stack.sh --os ${TRAVIS_OS_NAME} --verbose
 
