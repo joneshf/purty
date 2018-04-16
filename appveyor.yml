@@ -19,7 +19,7 @@ deploy:
     on:
       appveyor_repo_tag: true
     package: purty
-    provider: Bintray
+    provider: BinTray
     repo: generic
     subject: joneshf
     username: joneshf
