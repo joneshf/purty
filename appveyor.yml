@@ -6,6 +6,8 @@ build_script:
 cache:
   - .stack-root
   - .stack-work
+  - C:\ProgramData\chocolatey\bin -> appveyor.yml
+  - C:\ProgramData\chocolatey\lib -> appveyor.yml
 
 environment:
   STACK_ROOT: '%APPVEYOR_BUILD_FOLDER%\.stack-root'
