@@ -1,3 +1,6 @@
+artifacts:
+  - path: bin\purty.exe
+
 build_script:
   - stack setup
   - stack build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
