@@ -35,12 +35,7 @@ The rest of the time between freeze and release is dedicated to making release n
 1. Create a tag with the version being released.
     * Prefix the version with a `v`.
         For example: if we're on version `2.3.1`, make the tag `v2.3.1`.
-    * This will kick off builds of the OSX and Windows binaries and upload them to our [Bintray package][].
-    * The Linux binary has to be manually added to our [Bintray package][].
-        1. Download the binary from the pipeline.
-        1. Add the version to our [Bintray package][] with the file name `linux/purty`.
-            * If there is already a version for this release, add the Linux binary to the version.
-            * If there is not a version for this release, [create a new version][] with the appropriate details.
+    * This will kick off builds of the Linux, OSX, and Windows binaries and upload them to our [Bintray package][].
 1. Copy the entry from the [CHANGELOG.md][] to the release notes on the [Bintray package][].
 1. Download a binary on your machine and test a few files.
 1. If you notice any problems, issue them like normal.
