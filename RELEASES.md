@@ -33,8 +33,10 @@ The rest of the time between freeze and release is dedicated to making release n
 1. Update the version in [ci/bintray.json][] and [package.yaml][] with the version being released.
 1. Merge all changes into `master`.
 1. Create a tag with the version being released.
-    * Prefix the version with a `v`.
-        For example: if we're on version `2.3.1`, make the tag `v2.3.1`.
+    * Do not prefix the version with a `v`.
+        The prefix is arbitrary and unnecessary.
+        So, we're arbitrarily deciding to _not_ have it.
+        For example: if we're on version `2.3.1`, make the tag `2.3.1`.
     * This will kick off builds of the Linux, OSX, and Windows binaries and upload them to our [Bintray package][].
 1. Copy the entry from the [CHANGELOG.md][] to the release notes on the [Bintray package][].
 1. Download a binary on your machine and test a few files.
