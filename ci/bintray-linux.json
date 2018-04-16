@@ -1,8 +1,8 @@
 {
   "files": [
     {
-      "includePattern": "purty-(.*).tar.gz",
-      "uploadPattern": "purty-$1.tar.gz"
+      "includePattern": "purty-linux-v0.1.0-rc6.tar.gz",
+      "uploadPattern": "purty-linux-v0.1.0-rc6.tar.gz"
     }
   ],
   "package": {
