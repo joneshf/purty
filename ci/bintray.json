@@ -2,7 +2,7 @@
   "files": [
     {
       "includePattern": "bin/purty",
-      "uploadPattern": "osx/purty"
+      "uploadPattern": "v0.1.0-rc2/osx/purty"
     }
   ],
   "package": {
