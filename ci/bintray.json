@@ -1,8 +1,8 @@
 {
   "files": [
     {
-      "includePattern": "purty-osx-v0.1.0-rc5.tar.gz",
-      "uploadPattern": "purty-osx-v0.1.0-rc5.tar.gz"
+      "includePattern": "purty-(.*).tar.gz",
+      "uploadPattern": "purty-$1.tar.gz"
     }
   ],
   "package": {
