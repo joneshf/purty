@@ -2,6 +2,7 @@
 [![pipeline status](https://gitlab.com/joneshf/purty/badges/master/pipeline.svg)](https://gitlab.com/joneshf/purty/commits/master)
 [![Build Status](https://travis-ci.org/joneshf/purty.svg?branch=master)](https://travis-ci.org/joneshf/purty)
 [![coverage report](https://gitlab.com/joneshf/purty/badges/master/coverage.svg)](https://gitlab.com/joneshf/purty/commits/master)
+[![Download](https://api.bintray.com/packages/joneshf/generic/purty/images/download.svg)](https://bintray.com/joneshf/generic/purty/_latestVersion)
 
 ## What is it?
 
