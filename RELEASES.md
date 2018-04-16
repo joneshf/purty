@@ -30,7 +30,7 @@ The rest of the time between freeze and release is dedicated to making release n
 1. Add an entry to the [CHANGELOG.md][] that has the new version and all changes.
     * Separate the changes into additions, [breaking] changes, and deletions.
     * Even if the change is a "bug fix" it fits into one of these categories.
-1. Update the version in [ci/bintray.json][] and [package.yaml][] with the version being released.
+1. Update the versions in [ci/bintray-linux.json][],  [ci/bintray-osx.json][], and [package.yaml][] with the version being released.
 1. Merge all changes into `master`.
 1. Create a tag with the version being released.
     * Do not prefix the version with a `v`.
@@ -52,7 +52,8 @@ The rest of the time between freeze and release is dedicated to making release n
 
 [Bintray package]: https://bintray.com/joneshf/generic/purty
 [CHANGELOG.md]: ./CHANGELOG.md
-[ci/bintray.json]: ./ci/bintray.json
+[ci/bintray-linux.json]: ./ci/bintray-linux.json
+[ci/bintray-osx.json]: ./ci/bintray-osx.json
 [create a new version]: https://bintray.com/joneshf/generic/purty/new/version
 [GitLab release process]: https://about.gitlab.com/2015/12/17/gitlab-release-process/
 [GNOME's Time-Based Release Schedule]: https://wiki.gnome.org/ReleasePlanning/TimeBased
