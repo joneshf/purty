@@ -1,5 +1,5 @@
 before_deploy:
-  - appveyor PushArtifact bin\purty.exe -FileName '%APPVEYOR_REPO_TAG_NAME%\win\purty.exe'
+  - appveyor PushArtifact bin\purty.exe -FileName %APPVEYOR_REPO_TAG_NAME%\win\purty.exe
 
 build_script:
   - stack setup
