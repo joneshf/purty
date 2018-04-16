@@ -103,10 +103,8 @@ else
     info "Installing Stack for ${OS}..."
 
     debug "Downloading tar from ${URL}"
-    wget --append-output "${LOG_FILE}" \
-         --output-document "${TEMPORARY_DIR}/stack.tar.gz" \
-         --show-progress \
-         "${URL}"
+    curl --location --output "${TEMPORARY_DIR}/stack.tar.gz" "${URL}" 2>&1 \
+        | tee --append "${LOG_FILE}"
 
     debug "Extracting stack binary"
     tar --extract \
