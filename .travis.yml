@@ -30,6 +30,7 @@ env:
 language: c
 
 os:
+  - linux
   - osx
 
 sudo: false
