@@ -1,5 +1,6 @@
 before_deploy:
-  - appveyor PushArtifact bin\purty.exe -FileName %APPVEYOR_REPO_TAG_NAME%\win\purty.exe
+  - 7z a purty-win-%APPVEYOR_REPO_TAG_NAME%.zip .\bin\purty.exe
+  - appveyor PushArtifact purty-win-%APPVEYOR_REPO_TAG_NAME%.zip
 
 build_script:
   - stack setup
@@ -15,7 +16,7 @@ cache:
 deploy:
   - api_key:
       secure: y/pMqpeXcoK4ZUAPdF4at7Ji7XjRRa8cOsQtQH8HT+G5mgwh1ctnPt5NqMd3Npcn
-    artifact: '%APPVEYOR_REPO_TAG_NAME%\win\purty.exe'
+    artifact: 'purty-win-%APPVEYOR_REPO_TAG_NAME%.zip'
     on:
       appveyor_repo_tag: true
     package: purty
