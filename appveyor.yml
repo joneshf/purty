@@ -1,0 +1,14 @@
+build_script:
+  - stack setup
+  - stack build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
+  - stack build --coverage --test
+
+cache:
+  - .stack-root
+  - .stack-work
+
+environment:
+  STACK_ROOT: '%APPVEYOR_BUILD_FOLDER%\.stack-root'
+
+install:
+  - chocolatey install haskell-stack --version 1.6.5 --yes
