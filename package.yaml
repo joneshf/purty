@@ -90,4 +90,4 @@ tests:
       - tasty-golden == 2.3.1.1
     main: Main.hs
     source-dirs: test/golden
-version: 0.1.0-rc7
+version: 0.1.0
