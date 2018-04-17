@@ -1,0 +1,21 @@
+{
+  "files": [
+    {
+      "includePattern": "purty-v0.1.0-rc7-linux.tar.gz",
+      "uploadPattern": "purty-v0.1.0-rc7-linux.tar.gz"
+    }
+  ],
+  "package": {
+    "licenses": [
+      "BSD 3-Clause"
+    ],
+    "name": "purty",
+    "repo": "generic",
+    "subject": "joneshf",
+    "vcs_url": "https://gitlab.com/joneshf/purty.git"
+  },
+  "version": {
+    "name": "v0.1.0-rc7",
+    "released": "2018-04-16"
+  }
+}
