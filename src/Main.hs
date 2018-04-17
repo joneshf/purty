@@ -2,6 +2,8 @@ module Main where
 
 import "rio" RIO
 
+import "base" System.Exit (exitFailure)
+
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( defaultLayoutOptions
     )
@@ -36,6 +38,7 @@ main = do
         Left err -> do
           logError "Problem parsing module"
           logError (displayShow err)
+          liftIO exitFailure
         Right stream -> do
           logDebug "Successfully created stream for rendering"
           logDebug (displayShow $ void stream)
