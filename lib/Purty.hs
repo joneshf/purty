@@ -59,11 +59,12 @@ data Args
   = Args
     { filePath :: !(Either (Path Abs File) (Path Rel File))
     , verbose  :: !Bool
+    , inPlace :: !Bool
     }
 
 instance Display Args where
-  display Args { filePath, verbose } =
-    "{"  <> displayFilePath filePath <> ", " <> displayVerbose verbose <> "}"
+  display Args { filePath, verbose, inPlace } =
+    "{"  <> displayFilePath filePath <> ", " <> displayVerbose verbose <> ", " <> displayInPlace inPlace <> "}"
       where
       displayFilePath = \case
         Left absFile -> "Absolute file: " <> displayShow absFile
@@ -71,6 +72,9 @@ instance Display Args where
       displayVerbose = \case
         True -> "Verbose"
         False -> "Not verbose"
+      displayInPlace = \case
+        True -> "Formatting files in-place"
+        False -> "Writing formatted files to stdout"
 
 class HasArgs env where
   argsL :: Lens' env Args
@@ -92,11 +96,19 @@ parserVerbose = switch meta
     help "Print debugging information to STDERR while running"
       <> long "verbose"
 
+parserInPlace :: Parser Bool
+parserInPlace = switch meta
+  where
+  meta =
+    help "Format file in-place"
+      <> long "write"
+
 args :: Parser Args
 args =
   Args
     <$> parserFilePath
     <*> parserVerbose
+    <*> parserInPlace
 
 argsInfo :: ParserInfo Args
 argsInfo =
@@ -145,7 +157,7 @@ defaultEnv :: LogFunc -> Path Abs File -> Env
 defaultEnv envLogFunc filePath =
   Env { envArgs, envLogFunc, envPrettyPrintConfig }
     where
-    envArgs = Args { verbose = True, filePath = Left filePath }
+    envArgs = Args { verbose = True, inPlace = False, filePath = Left filePath }
     envPrettyPrintConfig =
       PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
 
