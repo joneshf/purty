@@ -1,0 +1,35 @@
+before_deploy:
+  - 7z a purty-%APPVEYOR_REPO_TAG_NAME%-win.zip .\bin\purty.exe
+  - appveyor PushArtifact purty-%APPVEYOR_REPO_TAG_NAME%-win.zip
+
+build_script:
+  - stack setup
+  - stack build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
+  - stack build --coverage --test
+
+cache:
+  - .stack-root
+  - .stack-work
+  - C:\ProgramData\chocolatey\bin -> appveyor.yml
+  - C:\ProgramData\chocolatey\lib -> appveyor.yml
+
+deploy:
+  - api_key:
+      secure: y/pMqpeXcoK4ZUAPdF4at7Ji7XjRRa8cOsQtQH8HT+G5mgwh1ctnPt5NqMd3Npcn
+    artifact: 'purty-%APPVEYOR_REPO_TAG_NAME%-win.zip'
+    on:
+      appveyor_repo_tag: true
+    package: purty
+    provider: BinTray
+    repo: generic
+    subject: joneshf
+    username: joneshf
+    version: '%APPVEYOR_REPO_TAG_NAME%'
+
+environment:
+  STACK_ROOT: '%APPVEYOR_BUILD_FOLDER%\.stack-root'
+
+install:
+  - chocolatey install haskell-stack --version 1.6.5 --yes
+
+version: '{build}'
