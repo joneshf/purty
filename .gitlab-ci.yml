@@ -10,26 +10,12 @@ variables:
   STACK_ROOT: $CI_PROJECT_DIR/.stack-root
   
 stages:
-  - install
   - build
-  - test
 
-Install Haskell dependencies:
-  script: stack --system-ghc setup
-  stage: install
-
-Compile Haskell:
-  artifacts:
-    name: purty
-    paths:
-      - bin
-  script: stack --system-ghc build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
+Build purty:
+  script:
+    - stack --system-ghc setup
+    - stack --system-ghc build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
+    - stack --system-ghc build --coverage --test
+    - bash -x ./test/acceptance/filepath.sh
   stage: build
-
-Run acceptance tests:
-  script: bash -x ./test/acceptance/filepath.sh
-  stage: test
-
-Run golden tests:
-  script: stack --system-ghc build --coverage --test
-  stage: test
