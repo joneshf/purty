@@ -87,6 +87,16 @@ cd "${DIR}"
 # 2. Run the test. In most cases, letting it crash is fine.
 # 3. Give some `info` about the test that just passed.
 
+debug 'Testing if exit code is non-zero for parse errors'
+debug 'Turning off "errexit" so the command does not exit the script'
+set +o errexit
+"${PURTY}" './Unparsable.purs' 2&> /dev/null
+unparseable_exit_code="${?}"
+debug 'Turning on "errexit" so failed commands exit the script'
+set -o errexit
+[[ "${unparseable_exit_code}" -eq 0 ]]
+info 'Exit code is non-zero for parse errors'
+
 debug 'Testing if absolute paths work'
 "${PURTY}" "$(pwd)/Test.purs" > /dev/null
 info 'Absolute file paths work'
