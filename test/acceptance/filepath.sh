@@ -79,8 +79,10 @@ cd "${DIR}"
 
 # End Boilerplate
 
-info 'Absolute file paths work'
+debug 'Testing if absolute paths work'
 "${PURTY}" "$(pwd)/Test.purs" > /dev/null
+info 'Absolute file paths work'
 
-info 'Relative file paths work'
+debug 'Testing if relative paths work'
 "${PURTY}" "./Test.purs" > /dev/null
+info 'Relative file paths work'
