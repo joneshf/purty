@@ -14,7 +14,7 @@ readonly SCRIPT_NAME="$(basename "${THIS_SCRIPT}")"
 readonly TEMPORARY_DIR="$(mktemp --directory -t "${SCRIPT_NAME}.XXXXXXXXXX")"
 readonly LOG_FILE="$(mktemp -t "${SCRIPT_NAME}.log.XXXXXXXXXX")"
 
-PURTY='../../bin/purty'
+PURTY='../bin/purty'
 VERBOSE=''
 
 log() {
@@ -90,7 +90,7 @@ cd "${DIR}"
 debug 'Testing if exit code is non-zero for parse errors'
 debug 'Turning off "errexit" so the command does not exit the script'
 set +o errexit
-"${PURTY}" './Unparsable.purs' 2&> /dev/null
+"${PURTY}" './acceptance/Unparsable.purs' 2&> /dev/null
 unparseable_exit_code="${?}"
 debug 'Turning on "errexit" so failed commands exit the script'
 set -o errexit
@@ -99,9 +99,9 @@ debug "unparseable_exit_code: ${unparseable_exit_code}"
 info 'Exit code is non-zero for parse errors'
 
 debug 'Testing if absolute paths work'
-"${PURTY}" "$(pwd)/Test.purs" > /dev/null
+"${PURTY}" "$(pwd)/acceptance/Test.purs" > /dev/null
 info 'Absolute file paths work'
 
 debug 'Testing if relative paths work'
-"${PURTY}" "./Test.purs" > /dev/null
+"${PURTY}" "./acceptance/Test.purs" > /dev/null
 info 'Relative file paths work'
