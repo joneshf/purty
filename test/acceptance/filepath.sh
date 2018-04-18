@@ -5,6 +5,9 @@ set -o nounset
 set -o pipefail
 IFS=$'\n\t'
 
+# There's a good chunk of boilerplate here.
+# Head down to the end of the boilerplate to see the tests.
+
 readonly DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly THIS_SCRIPT="${0}"
 readonly SCRIPT_NAME="$(basename "${THIS_SCRIPT}")"
@@ -78,6 +81,11 @@ debug "Moving to ${DIR}"
 cd "${DIR}"
 
 # End Boilerplate
+
+# To write a test:
+# 1. Start off with a `debug` about what the test will do
+# 2. Run the test. In most cases, letting it crash is fine.
+# 3. Give some `info` about the test that just passed.
 
 debug 'Testing if absolute paths work'
 "${PURTY}" "$(pwd)/Test.purs" > /dev/null
