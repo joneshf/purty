@@ -1,19 +1,44 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -o errexit
+set -o nounset
+set -o pipefail
 IFS=$'\n\t'
 
 readonly DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly THIS_SCRIPT="${0}"
-readonly LOG_FILE="/tmp/$(basename "${THIS_SCRIPT}").log"
+readonly SCRIPT_NAME="$(basename "${THIS_SCRIPT}")"
+readonly TEMPORARY_DIR="$(mktemp --directory -t "${SCRIPT_NAME}.XXXXXXXXXX")"
+readonly LOG_FILE="$(mktemp -t "${SCRIPT_NAME}.log.XXXXXXXXXX")"
 
 PURTY='../../bin/purty'
+VERBOSE=''
 
-#/ Run an acceptance test
+log() {
+    local level="${1}"
+    local msg="${2}"
+
+    if [[ 'DEBUG' = "${level}" && -z "${VERBOSE}" ]]; then
+        printf '%-12s %s\n' "[${level}]" "${msg}" >> "${LOG_FILE}"
+    else
+        printf '%-12s %s\n' "[${level}]" "${msg}" | tee --append "${LOG_FILE}" >&2
+    fi
+}
+
+debug()     { log 'DEBUG'     "${1}" ; }
+info()      { log 'INFO'      "${1}" ; }
+warning()   { log 'WARNING'   "${1}" ; }
+error()     { log 'ERROR'     "${1}" ; }
+emergency() { log 'EMERGENCY' "${1}" ; exit 1 ; }
+
+#/ Run the acceptance tests
 #/
 #/ Options:
-#/       --help     display this help and exit
-#/       --purty    path to the purty binary
+#/       --help                 display this help and exit
+#/       --purty                path to the purty binary
+#/   -V, --verbose              display logs from all levels
+#/                                normally only displays logs above 'DEBUG'
+#/                                will still output all logs to the log file
 usage() {
     grep '^#/' "${THIS_SCRIPT}" | cut --characters 4-
     exit 0
@@ -26,35 +51,36 @@ while [[ $# -gt 0 ]]; do
         --purty)
             shift
             PURTY="${1}";;
+        -V|--verbose) VERBOSE='verbose';;
         *)
-            echo "${THIS_SCRIPT}: unrecognized option '${option}'"
-            echo "Try '${THIS_SCRIPT} --help' for more information"
+            error "${THIS_SCRIPT}: unrecognized option '${option}'"
+            error "Try '${THIS_SCRIPT} --help' for more information"
             exit 2;;
     esac
     shift
 done
 
-info()    { echo "[INFO]    $*" | tee --append "${LOG_FILE}" >&2 ; }
-warning() { echo "[WARNING] $*" | tee --append "${LOG_FILE}" >&2 ; }
-error()   { echo "[ERROR]   $*" | tee --append "${LOG_FILE}" >&2 ; }
-fatal()   { echo "[FATAL]   $*" | tee --append "${LOG_FILE}" >&2 ; exit 1 ; }
-
 cleanup() {
     local exit_code="$?"
 
-    popd
+    debug "Moving back to ${OLDPWD}"
+    cd "${OLDPWD}"
 
     exit "$exit_code"
 }
 
 trap cleanup EXIT
 
-pushd "${DIR}"
+debug "Created temp directory: ${TEMPORARY_DIR}"
+debug "Created log file: ${LOG_FILE}"
+
+debug "Moving to ${DIR}"
+cd "${DIR}"
 
 # End Boilerplate
 
-echo 'Absolute file paths work'
+info 'Absolute file paths work'
 "${PURTY}" "$(pwd)/Test.purs" > /dev/null
 
-echo 'Relative file paths work'
+info 'Relative file paths work'
 "${PURTY}" "./Test.purs" > /dev/null
