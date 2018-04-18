@@ -94,7 +94,7 @@ set +o errexit
 unparseable_exit_code="${?}"
 debug 'Turning on "errexit" so failed commands exit the script'
 set -o errexit
-[[ "${unparseable_exit_code}" -eq 0 ]]
+[[ "${unparseable_exit_code}" -ne 0 ]]
 info 'Exit code is non-zero for parse errors'
 
 debug 'Testing if absolute paths work'
