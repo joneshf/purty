@@ -17,5 +17,5 @@ Build purty:
     - stack --system-ghc setup
     - stack --system-ghc build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
     - stack --system-ghc build --coverage --test
-    - bash -x ./test/acceptance/filepath.sh
+    - test/acceptance/filepath.sh --verbose
   stage: build
