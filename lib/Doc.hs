@@ -603,12 +603,15 @@ fromTypeClassWithoutConstraints ::
   [Declaration] ->
   Doc a
 fromTypeClassWithoutConstraints name parameters funDeps declarations =
-  pretty (runProperName name)
-    <> fromParameters parameters
-    <> fromFunctionalDependencies (fromList $ zip [0..] $ fmap fst parameters) funDeps
-    <+> "where"
-    <> line
-    <> indent 2 (vsep $ fmap fromDeclaration declarations)
+  case declarations of
+    [] -> classHead
+    _ -> classHead
+      <+> "where"
+      <> line
+      <> indent 2 (vsep $ fmap fromDeclaration declarations)
+  where classHead = pretty (runProperName name)
+                      <> fromParameters parameters
+                      <> fromFunctionalDependencies (fromList $ zip [0..] $ fmap fst parameters) funDeps
 
 parentheses :: [Doc a] -> Doc a
 parentheses = enclosedWith "(" ")"
