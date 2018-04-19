@@ -29,6 +29,10 @@ env:
 
 language: c
 
+notifications:
+  webhooks:
+    - secure: t8fOnG4eXLO/dHrwEiEDP/l3NhDl4ssm+iFgkxy9Hvj+7ih7kUEL+GGMQ8uWAQfBOxb5m8NGFSdZv61PphZnky/qdcCJihR6TSe90Tls1kUy56ep0B9QRe9PhOdkD8xuRwpbZbkzFY/krxjhJEXObEBqmk7XOXIq/QlLA6Fng3C1GBmvqHvT7DODXZfUi1DqoA09ydwY2S4YTOJtPZUVs760xANup9BzILm007/pDsIws4//B6saQfb6Qzab9OyAD2eitQ+6Fzn3wbqoUsUrEM1yGkJWHiRS+tSSo8/D4rOM9g+Su1+ZjLrp9kHiAToCbZR6rmy7t6X8KzvsIoIVx2CDHuU8JleIpUQ9vwcrmh4eSVc6jZmgm7YfIw4Hww0+vi6nDFnRlGiHrCHi6ZSC6inEoQsxruQcb/3olVXmVrOuwh1LZ1b1cY4VhW3mgF0MTApFt3+JGos1cbA1GFbEZxDb+a6MwXN1jWqg3LdIiYMw/3OW82AKuc3D1cKv41CbVJiu8Ilpkz+whg6PD6KpC09Abqi4mD5wtHpvdWjX93DJk1SshY5L7o3ncrQxUOarVVgNuEsLRtnL0W1XIl2VeBe+grCR1VUeyvo0wPETFEqXUXMYGKyFaC8ZDW1tiz4SkxYNbhgyfDwc9DT7gzVBkN9vWHhO6P2hnqAfogacnMw=
+
 os:
   - linux
   - osx
