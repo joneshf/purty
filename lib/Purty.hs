@@ -34,7 +34,6 @@ import "path" Path
     , fromAbsFile
     , parseAbsFile
     , parseRelFile
-    , toFilePath
     )
 import "path-io" Path.IO                          (makeAbsolute)
 import "parsec" Text.Parsec                       (ParseError)
@@ -119,9 +118,6 @@ argsInfo =
     <> progDesc "Pretty print a PureScript file"
     <> header "purty - A PureScript pretty-printer"
     )
-
-makePathDumb :: Either (Path Abs File) (Path Rel File) -> String
-makePathDumb = either toFilePath toFilePath
 
 data PrettyPrintConfig
   = PrettyPrintConfig

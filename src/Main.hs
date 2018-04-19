@@ -1,9 +1,13 @@
 module Main where
 
-import "rio" RIO
-import qualified "directory" System.Directory as IO
-import qualified "base" System.IO as IO
+import "rio" RIO hiding (withSystemTempFile)
 
+import "path-io" Path.IO 
+    ( withSystemTempFile
+    , copyFile
+    , copyPermissions
+    , makeAbsolute
+    )
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( defaultLayoutOptions
     )
@@ -19,7 +23,6 @@ import "purty" Purty
     , envLogFunc
     , envPrettyPrintConfig
     , layoutOptions
-    , makePathDumb
     , purty
     )
 
@@ -43,16 +46,12 @@ main = do
           logDebug "Successfully created stream for rendering"
           logDebug (displayShow $ void stream)
           case inPlace of
-            True -> liftIO $ do
-              let dumbPath = makePathDumb filePath
-              tmp <- IO.getTemporaryDirectory
-              (fp, h) <- IO.openTempFile tmp "purty.purs"
+            True -> liftIO $ withSystemTempFile "purty.purs" $ \fp h -> do
+              absPath <- either pure makeAbsolute filePath
               renderIO h stream
-              hFlush h
               hClose h
-              IO.copyPermissions dumbPath fp
-              IO.copyFile fp dumbPath
-              IO.removeFile fp
+              copyPermissions absPath fp
+              copyFile fp absPath
             False -> do
               logDebug "Printing to stdout"
               liftIO $ renderIO stdout stream
