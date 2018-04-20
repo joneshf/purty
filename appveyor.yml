@@ -4,8 +4,8 @@ before_deploy:
 
 build_script:
   - stack setup
-  - stack build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
-  - stack build --coverage --test
+  - stack build --copy-bins --local-bin-path bin --no-run-tests --test
+  - stack build --test
 
 cache:
   - .stack-root
