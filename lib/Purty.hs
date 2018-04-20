@@ -4,8 +4,8 @@ import "rio" RIO
 
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( LayoutOptions
-    , PageWidth(AvailablePerLine, Unbounded)
     , SimpleDocStream
+    , PageWidth(AvailablePerLine, Unbounded)
     , defaultLayoutOptions
     , layoutPageWidth
     , layoutSmart
