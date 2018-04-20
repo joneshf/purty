@@ -43,4 +43,4 @@ script:
   - stack setup
   - stack build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
   - stack build --coverage --test
-  - test/acceptance/filepath.sh
+  - test/acceptance.sh --verbose
