@@ -1,17 +1,22 @@
 module Main where
 
-import "rio" RIO
-
-import "base" System.Exit (exitFailure)
+import "rio" RIO hiding (withSystemTempFile)
 
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( defaultLayoutOptions
     )
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderIO)
 import "optparse-applicative" Options.Applicative            (execParser)
+import "path-io" Path.IO
+    ( copyFile
+    , copyPermissions
+    , makeAbsolute
+    , withSystemTempFile
+    )
+import "base" System.Exit                                    (exitFailure)
 
 import "purty" Purty
-    ( Args(Args, verbose)
+    ( Args(..)
     , Env(Env)
     , PrettyPrintConfig(PrettyPrintConfig)
     , argsInfo
@@ -24,7 +29,7 @@ import "purty" Purty
 
 main :: IO ()
 main = do
-  envArgs@Args{ verbose } <- execParser argsInfo
+  envArgs@Args{ verbose, filePath, inPlace } <- execParser argsInfo
   let envPrettyPrintConfig =
         PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
   logOptions <- logOptionsHandle stderr verbose
@@ -42,4 +47,13 @@ main = do
         Right stream -> do
           logDebug "Successfully created stream for rendering"
           logDebug (displayShow $ void stream)
-          liftIO $ renderIO stdout stream
+          case inPlace of
+            True -> liftIO $ withSystemTempFile "purty.purs" $ \fp h -> do
+              absPath <- either pure makeAbsolute filePath
+              renderIO h stream
+              hClose h
+              copyPermissions absPath fp
+              copyFile fp absPath
+            False -> do
+              logDebug "Printing to stdout"
+              liftIO $ renderIO stdout stream
