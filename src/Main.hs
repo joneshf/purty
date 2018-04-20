@@ -2,17 +2,18 @@ module Main where
 
 import "rio" RIO hiding (withSystemTempFile)
 
-import "path-io" Path.IO
-    ( withSystemTempFile
-    , copyFile
-    , copyPermissions
-    , makeAbsolute
-    )
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( defaultLayoutOptions
     )
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderIO)
 import "optparse-applicative" Options.Applicative            (execParser)
+import "path-io" Path.IO
+    ( copyFile
+    , copyPermissions
+    , makeAbsolute
+    , withSystemTempFile
+    )
+import "base" System.Exit                                    (exitFailure)
 
 import "purty" Purty
     ( Args(..)

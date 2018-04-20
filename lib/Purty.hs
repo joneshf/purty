@@ -59,7 +59,7 @@ data Args
   = Args
     { filePath :: !(Either (Path Abs File) (Path Rel File))
     , verbose  :: !Bool
-    , inPlace :: !Bool
+    , inPlace  :: !Bool
     }
 
 instance Display Args where
