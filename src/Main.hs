@@ -2,7 +2,7 @@ module Main where
 
 import "rio" RIO hiding (withSystemTempFile)
 
-import "path-io" Path.IO 
+import "path-io" Path.IO
     ( withSystemTempFile
     , copyFile
     , copyPermissions
@@ -42,6 +42,7 @@ main = do
         Left err -> do
           logError "Problem parsing module"
           logError (displayShow err)
+          liftIO exitFailure
         Right stream -> do
           logDebug "Successfully created stream for rendering"
           logDebug (displayShow $ void stream)
