@@ -28,7 +28,7 @@ import "purty" Purty (defaultEnv, purty)
 main :: IO ()
 main = defaultMain goldenTests
 
-diff :: FilePath -> FilePath -> [[Char]]
+diff :: FilePath -> FilePath -> [String]
 diff old new = ["diff", "--unified", old, new]
 
 golden :: TestName -> Path Rel File -> TestTree
