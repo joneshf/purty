@@ -74,6 +74,7 @@ import "purescript" Language.PureScript
     , tyRecord
     )
 import "purescript" Language.PureScript.Label    (runLabel)
+import "purescript" Language.PureScript.Names    (Qualified)
 import "purescript" Language.PureScript.PSString (PSString)
 import "rio" RIO.List                            (repeat, zipWith)
 import "rio" RIO.Text                            (dropAround)
@@ -276,12 +277,7 @@ fromDeclaration = \case
       <+> "::"
       <> fromTypeClassConstraints "=>" constraints
       <> line
-      <> indent 2 ( pretty (showQualified runProperName name)
-                  <+> hsep (fmap fromType types)
-                  <+> "where"
-                  <> line
-                  <> indent 2 (vsep $ fmap fromDeclaration declarations)
-                  )
+      <> (indent 2 $ fromTypeInstanceWithoutConstraints name types declarations)
   TypeInstanceDeclaration (_, comments) ident constraints name types NewtypeInstance ->
     fromComments comments
       <> "derive newtype instance"
@@ -603,12 +599,30 @@ fromTypeClassWithoutConstraints ::
   [Declaration] ->
   Doc a
 fromTypeClassWithoutConstraints name parameters funDeps declarations =
-  pretty (runProperName name)
-    <> fromParameters parameters
-    <> fromFunctionalDependencies (fromList $ zip [0..] $ fmap fst parameters) funDeps
-    <+> "where"
-    <> line
-    <> indent 2 (vsep $ fmap fromDeclaration declarations)
+  case declarations of
+    [] -> classHead
+    _ -> classHead
+      <+> "where"
+      <> line
+      <> indent 2 (vsep $ fmap fromDeclaration declarations)
+  where classHead = pretty (runProperName name)
+                      <> fromParameters parameters
+                      <> fromFunctionalDependencies (fromList $ zip [0..] $ fmap fst parameters) funDeps
+
+fromTypeInstanceWithoutConstraints ::
+  Qualified (ProperName a) ->
+  [Type] ->
+  [Declaration] ->
+  Doc ann
+fromTypeInstanceWithoutConstraints name types declarations =
+  case declarations of
+    [] -> instanceHead
+    _ -> instanceHead
+      <+> "where"
+      <> line
+      <> indent 2 (vsep $ fmap fromDeclaration declarations)
+  where instanceHead = pretty (showQualified runProperName name)
+                        <+> hsep (fmap fromType types)
 
 parentheses :: [Doc a] -> Doc a
 parentheses = enclosedWith "(" ")"
