@@ -119,9 +119,9 @@ argsInfo =
     <> header "purty - A PureScript pretty-printer"
     )
 
-data PrettyPrintConfig
+newtype PrettyPrintConfig
   = PrettyPrintConfig
-    { layoutOptions :: !LayoutOptions
+    { layoutOptions :: LayoutOptions
     }
 
 instance Display PrettyPrintConfig where

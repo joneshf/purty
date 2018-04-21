@@ -47,13 +47,13 @@ main = do
         Right stream -> do
           logDebug "Successfully created stream for rendering"
           logDebug (displayShow $ void stream)
-          case inPlace of
-            True -> liftIO $ withSystemTempFile "purty.purs" $ \fp h -> do
+          if inPlace then
+            liftIO $ withSystemTempFile "purty.purs" $ \fp h -> do
               absPath <- either pure makeAbsolute filePath
               renderIO h stream
               hClose h
               copyPermissions absPath fp
               copyFile fp absPath
-            False -> do
+          else do
               logDebug "Printing to stdout"
               liftIO $ renderIO stdout stream

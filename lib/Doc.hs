@@ -191,7 +191,7 @@ fromDeclaration = \case
     vsep (toList $ fmap (fromDeclaration . ValueDeclaration . valueDeclarationFromAnonymousDeclaration) declarations)
   BoundValueDeclaration (_, comments) binder expr ->
     fromComments comments <> fromBinder binder <+> "=" <+> fromExpr expr
-  DataBindingGroupDeclaration (declarations) ->
+  DataBindingGroupDeclaration declarations ->
     vsep (toList $ fmap fromDeclaration declarations)
   DataDeclaration (_, comments) dataType name parameters constructors ->
     fromComments comments
@@ -277,7 +277,7 @@ fromDeclaration = \case
       <+> "::"
       <> fromTypeClassConstraints "=>" constraints
       <> line
-      <> (indent 2 $ fromTypeInstanceWithoutConstraints name types declarations)
+      <> indent 2 (fromTypeInstanceWithoutConstraints name types declarations)
   TypeInstanceDeclaration (_, comments) ident constraints name types NewtypeInstance ->
     fromComments comments
       <> "derive newtype instance"
@@ -332,7 +332,7 @@ fromExport :: DeclarationRef -> Doc a
 fromExport = \case
   KindRef _ name -> "kind" <+> pretty (runProperName name)
   ModuleRef _ name -> "module" <+> pretty (runModuleName name)
-  ReExportRef _ _ _ -> mempty
+  ReExportRef {} -> mempty
   TypeRef _ name constructors ->
     -- N.B. `Nothing` means everything
     pretty (runProperName name) <> maybe "(..)" fromConstructors constructors
@@ -385,7 +385,7 @@ fromExpr = \case
   Op op -> pretty (showQualified runOpName op)
   Parens expr -> parens (fromExpr expr)
   PositionedValue _ comments expr -> fromComments comments <> fromExpr expr
-  TypeClassDictionary _ _ _ -> mempty
+  TypeClassDictionary {} -> mempty
   TypeClassDictionaryAccessor _ _ -> mempty
   TypeClassDictionaryConstructorApp _ _ -> mempty
   TypedValue _ expr exprType -> fromExpr expr <+> "::" <+> fromType exprType
@@ -509,7 +509,7 @@ fromPathNode (key, Branch path) =
 
 fromPathTree :: PathTree Expr -> Doc a
 fromPathTree (PathTree paths) =
-  braces (fmap fromPathNode $ runAssocList paths)
+  braces (fromPathNode <$> runAssocList paths)
 
 fromType :: Language.PureScript.Type -> Doc a
 fromType =
@@ -536,7 +536,7 @@ fromType =
     PrettyPrintObject type' -> "{" <> hsep (convertRow [] type') <> "}"
     type'@RCons {} -> "(" <> hsep (convertRow [] type') <> ")"
     REmpty -> "()"
-    Skolem _ _ _ _ -> mempty
+    Skolem {} -> mempty
     TUnknown _ -> mempty
     TypeApp f x -> fromType f <+> fromType x
     TypeConstructor constructor ->
@@ -573,7 +573,7 @@ fromTypeWithParens =
     PrettyPrintObject type' -> "{" <> hsep (convertRow [] type') <> "}"
     type'@RCons {} -> "(" <> hsep (convertRow [] type') <> ")"
     REmpty -> "()"
-    Skolem _ _ _ _ -> mempty
+    Skolem {} -> mempty
     TUnknown _ -> mempty
     TypeApp f x -> fromTypeWithParens f <+> fromTypeWithParens x
     TypeConstructor constructor ->
