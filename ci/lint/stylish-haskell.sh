@@ -97,9 +97,9 @@ CHANGED_FILES="$(git status --porcelain '*.hs')"
 
 if [[ -n "${CHANGED_FILES}"  ]]; then
     error 'Some Haskell files are not formatted properly'
-    error "$(git diff '*.hs')"
+    error "$(git diff -- '*.hs')"
     error ''
-    error "You can fix this by running '${THIS_SCRIPT}'"
+    error "You can fix this by running '${THIS_SCRIPT}' locally and committing"
 
     exit 1
 fi
