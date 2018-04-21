@@ -609,10 +609,10 @@ fromTypeClassWithoutConstraints name parameters funDeps declarations =
                       <> fromParameters parameters
                       <> fromFunctionalDependencies (fromList $ zip [0..] $ fmap fst parameters) funDeps
 
-fromTypeInstanceWithoutConstraints :: 
-  Qualified (ProperName a) -> 
-  [Type] -> 
-  [Declaration] -> 
+fromTypeInstanceWithoutConstraints ::
+  Qualified (ProperName a) ->
+  [Type] ->
+  [Declaration] ->
   Doc ann
 fromTypeInstanceWithoutConstraints name types declarations =
   case declarations of
@@ -621,8 +621,8 @@ fromTypeInstanceWithoutConstraints name types declarations =
       <+> "where"
       <> line
       <> indent 2 (vsep $ fmap fromDeclaration declarations)
-  where instanceHead = pretty (showQualified runProperName name) 
-                        <+> hsep (fmap fromType types) 
+  where instanceHead = pretty (showQualified runProperName name)
+                        <+> hsep (fmap fromType types)
 
 parentheses :: [Doc a] -> Doc a
 parentheses = enclosedWith "(" ")"
