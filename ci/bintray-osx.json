@@ -1,12 +1,12 @@
 {
   "files": [
     {
-      "includePattern": "purty-0.2.0-rc1-osx.tar.gz",
-      "uploadPattern": "purty-0.2.0-rc1-darwin.tar.gz"
+      "includePattern": "purty-0.2.0-rc2-osx.tar.gz",
+      "uploadPattern": "purty-0.2.0-rc2-darwin.tar.gz"
     },
     {
-      "includePattern": "purty-0.2.0-rc1-osx.tar.gz",
-      "uploadPattern": "purty-0.2.0-rc1-osx.tar.gz"
+      "includePattern": "purty-0.2.0-rc2-osx.tar.gz",
+      "uploadPattern": "purty-0.2.0-rc2-osx.tar.gz"
     }
   ],
   "package": {
@@ -19,7 +19,7 @@
     "vcs_url": "https://gitlab.com/joneshf/purty.git"
   },
   "version": {
-    "name": "0.2.0-rc1",
+    "name": "0.2.0-rc2",
     "released": "2018-04-22"
   }
 }
