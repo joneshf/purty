@@ -109,15 +109,15 @@ tar --extract \
 debug "Moving osx binary to the appropriate location"
 mv "${TEMPORARY_DIR}/purty" "bin/osx/purty"
 
-# debug "Downloading win tar from ${WIN_URL}"
-# curl --location --output "${TEMPORARY_DIR}/win.tar.gz" "${WIN_URL}" 2>&1 \
-#     | tee --append "${LOG_FILE}"
+debug "Downloading win tar from ${WIN_URL}"
+curl --location --output "${TEMPORARY_DIR}/win.tar.gz" "${WIN_URL}" 2>&1 \
+    | tee --append "${LOG_FILE}"
 
-# debug "Extracting win binary"
-# tar --extract \
-#     --file "${TEMPORARY_DIR}/win.tar.gz" \
-#     --directory "${TEMPORARY_DIR}" \
-#     --gzip
+debug "Extracting win binary"
+tar --extract \
+    --file "${TEMPORARY_DIR}/win.tar.gz" \
+    --directory "${TEMPORARY_DIR}" \
+    --gzip
 
-# debug "Moving win binary to the appropriate location"
-# mv "${TEMPORARY_DIR}/purty.exe" "bin/win/purty.exe"
+debug "Moving win binary to the appropriate location"
+mv "${TEMPORARY_DIR}/purty.exe" "bin/win/purty.exe"
