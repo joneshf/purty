@@ -2,10 +2,6 @@
   "files": [
     {
       "includePattern": "purty-0.2.0-rc3-osx.tar.gz",
-      "uploadPattern": "purty-0.2.0-rc3-darwin.tar.gz"
-    },
-    {
-      "includePattern": "purty-0.2.0-rc3-osx.tar.gz",
       "uploadPattern": "purty-0.2.0-rc3-osx.tar.gz"
     }
   ],
