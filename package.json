@@ -23,5 +23,10 @@
     "bin/osx/purty",
     "bin/purty.js",
     "bin/win/purty.exe"
+  ],
+  "os": [
+    "linux",
+    "darwin",
+    "win32"
   ]
 }
