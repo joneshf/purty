@@ -27,5 +27,5 @@
   "scripts": {
     "prepack": "ci/npm/prepack.sh --verbose"
   },
-  "version": "0.2.0-rc4"
+  "version": "0.2.0-rc5"
 }
