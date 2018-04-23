@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+echo 'Install failed. Please report this to https://gitlab.com/joneshf/purty/issues'
+exit 1

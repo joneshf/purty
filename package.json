@@ -27,5 +27,7 @@
     "package_name": "?file_path={module_name}-{version}-{platform}.tar.gz",
     "remote_path": "./joneshf/generic/download_file"
   },
-  "files": []
+  "files": [
+    "bin/purty"
+  ]
 }
