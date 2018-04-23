@@ -2,6 +2,10 @@
   "files": [
     {
       "includePattern": "purty-0.1.0-osx.tar.gz",
+      "uploadPattern": "purty-0.1.0-darwin.tar.gz"
+    },
+    {
+      "includePattern": "purty-0.1.0-osx.tar.gz",
       "uploadPattern": "purty-0.1.0-osx.tar.gz"
     }
   ],
