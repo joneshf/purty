@@ -64,8 +64,8 @@ done
 cleanup() {
     local exit_code="$?"
 
-    # debug 'Removing temp directory'
-    # rm --force --recursive "${TEMPORARY_DIR}"
+    debug 'Removing temp directory'
+    rm --force --recursive "${TEMPORARY_DIR}"
 
     exit "$exit_code"
 }
@@ -80,44 +80,47 @@ debug "Created log file: ${LOG_FILE}"
 cd "${DIR}/../.."
 
 debug "version: ${VERSION}"
-debug "creating directories for binaries"
+debug 'creating directories for binaries'
 mkdir --parents bin/linux bin/osx bin/win
 
+info 'Packaging linux binary'
 debug "Downloading linux tar from ${LINUX_URL}"
 curl --location --output "${TEMPORARY_DIR}/linux.tar.gz" "${LINUX_URL}" 2>&1 \
     | tee --append "${LOG_FILE}"
 
-debug "Extracting linux binary"
+debug 'Extracting linux binary'
 tar --extract \
     --file "${TEMPORARY_DIR}/linux.tar.gz" \
     --directory "${TEMPORARY_DIR}" \
     --gzip
 
-debug "Moving linux binary to the appropriate location"
+debug 'Moving linux binary to the appropriate location'
 mv "${TEMPORARY_DIR}/purty" "bin/linux/purty"
 
+info 'Packaging osx binary'
 debug "Downloading osx tar from ${OSX_URL}"
 curl --location --output "${TEMPORARY_DIR}/osx.tar.gz" "${OSX_URL}" 2>&1 \
     | tee --append "${LOG_FILE}"
 
-debug "Extracting osx binary"
+debug 'Extracting osx binary'
 tar --extract \
     --file "${TEMPORARY_DIR}/osx.tar.gz" \
     --directory "${TEMPORARY_DIR}" \
     --gzip
 
-debug "Moving osx binary to the appropriate location"
+debug 'Moving osx binary to the appropriate location'
 mv "${TEMPORARY_DIR}/purty" "bin/osx/purty"
 
+info 'Packaging win binary'
 debug "Downloading win tar from ${WIN_URL}"
 curl --location --output "${TEMPORARY_DIR}/win.tar.gz" "${WIN_URL}" 2>&1 \
     | tee --append "${LOG_FILE}"
 
-debug "Extracting win binary"
+debug 'Extracting win binary'
 tar --extract \
     --file "${TEMPORARY_DIR}/win.tar.gz" \
     --directory "${TEMPORARY_DIR}" \
     --gzip
 
-debug "Moving win binary to the appropriate location"
+debug 'Moving win binary to the appropriate location'
 mv "${TEMPORARY_DIR}/purty.exe" "bin/win/purty.exe"
