@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.2.0
+
+Infrastructure changes
+
+Most of this release was around making the infrastructure of creating `purty`. We had a few features and fixes, but mostly infrastructure.
+
+### Additions
+
+* [Run stylish-haskell on CI](https://gitlab.com/joneshf/purty/issues/9)
+* [Pretty print files in place](https://gitlab.com/joneshf/purty/issues/12)
+* [Run hlint on CI](https://gitlab.com/joneshf/purty/issues/15)
+* [Release `purty` as an NPM package](https://gitlab.com/joneshf/purty/issues/22)
+
+### Changes
+
+* [Return non-zero exit code on parse errors](https://gitlab.com/joneshf/purty/issues/13)
+* [Make acceptance tests easier to work with](https://gitlab.com/joneshf/purty/issues/16)
+* [Run GitLab CI in one stage](https://gitlab.com/joneshf/purty/merge_requests/22)
+* [Remove unnecessary where clause in type class and instance declarations](https://gitlab.com/joneshf/purty/issues/24)
+* [Fix Travis CI reporting to pipeline](https://gitlab.com/joneshf/purty/issues/25)
+* [Report Travis CI starting on pipeline](https://gitlab.com/joneshf/purty/merge_requests/28)
+
+### Deletions
+
+* [Stop released binaries generating coverage information](https://gitlab.com/joneshf/purty/issues/26)
+
 ## 0.1.0
 
 Initial release
