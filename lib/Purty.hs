@@ -38,13 +38,14 @@ import "path" Path
 import "path-io" Path.IO                          (makeAbsolute)
 import "parsec" Text.Parsec                       (ParseError)
 
-import qualified "this" Doc
+import qualified "this" Doc.Dynamic
+import qualified "this" Doc.Static
 
 purty ::
   (HasArgs env, HasLogFunc env, HasPrettyPrintConfig env) =>
   RIO env (Either ParseError (SimpleDocStream a))
 purty = do
-  Args { filePath } <- view argsL
+  Args { filePath, formatting } <- view argsL
   PrettyPrintConfig { layoutOptions } <- view prettyPrintConfigL
   absFilePath <- either pure makeAbsolute filePath
   logDebug ("Converted file to absolute: " <> displayShow absFilePath)
@@ -53,7 +54,9 @@ purty = do
   logDebug (display contents)
   pure $ do
     (_, m) <- parseModuleFromFile id (fromAbsFile absFilePath, contents)
-    pure (layoutSmart layoutOptions $ Doc.fromModule m)
+    case formatting of
+      Dynamic -> pure (layoutSmart layoutOptions $ Doc.Dynamic.fromModule m)
+      Static -> pure (layoutSmart layoutOptions $ Doc.Static.fromModule m)
 
 data Args
   = Args

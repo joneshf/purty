@@ -1,4 +1,4 @@
-module Doc where
+module Doc.Dynamic where
 
 import "rio" RIO
 
