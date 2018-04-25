@@ -201,15 +201,14 @@ instance Display Env where
       <> display envPrettyPrintConfig
       <> "}"
 
-defaultEnv :: LogFunc -> Path Abs File -> Env
-defaultEnv envLogFunc filePath' =
+defaultEnv :: Formatting -> LogFunc -> Path Abs File -> Env
+defaultEnv formatting envLogFunc filePath' =
   Env { envArgs, envLogFunc, envPrettyPrintConfig }
     where
     envArgs = Args { filePath, formatting, output, verbosity }
     envPrettyPrintConfig =
       PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
     filePath = Left filePath'
-    formatting = Static
     output = StdOut
     verbosity = Verbose
 
