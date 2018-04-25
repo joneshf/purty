@@ -97,12 +97,6 @@ convertForAlls vars = \case
 
 convertRow :: [Doc a] -> Language.PureScript.Type -> [Doc a]
 convertRow rest = \case
-  RCons label type' tail@REmpty ->
-    convertRow
-      ( printRowPair label type'
-      : rest
-      )
-      tail
   RCons label type' tail@RCons{} ->
     convertRow
       ( printRowPair label type'
@@ -113,12 +107,11 @@ convertRow rest = \case
   RCons label type' tail ->
     convertRow
       ( printRowPair label type'
-      <+> "|"
       : rest
       )
       tail
   REmpty -> reverse rest
-  x -> reverse (fromType x : rest)
+  x -> reverse ("|" <+> fromType x : rest)
   where
     printRowPair l t = pretty (ppStringWithoutQuotes $ runLabel l) <+> "::" <+> fromType t
 

@@ -55,4 +55,5 @@ goldenTests =
     , golden "type synonym newline" [relfile|test/golden/files/TypeSynonymNewline.purs|]
     , golden "type synonym" [relfile|test/golden/files/TypeSynonym.purs|]
     , golden "typeclass" [relfile|test/golden/files/TypeClass.purs|]
+    , golden "open record types" [relfile|test/golden/files/Merge.purs|]
     ]
