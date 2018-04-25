@@ -16,9 +16,11 @@ import "path-io" Path.IO
 import "base" System.Exit                                    (exitFailure)
 
 import "purty" Purty
-    ( Args(..)
+    ( Args(Args, filePath, output, verbosity)
     , Env(Env)
+    , Output(InPlace, StdOut)
     , PrettyPrintConfig(PrettyPrintConfig)
+    , Verbosity(Verbose)
     , argsInfo
     , envArgs
     , envLogFunc
@@ -29,10 +31,10 @@ import "purty" Purty
 
 main :: IO ()
 main = do
-  envArgs@Args{ verbose, filePath, inPlace } <- execParser argsInfo
+  envArgs@Args{ verbosity, filePath, output } <- execParser argsInfo
   let envPrettyPrintConfig =
         PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
-  logOptions <- logOptionsHandle stderr verbose
+  logOptions <- logOptionsHandle stderr (verbosity == Verbose)
   withLogFunc logOptions $ \envLogFunc -> do
     let env = Env { envArgs, envLogFunc, envPrettyPrintConfig }
     runRIO env $ do
@@ -47,13 +49,13 @@ main = do
         Right stream -> do
           logDebug "Successfully created stream for rendering"
           logDebug (displayShow $ void stream)
-          if inPlace then
-            liftIO $ withSystemTempFile "purty.purs" $ \fp h -> do
+          case output of
+            InPlace -> liftIO $ withSystemTempFile "purty.purs" $ \fp h -> do
               absPath <- either pure makeAbsolute filePath
               renderIO h stream
               hClose h
               copyPermissions absPath fp
               copyFile fp absPath
-          else do
+            StdOut -> do
               logDebug "Printing to stdout"
               liftIO $ renderIO stdout stream

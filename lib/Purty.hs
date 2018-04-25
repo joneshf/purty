@@ -15,6 +15,7 @@ import "optparse-applicative" Options.Applicative
     ( Parser
     , ParserInfo
     , argument
+    , flag
     , fullDesc
     , header
     , help
@@ -24,7 +25,6 @@ import "optparse-applicative" Options.Applicative
     , maybeReader
     , metavar
     , progDesc
-    , switch
     )
 import "path" Path
     ( Abs
@@ -57,24 +57,30 @@ purty = do
 
 data Args
   = Args
-    { filePath :: !(Either (Path Abs File) (Path Rel File))
-    , verbose  :: !Bool
-    , inPlace  :: !Bool
+    { filePath  :: !(Either (Path Abs File) (Path Rel File))
+    , output    :: !Output
+    , verbosity :: !Verbosity
     }
 
 instance Display Args where
-  display Args { filePath, verbose, inPlace } =
-    "{"  <> displayFilePath filePath <> ", " <> displayVerbose verbose <> ", " <> displayInPlace inPlace <> "}"
+  display Args { filePath, verbosity, output } =
+    "{"
+      <> displayFilePath filePath
+      <> ", "
+      <> displayOutput output
+      <> ", "
+      <> displayVerbosity verbosity
+      <> "}"
       where
       displayFilePath = \case
         Left absFile -> "Absolute file: " <> displayShow absFile
         Right relFile -> "Relative file: " <> displayShow relFile
-      displayVerbose = \case
-        True -> "Verbose"
-        False -> "Not verbose"
-      displayInPlace = \case
-        True -> "Formatting files in-place"
-        False -> "Writing formatted files to stdout"
+      displayVerbosity = \case
+        Verbose -> "Verbose"
+        NotVerbose -> "Not verbose"
+      displayOutput = \case
+        InPlace -> "Formatting files in-place"
+        StdOut -> "Writing formatted files to stdout"
 
 class HasArgs env where
   argsL :: Lens' env Args
@@ -89,15 +95,31 @@ parserFilePath = argument parser meta
     fmap Left (maybeReader parseAbsFile)
       <|> fmap Right (maybeReader parseRelFile)
 
-parserVerbose :: Parser Bool
-parserVerbose = switch meta
+-- |
+-- The minimum level of logs to display.
+--
+-- 'Verbose' will display debug logs.
+-- Debug logs are pretty noisy, but useful when diagnosing problems.
+data Verbosity
+  = Verbose
+  | NotVerbose
+  deriving (Eq)
+
+parserVerbosity :: Parser Verbosity
+parserVerbosity = flag NotVerbose Verbose meta
   where
   meta =
     help "Print debugging information to STDERR while running"
       <> long "verbose"
 
-parserInPlace :: Parser Bool
-parserInPlace = switch meta
+-- |
+-- What to do with the pretty printed output
+data Output
+  = InPlace
+  | StdOut
+
+parserOutput :: Parser Output
+parserOutput = flag StdOut InPlace meta
   where
   meta =
     help "Format file in-place"
@@ -107,8 +129,8 @@ args :: Parser Args
 args =
   Args
     <$> parserFilePath
-    <*> parserVerbose
-    <*> parserInPlace
+    <*> parserOutput
+    <*> parserVerbosity
 
 argsInfo :: ParserInfo Args
 argsInfo =
@@ -154,12 +176,15 @@ instance Display Env where
       <> "}"
 
 defaultEnv :: LogFunc -> Path Abs File -> Env
-defaultEnv envLogFunc filePath =
+defaultEnv envLogFunc filePath' =
   Env { envArgs, envLogFunc, envPrettyPrintConfig }
     where
-    envArgs = Args { verbose = True, inPlace = False, filePath = Left filePath }
+    envArgs = Args { filePath, output, verbosity }
     envPrettyPrintConfig =
       PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
+    filePath = Left filePath'
+    output = StdOut
+    verbosity = Verbose
 
 class HasEnv env where
   envL :: Lens' env Env
