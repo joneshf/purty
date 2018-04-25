@@ -57,15 +57,18 @@ purty = do
 
 data Args
   = Args
-    { filePath  :: !(Either (Path Abs File) (Path Rel File))
-    , output    :: !Output
-    , verbosity :: !Verbosity
+    { filePath   :: !(Either (Path Abs File) (Path Rel File))
+    , formatting :: !Formatting
+    , output     :: !Output
+    , verbosity  :: !Verbosity
     }
 
 instance Display Args where
-  display Args { filePath, verbosity, output } =
+  display Args { filePath, formatting, verbosity, output } =
     "{"
       <> displayFilePath filePath
+      <> ", "
+      <> displayFormatting formatting
       <> ", "
       <> displayOutput output
       <> ", "
@@ -75,6 +78,9 @@ instance Display Args where
       displayFilePath = \case
         Left absFile -> "Absolute file: " <> displayShow absFile
         Right relFile -> "Relative file: " <> displayShow relFile
+      displayFormatting = \case
+        Dynamic -> "Dynamic"
+        Static -> "Static"
       displayVerbosity = \case
         Verbose -> "Verbose"
         NotVerbose -> "Not verbose"
@@ -94,6 +100,22 @@ parserFilePath = argument parser meta
   parser =
     fmap Left (maybeReader parseAbsFile)
       <|> fmap Right (maybeReader parseRelFile)
+
+-- |
+-- How we want to pretty print
+--
+-- Dynamic formatting takes line length into account.
+-- Static formatting is always the same.
+data Formatting
+  = Dynamic
+  | Static
+
+parserFormatting :: Parser Formatting
+parserFormatting = flag Static Dynamic meta
+  where
+  meta =
+    help "Pretty print taking line length into account"
+      <> long "dynamic"
 
 -- |
 -- The minimum level of logs to display.
@@ -129,6 +151,7 @@ args :: Parser Args
 args =
   Args
     <$> parserFilePath
+    <*> parserFormatting
     <*> parserOutput
     <*> parserVerbosity
 
@@ -179,10 +202,11 @@ defaultEnv :: LogFunc -> Path Abs File -> Env
 defaultEnv envLogFunc filePath' =
   Env { envArgs, envLogFunc, envPrettyPrintConfig }
     where
-    envArgs = Args { filePath, output, verbosity }
+    envArgs = Args { filePath, formatting, output, verbosity }
     envPrettyPrintConfig =
       PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
     filePath = Left filePath'
+    formatting = Static
     output = StdOut
     verbosity = Verbose
 
