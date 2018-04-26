@@ -3,10 +3,9 @@ module Purty where
 import "rio" RIO
 
 import "prettyprinter" Data.Text.Prettyprint.Doc
-    ( LayoutOptions
+    ( LayoutOptions(LayoutOptions, layoutPageWidth)
     , PageWidth(AvailablePerLine, Unbounded)
     , SimpleDocStream
-    , defaultLayoutOptions
     , layoutPageWidth
     , layoutSmart
     )
@@ -56,7 +55,7 @@ purty = do
     (_, m) <- parseModuleFromFile id (fromAbsFile absFilePath, contents)
     case formatting of
       Dynamic -> pure (layoutSmart layoutOptions $ Doc.Dynamic.fromModule m)
-      Static -> pure (layoutSmart layoutOptions $ Doc.Static.fromModule m)
+      Static  -> pure (layoutSmart layoutOptions $ Doc.Static.fromModule m)
 
 data Args
   = Args
@@ -186,6 +185,16 @@ instance Display PrettyPrintConfig where
 class HasPrettyPrintConfig env where
   prettyPrintConfigL :: Lens' env PrettyPrintConfig
 
+defaultPrettyPrintConfig :: PrettyPrintConfig
+defaultPrettyPrintConfig =
+  PrettyPrintConfig
+    { layoutOptions =
+      LayoutOptions
+      { layoutPageWidth =
+        AvailablePerLine 80 1
+      }
+    }
+
 data Env
   = Env
     { envArgs              :: !Args
@@ -206,8 +215,7 @@ defaultEnv formatting envLogFunc filePath' =
   Env { envArgs, envLogFunc, envPrettyPrintConfig }
     where
     envArgs = Args { filePath, formatting, output, verbosity }
-    envPrettyPrintConfig =
-      PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
+    envPrettyPrintConfig = defaultPrettyPrintConfig
     filePath = Left filePath'
     output = StdOut
     verbosity = Verbose

@@ -247,8 +247,7 @@ fromDeclaration = \case
     fromComments comments
       <> pretty (runIdent tydeclIdent)
       <+> "::"
-      <> line
-      <> indent 2 (align $ fromType tydeclType)
+      <+> fromType tydeclType
   TypeClassDeclaration (_, comments) name parameters [] funDeps declarations ->
     fromComments comments
       <> "class"

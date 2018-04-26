@@ -2,9 +2,6 @@ module Main where
 
 import "rio" RIO hiding (withSystemTempFile)
 
-import "prettyprinter" Data.Text.Prettyprint.Doc
-    ( defaultLayoutOptions
-    )
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderIO)
 import "optparse-applicative" Options.Applicative            (execParser)
 import "path-io" Path.IO
@@ -19,21 +16,19 @@ import "purty" Purty
     ( Args(Args, filePath, output, verbosity)
     , Env(Env)
     , Output(InPlace, StdOut)
-    , PrettyPrintConfig(PrettyPrintConfig)
     , Verbosity(Verbose)
     , argsInfo
+    , defaultPrettyPrintConfig
     , envArgs
     , envLogFunc
     , envPrettyPrintConfig
-    , layoutOptions
     , purty
     )
 
 main :: IO ()
 main = do
   envArgs@Args{ verbosity, filePath, output } <- execParser argsInfo
-  let envPrettyPrintConfig =
-        PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
+  let envPrettyPrintConfig = defaultPrettyPrintConfig
   logOptions <- logOptionsHandle stderr (verbosity == Verbose)
   withLogFunc logOptions $ \envLogFunc -> do
     let env = Env { envArgs, envLogFunc, envPrettyPrintConfig }
