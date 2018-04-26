@@ -64,7 +64,7 @@ absolutize :: MonadIO m => PurtyFilePath -> m (Path Abs File)
 absolutize fp = case fp of
   AbsFile absolute -> pure absolute
   RelFile relative -> makeAbsolute relative
-  Unparsed path -> resolveFile' path
+  Unparsed path    -> resolveFile' path
 
 data Args
   = Args
