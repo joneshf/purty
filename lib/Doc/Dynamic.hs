@@ -531,7 +531,7 @@ fromType =
         <> "."
         <> line
         <> fromType type'
-    PrettyPrintFunction f x -> fromType f <+> "->" <> line <> fromType x
+    PrettyPrintFunction f x -> fromType f <+> "->" <+> fromType x
     PrettyPrintObject type' -> "{" <> hsep (convertRow [] type') <> "}"
     type'@RCons {} -> "(" <> hsep (convertRow [] type') <> ")"
     REmpty -> "()"
