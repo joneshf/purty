@@ -92,4 +92,14 @@ tests:
       - tasty-golden == 2.3.1.1
     main: Main.hs
     source-dirs: test/golden
+  properties:
+    dependencies:
+      - base == 4.10.0.0
+      - hedgehog == 0.5
+      - prettyprinter == 1.1.1
+      - purescript == 0.11.7
+      - purty
+      - rio == 0.1.0.0
+    main: Main.hs
+    source-dirs: test/properties
 version: 0.2.0
