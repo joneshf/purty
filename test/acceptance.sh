@@ -105,3 +105,7 @@ info 'Absolute file paths work'
 debug 'Testing if relative paths work'
 "${PURTY}" "./acceptance/Test.purs" > /dev/null
 info 'Relative file paths work'
+
+debug 'Testing if paths with .. work'
+"${PURTY}" "../test/acceptance/Test.purs" > /dev/null
+info 'Paths with .. work'
