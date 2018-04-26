@@ -526,7 +526,7 @@ fromType =
         <> line
         <> fromType type'
     PrettyPrintFunction f x -> fromType f <+> "->" <> line <> fromType x
-    PrettyPrintObject type' -> hsep $ ["{"] <> (convertRow [] type') <> ["}"] 
+    PrettyPrintObject type' -> hsep $ ["{"] <> (convertRow [] type') <> ["}"]
     type'@RCons {} -> hsep $ ["("] <> (convertRow [] type') <> [")"]
     REmpty -> "()"
     Skolem {} -> mempty
