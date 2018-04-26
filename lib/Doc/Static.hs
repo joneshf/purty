@@ -9,9 +9,6 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , cat
     , comma
     , enclose
-    , encloseSep
-    , flatAlt
-    , group
     , hcat
     , hsep
     , indent
@@ -129,13 +126,8 @@ convertTypeApps = \case
   x -> x
 
 enclosedWith :: Doc a -> Doc a -> [Doc a] -> Doc a
-enclosedWith open close =
-  align
-    . group
-    . encloseSep
-      (flatAlt (open <> space) open)
-      (flatAlt (line <> close) close)
-      ", "
+enclosedWith open close xs =
+  align (vsep (zipWith (<+>) (open : repeat comma) xs) <> line <> close)
 
 fromBinder :: Binder -> Doc a
 fromBinder = pretty . prettyPrintBinder
@@ -169,7 +161,7 @@ fromConstructor = pretty . runProperName
 fromConstructors :: [ProperName 'ConstructorName] -> Doc a
 fromConstructors [] = mempty
 fromConstructors constructors =
-  parentheses $ fmap fromConstructor constructors
+  "(" <> hsep (punctuate comma $ fmap fromConstructor constructors) <> ")"
 
 fromDataConstructor :: (ProperName 'ConstructorName, [Language.PureScript.Type]) -> Doc a
 fromDataConstructor = \case
@@ -242,7 +234,7 @@ fromDeclaration = \case
       <> "import"
       <+> pretty (runModuleName name)
       <> fromImportType importType
-      <+> foldMap fromImportQualified qualified
+      <> foldMap fromImportQualified qualified
   TypeDeclaration TypeDeclarationData { tydeclIdent, tydeclSourceAnn = (_, comments), tydeclType } ->
     fromComments comments
       <> pretty (runIdent tydeclIdent)
@@ -435,7 +427,7 @@ fromGuardedExpr' separator (GuardedExpr guards expr) =
       <> indent 2 (fromExpr expr)
 
 fromImportQualified :: ModuleName -> Doc a
-fromImportQualified name = "as" <+> pretty (runModuleName name)
+fromImportQualified name = space <> "as" <+> pretty (runModuleName name)
 
 fromImportType :: ImportDeclarationType -> Doc a
 fromImportType = \case

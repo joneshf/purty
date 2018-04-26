@@ -7,6 +7,8 @@ init ::
   T
 init = { foo: 1
        , bar: { baz: 2
-              , qux: {lhs: 3, rhs: 4}
+              , qux: { lhs: 3
+                     , rhs: 4
+                     }
               }
        }
