@@ -241,7 +241,7 @@ fromDeclaration = \case
       <> "import"
       <+> pretty (runModuleName name)
       <> fromImportType importType
-      <+> foldMap fromImportQualified qualified
+      <> foldMap fromImportQualified qualified
   TypeDeclaration TypeDeclarationData { tydeclIdent, tydeclSourceAnn = (_, comments), tydeclType } ->
     fromComments comments
       <> pretty (runIdent tydeclIdent)
@@ -425,13 +425,18 @@ fromGuardedExpr' separator (GuardedExpr guards expr) =
       <> indent 2 (fromExpr expr)
 
 fromImportQualified :: ModuleName -> Doc a
-fromImportQualified name = "as" <+> pretty (runModuleName name)
+fromImportQualified name = space <> "as" <+> pretty (runModuleName name)
 
 fromImportType :: ImportDeclarationType -> Doc a
 fromImportType = \case
-  Explicit declarationRefs -> line <> indent 2 (fromExports declarationRefs)
+  Explicit declarationRefs ->
+    flatAlt
+      (space <> fromExports declarationRefs)
+      (line <> indent 2 (fromExports declarationRefs))
   Hiding declarationRefs ->
-    line <> indent 2 ("hiding" <+> fromExports declarationRefs)
+    flatAlt
+      (space <> "hiding" <+> fromExports declarationRefs)
+      (line <> indent 2 ("hiding" <+> fromExports declarationRefs))
   Implicit -> mempty
 
 fromKind :: Kind -> Doc a
