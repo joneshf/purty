@@ -6,7 +6,6 @@ import "containers" Data.IntMap.Strict           (findWithDefault, fromList)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , align
-    , cat
     , comma
     , enclose
     , encloseSep
@@ -256,18 +255,15 @@ fromDeclaration = \case
     fromComments comments
       <> "class"
       <> fromTypeClassConstraints "<=" constraints
-      <> line
-      <> indent 2 (fromTypeClassWithoutConstraints name parameters funDeps declarations)
+      <+> fromTypeClassWithoutConstraints name parameters funDeps declarations
   TypeInstanceDeclaration (_, comments) ident constraints name types DerivedInstance ->
     fromComments comments
       <> "derive instance"
       <+> pretty (runIdent ident)
       <+> "::"
       <> fromTypeClassConstraints "=>" constraints
-      <> line
-      <> indent 2 ( pretty (showQualified runProperName name)
-                  <+> hsep (fmap fromType types)
-                  )
+      <+> pretty (showQualified runProperName name)
+      <+> hsep (fmap fromType types)
       <> line
   TypeInstanceDeclaration (_, comments) ident constraints name types (ExplicitInstance declarations) ->
     fromComments comments
@@ -275,18 +271,15 @@ fromDeclaration = \case
       <+> pretty (runIdent ident)
       <+> "::"
       <> fromTypeClassConstraints "=>" constraints
-      <> line
-      <> indent 2 (fromTypeInstanceWithoutConstraints name types declarations)
+      <+> fromTypeInstanceWithoutConstraints name types declarations
   TypeInstanceDeclaration (_, comments) ident constraints name types NewtypeInstance ->
     fromComments comments
       <> "derive newtype instance"
       <+> pretty (runIdent ident)
       <+> "::"
       <> fromTypeClassConstraints "=>" constraints
-      <> line
-      <> indent 2 ( pretty (showQualified runProperName name)
-                  <+> hsep (fmap fromType types)
-                  )
+      <+> pretty (showQualified runProperName name)
+      <+> hsep (fmap fromType types)
       <> line
   TypeInstanceDeclaration (_, comments) ident constraints name types (NewtypeInstanceWithDictionary _) ->
     fromComments comments
@@ -294,10 +287,8 @@ fromDeclaration = \case
       <+> pretty (runIdent ident)
       <+> "::"
       <> fromTypeClassConstraints "=>" constraints
-      <> line
-      <> indent 2 ( pretty (showQualified runProperName name)
-                  <+> hsep (fmap fromType types)
-                  )
+      <+> pretty (showQualified runProperName name)
+      <+> hsep (fmap fromType types)
       <> line
   TypeSynonymDeclaration (_, comments) name parameters underlyingType ->
     fromComments comments
@@ -586,10 +577,7 @@ fromTypeClassConstraints :: Doc a -> [Language.PureScript.Constraint] -> Doc a
 fromTypeClassConstraints arrow = \case
   [] -> mempty
   constraints ->
-    space
-      <> line
-      <> indent 2 (align (cat (zipWith (<>) ("(" <> space : repeat ", ") (fmap fromConstraint constraints)) <> line <> ")"))
-      <+> arrow
+    space <> align (parentheses $ fmap fromConstraint constraints) <+> arrow
 
 fromTypeClassWithoutConstraints ::
   ProperName 'ClassName ->
