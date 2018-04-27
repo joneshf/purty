@@ -98,6 +98,7 @@ convertRow rest = \case
     convertRow
       ( printRowPair label type'
       <> ","
+      <> space
       : rest
       )
       tail
@@ -108,7 +109,7 @@ convertRow rest = \case
       )
       tail
   REmpty -> reverse rest
-  x -> reverse ("|" <+> fromType x : rest)
+  x -> reverse (space <> "|" <+> fromType x : rest)
   where
     printRowPair l t = pretty (ppStringWithoutQuotes $ runLabel l) <+> "::" <+> fromType t
 
@@ -518,8 +519,8 @@ fromType =
         <> line
         <> fromType type'
     PrettyPrintFunction f x -> fromType f <+> "->" <> line <> fromType x
-    PrettyPrintObject type' -> hsep $ ["{"] <> convertRow [] type' <> ["}"]
-    type'@RCons {} -> hsep $ ["("] <> convertRow [] type' <> [")"]
+    PrettyPrintObject type' -> "{" <> hcat (convertRow [] type') <> "}"
+    type'@RCons {} -> "(" <> hcat (convertRow [] type') <> ")"
     REmpty -> "()"
     Skolem {} -> mempty
     TUnknown _ -> mempty
@@ -555,8 +556,8 @@ fromTypeWithParens =
         <+> fromTypeWithParens type'
     PrettyPrintFunction f x ->
       fromTypeWithParens f <+> "->" <+> fromTypeWithParens x
-    PrettyPrintObject type' -> "{" <> hsep (convertRow [] type') <> "}"
-    type'@RCons {} -> "(" <> hsep (convertRow [] type') <> ")"
+    PrettyPrintObject type' -> "{" <> hcat (convertRow [] type') <> "}"
+    type'@RCons {} -> "(" <> hcat (convertRow [] type') <> ")"
     REmpty -> "()"
     Skolem {} -> mempty
     TUnknown _ -> mempty

@@ -1,7 +1,7 @@
 module TypeSynonymNewline where
 
 type T
-  = { foo :: Int, bar :: { baz :: Int, qux :: { lhs :: Int, rhs :: Int } } }
+  = {foo :: Int, bar :: {baz :: Int, qux :: {lhs :: Int, rhs :: Int}}}
 
 init ::
   T
