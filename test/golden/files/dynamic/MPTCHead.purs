@@ -1,6 +1,6 @@
 module MPTCHead where
 
-instance patchTuple :: 
+instance patchTuple ::
   ( Patch a da
   , Patch b db
   ) =>

@@ -247,48 +247,57 @@ fromDeclaration = \case
       <> pretty (runIdent tydeclIdent)
       <+> "::"
       <+> fromType tydeclType
-  TypeClassDeclaration (_, comments) name parameters [] funDeps declarations ->
-    fromComments comments
-      <> "class"
-      <+> fromTypeClassWithoutConstraints name parameters funDeps declarations
   TypeClassDeclaration (_, comments) name parameters constraints funDeps declarations ->
     fromComments comments
       <> "class"
-      <> fromTypeClassConstraints "<=" constraints
-      <+> fromTypeClassWithoutConstraints name parameters funDeps declarations
+      <> fromTypeClassConstraints
+        "<="
+        (fromTypeClassWithoutConstraints name parameters funDeps declarations)
+        constraints
   TypeInstanceDeclaration (_, comments) ident constraints name types DerivedInstance ->
     fromComments comments
       <> "derive instance"
       <+> pretty (runIdent ident)
       <+> "::"
-      <> fromTypeClassConstraints "=>" constraints
-      <+> pretty (showQualified runProperName name)
-      <+> hsep (fmap fromType types)
+      <> fromTypeClassConstraints
+        "=>"
+        ( pretty (showQualified runProperName name)
+        <+> hsep (fmap fromType types)
+        )
+        constraints
       <> line
   TypeInstanceDeclaration (_, comments) ident constraints name types (ExplicitInstance declarations) ->
     fromComments comments
       <> "instance"
       <+> pretty (runIdent ident)
       <+> "::"
-      <> fromTypeClassConstraints "=>" constraints
-      <+> fromTypeInstanceWithoutConstraints name types declarations
+      <> fromTypeClassConstraints
+        "=>"
+        (fromTypeInstanceWithoutConstraints name types declarations)
+        constraints
   TypeInstanceDeclaration (_, comments) ident constraints name types NewtypeInstance ->
     fromComments comments
       <> "derive newtype instance"
       <+> pretty (runIdent ident)
       <+> "::"
-      <> fromTypeClassConstraints "=>" constraints
-      <+> pretty (showQualified runProperName name)
-      <+> hsep (fmap fromType types)
+      <> fromTypeClassConstraints
+        "=>"
+        ( pretty (showQualified runProperName name)
+        <+> hsep (fmap fromType types)
+        )
+        constraints
       <> line
   TypeInstanceDeclaration (_, comments) ident constraints name types (NewtypeInstanceWithDictionary _) ->
     fromComments comments
       <> "derive newtype instance"
       <+> pretty (runIdent ident)
       <+> "::"
-      <> fromTypeClassConstraints "=>" constraints
-      <+> pretty (showQualified runProperName name)
-      <+> hsep (fmap fromType types)
+      <> fromTypeClassConstraints
+        "=>"
+        ( pretty (showQualified runProperName name)
+        <+> hsep (fmap fromType types)
+        )
+        constraints
       <> line
   TypeSynonymDeclaration (_, comments) name parameters underlyingType ->
     fromComments comments
@@ -578,11 +587,24 @@ fromTypeWithParens =
     TypeVar var -> pretty var
     TypeWildcard _ -> "_"
 
-fromTypeClassConstraints :: Doc a -> [Language.PureScript.Constraint] -> Doc a
-fromTypeClassConstraints arrow = \case
-  [] -> mempty
+fromTypeClassConstraints :: Doc a -> Doc a -> [Language.PureScript.Constraint] -> Doc a
+fromTypeClassConstraints arrow rest = \case
+  [] -> space <> rest
   constraints ->
-    space <> align (parentheses $ fmap fromConstraint constraints) <+> arrow
+    flatAlt
+      ( line
+      <> indent 2 ( align (vsep (zipWith (<+>) ("(" : repeat comma) $ fmap fromConstraint constraints) <> line <> ")" <+> arrow)
+                  <> line
+                  <> rest
+                  )
+      )
+      ( space
+      <> "("
+      <> hsep (punctuate comma $ fmap fromConstraint constraints)
+      <> ")"
+      <+> arrow
+      <+> rest
+      )
 
 fromTypeClassWithoutConstraints ::
   ProperName 'ClassName ->
