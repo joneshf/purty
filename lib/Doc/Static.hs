@@ -1,14 +1,17 @@
-module Doc.Static where
+-- N.B. The only reason we have an explicit export list is to get additional
+-- analysis on the module, like unused binds.
+-- Don't mis-interpret the export list as saying what the private/public API is.
+-- If you need something from this module, export it.
+module Doc.Static (fromModule, fromType) where
 
 import "rio" RIO
 
-import "containers" Data.IntMap.Strict           (findWithDefault, fromList)
+import "containers" Data.IntMap.Strict           (fromList)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , align
     , cat
     , comma
-    , enclose
     , hcat
     , hsep
     , indent
@@ -22,75 +25,71 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , (<+>)
     )
 import "purescript" Language.PureScript
-    ( Binder
-    , CaseAlternative(CaseAlternative, caseAlternativeBinders, caseAlternativeResult)
-    , Comment(BlockComment, LineComment)
+    ( CaseAlternative(CaseAlternative, caseAlternativeBinders, caseAlternativeResult)
     , Constraint(Constraint, constraintArgs, constraintClass)
-    , DataDeclType(Data, Newtype)
     , Declaration(BindingGroupDeclaration, BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ExternDataDeclaration, ExternDeclaration, ExternKindDeclaration, FixityDeclaration, ImportDeclaration, TypeClassDeclaration, TypeDeclaration, TypeInstanceDeclaration, TypeSynonymDeclaration, ValueDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
     , DoNotationElement(DoNotationBind, DoNotationLet, DoNotationValue, PositionedDoNotationElement)
     , Expr(Abs, Accessor, AnonymousArgument, App, BinaryNoParens, Case, Constructor, DeferredDictionary, Do, Hole, IfThenElse, Let, Literal, ObjectUpdate, ObjectUpdateNested, Op, Parens, PositionedValue, TypeClassDictionary, TypeClassDictionaryAccessor, TypeClassDictionaryConstructorApp, TypedValue, UnaryMinus, Var)
-    , Fixity(Fixity)
-    , FunctionalDependency(FunctionalDependency, fdDetermined, fdDeterminers)
+    , FunctionalDependency
     , Guard(ConditionGuard, PatternGuard)
     , GuardedExpr(GuardedExpr)
-    , Ident
     , ImportDeclarationType(Explicit, Hiding, Implicit)
     , Kind
     , Literal(ArrayLiteral, BooleanLiteral, CharLiteral, NumericLiteral, ObjectLiteral, StringLiteral)
     , Module(Module)
     , ModuleName
-    , NameKind
     , PathNode(Branch, Leaf)
     , PathTree(PathTree)
     , ProperName
     , ProperNameType(ClassName, ConstructorName)
-    , SourceAnn
     , Type(BinaryNoParensType, ConstrainedType, ForAll, KindedType, ParensInType, PrettyPrintForAll, PrettyPrintFunction, PrettyPrintObject, RCons, REmpty, Skolem, TUnknown, TypeApp, TypeConstructor, TypeLevelString, TypeOp, TypeVar, TypeWildcard)
     , TypeDeclarationData(TypeDeclarationData, tydeclIdent, tydeclSourceAnn, tydeclType)
     , TypeFixity(TypeFixity)
     , TypeInstanceBody(DerivedInstance, ExplicitInstance, NewtypeInstance, NewtypeInstanceWithDictionary)
-    , ValueDeclarationData(ValueDeclarationData, valdeclBinders, valdeclExpression, valdeclIdent, valdeclName, valdeclSourceAnn)
+    , ValueDeclarationData(ValueDeclarationData, valdeclBinders, valdeclExpression, valdeclIdent, valdeclSourceAnn)
     , ValueFixity(ValueFixity)
     , everywhereOnTypes
     , everywhereOnTypesTopDown
     , isImportDecl
-    , prettyPrintBinder
-    , prettyPrintKind
     , prettyPrintString
     , runAssocList
     , runIdent
     , runModuleName
     , runOpName
     , runProperName
-    , showAssoc
     , showOp
     , showQualified
-    , tyFunction
-    , tyRecord
     )
 import "purescript" Language.PureScript.Label    (runLabel)
 import "purescript" Language.PureScript.Names    (Qualified)
 import "purescript" Language.PureScript.PSString (PSString)
 import "rio" RIO.List                            (repeat, zipWith)
-import "rio" RIO.Text                            (dropAround)
 
-ppStringWithoutQuotes :: PSString -> Text
-ppStringWithoutQuotes = dropAround (== '"') . prettyPrintString
+import "this" Doc
+    ( convertForAlls
+    , convertTypeApps
+    , fromBinder
+    , fromBinders
+    , fromComments
+    , fromConstructors
+    , fromDataType
+    , fromFixity
+    , fromFunctionalDependencies
+    , fromImportQualified
+    , fromKind
+    , fromObject
+    , fromObjectUpdate
+    , fromParameters
+    , ppStringWithoutQuotes
+    , valueDeclarationFromAnonymousDeclaration
+    )
 
 braces :: [Doc a] -> Doc a
 braces = enclosedWith "{" "}"
 
 brackets :: [Doc a] -> Doc a
 brackets = enclosedWith "[" "]"
-
-convertForAlls :: [Text] -> Language.PureScript.Type -> Language.PureScript.Type
-convertForAlls vars = \case
-  ForAll var (quantifiedType@ForAll {}) _ ->
-    convertForAlls (var : vars) quantifiedType
-  ForAll var quantifiedType _ -> PrettyPrintForAll (var : vars) quantifiedType
-  other -> other
 
 convertRow :: [Doc a] -> Language.PureScript.Type -> [Doc a]
 convertRow rest = \case
@@ -113,49 +112,19 @@ convertRow rest = \case
   where
     printRowPair l t = pretty (ppStringWithoutQuotes $ runLabel l) <+> "::" <+> fromType t
 
-convertTypeApps :: Language.PureScript.Type -> Language.PureScript.Type
-convertTypeApps = \case
-  TypeApp (TypeApp f g) x | f == tyFunction -> PrettyPrintFunction g x
-  TypeApp o r | o == tyRecord -> PrettyPrintObject r
-  x -> x
-
 enclosedWith :: Doc a -> Doc a -> [Doc a] -> Doc a
 enclosedWith open close xs =
   align (vsep (zipWith (<+>) (open : repeat comma) xs) <> line <> close)
-
-fromBinder :: Binder -> Doc a
-fromBinder = pretty . prettyPrintBinder
-
-fromBinders :: [Binder] -> Doc a
-fromBinders = \case
-  [] -> mempty
-  binders -> space <> hsep (fmap fromBinder binders)
 
 fromCaseAlternative :: CaseAlternative -> Doc a
 fromCaseAlternative CaseAlternative {caseAlternativeBinders, caseAlternativeResult} =
   hsep (punctuate comma $ fmap fromBinder caseAlternativeBinders)
     <+> foldMap fromGuardedExprCase caseAlternativeResult
 
-fromComment :: Comment -> Doc a
-fromComment = \case
-  BlockComment comment -> enclose "{-" "-}" (pretty comment) <> line
-  LineComment comment -> "--" <> pretty comment <> line
-
-fromComments :: (Foldable f) => f Comment -> Doc a
-fromComments = foldMap fromComment
-
 fromConstraint :: Language.PureScript.Constraint -> Doc a
 fromConstraint Constraint { constraintArgs, constraintClass } =
   pretty (showQualified runProperName constraintClass)
     <+> hsep (fmap fromType constraintArgs)
-
-fromConstructor :: ProperName 'ConstructorName -> Doc a
-fromConstructor = pretty . runProperName
-
-fromConstructors :: [ProperName 'ConstructorName] -> Doc a
-fromConstructors [] = mempty
-fromConstructors constructors =
-  "(" <> hsep (punctuate comma $ fmap fromConstructor constructors) <> ")"
 
 fromDataConstructor :: (ProperName 'ConstructorName, [Language.PureScript.Type]) -> Doc a
 fromDataConstructor = \case
@@ -165,11 +134,6 @@ fromDataConstructor = \case
 fromDataConstructors :: [(ProperName 'ConstructorName, [Language.PureScript.Type])] -> Doc a
 fromDataConstructors =
   vsep . zipWith (<+>) ("=" : repeat "|") . fmap fromDataConstructor
-
-fromDataType :: DataDeclType -> Doc a
-fromDataType = \case
-  Data -> "data"
-  Newtype -> "newtype"
 
 fromDeclaration :: Declaration -> Doc a
 fromDeclaration = \case
@@ -378,24 +342,6 @@ fromExpr = \case
   UnaryMinus expr -> "-" <> fromExpr expr
   Var ident -> pretty (showQualified runIdent ident)
 
-fromFixity :: Language.PureScript.Fixity -> Doc a
-fromFixity (Fixity associativity precedence) =
-  pretty (showAssoc associativity) <+> pretty precedence
-
-fromFunctionalDependencies :: IntMap Text -> [FunctionalDependency] -> Doc a
-fromFunctionalDependencies vars = \case
-  [] -> mempty
-  funDeps ->
-    space
-      <> "|"
-      <+> hsep (punctuate comma $ fmap (fromFunctionalDependency vars) funDeps)
-
-fromFunctionalDependency :: IntMap Text -> FunctionalDependency -> Doc a
-fromFunctionalDependency vars FunctionalDependency { fdDetermined, fdDeterminers } =
-  hsep (fmap (pretty . flip (findWithDefault mempty) vars) fdDeterminers)
-    <+> "->"
-    <+> hsep (fmap (pretty . flip (findWithDefault mempty) vars) fdDetermined)
-
 fromGuard :: Guard -> Doc a
 fromGuard = \case
   ConditionGuard expr -> fromExpr expr
@@ -420,18 +366,12 @@ fromGuardedExpr' separator (GuardedExpr guards expr) =
       <> line
       <> indent 2 (fromExpr expr)
 
-fromImportQualified :: ModuleName -> Doc a
-fromImportQualified name = space <> "as" <+> pretty (runModuleName name)
-
 fromImportType :: ImportDeclarationType -> Doc a
 fromImportType = \case
   Explicit declarationRefs -> line <> indent 2 (fromExports declarationRefs)
   Hiding declarationRefs ->
     line <> indent 2 ("hiding" <+> fromExports declarationRefs)
   Implicit -> mempty
-
-fromKind :: Kind -> Doc a
-fromKind = pretty . prettyPrintKind
 
 fromLiteral :: Literal (Doc a) -> Doc a
 fromLiteral = \case
@@ -470,22 +410,6 @@ fromModuleImports :: [Declaration] -> Doc a
 fromModuleImports = \case
   [] -> mempty
   imports -> line <> line <> vsep (fmap fromDeclaration imports)
-
-fromObject :: (PSString, Doc a) -> Doc a
-fromObject (key, val) = pretty (ppStringWithoutQuotes key) <> ":" <+> val
-
-fromObjectUpdate :: (PSString, Doc a) -> Doc a
-fromObjectUpdate (key, val) = pretty (ppStringWithoutQuotes key) <+> "=" <+> val
-
-fromParameter :: (Text, Maybe Kind) -> Doc a
-fromParameter (parameter, Nothing) = pretty parameter
-fromParameter (parameter, Just k) =
-  parens (pretty parameter <+> "::" <+> fromKind k)
-
-fromParameters :: [(Text, Maybe Kind)] -> Doc a
-fromParameters = \case
-  [] -> mempty
-  parameters -> space <> hsep (fmap fromParameter parameters)
 
 fromPathNode :: (PSString, PathNode Expr) -> Doc a
 fromPathNode (key, Leaf expr) =
@@ -612,18 +536,3 @@ fromTypeInstanceWithoutConstraints name types declarations =
 
 parentheses :: [Doc a] -> Doc a
 parentheses = enclosedWith "(" ")"
-
-valueDeclarationFromAnonymousDeclaration ::
-  ((SourceAnn, Ident), NameKind, Expr) ->
-  ValueDeclarationData [GuardedExpr]
-valueDeclarationFromAnonymousDeclaration ((valdeclSourceAnn, valdeclIdent), valdeclName, expr) =
-  ValueDeclarationData
-    { valdeclBinders
-    , valdeclExpression
-    , valdeclIdent
-    , valdeclName
-    , valdeclSourceAnn
-    }
-  where
-  valdeclBinders = []
-  valdeclExpression = [GuardedExpr [] expr]
