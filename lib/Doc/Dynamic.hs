@@ -100,6 +100,7 @@ convertRow rest = \case
     convertRow
       ( printRowPair label type'
       <> ","
+      <> space
       : rest
       )
       tail
@@ -533,8 +534,8 @@ fromType =
       flatAlt
         (fromType f <+> "->" <> line <> fromType x)
         (fromType f <+> "->" <+> fromType x)
-    PrettyPrintObject type' -> "{" <> hsep (convertRow [] type') <> "}"
-    type'@RCons {} -> "(" <> hsep (convertRow [] type') <> ")"
+    PrettyPrintObject type' -> "{" <> hcat (convertRow [] type') <> "}"
+    type'@RCons {} -> "(" <> hcat (convertRow [] type') <> ")"
     REmpty -> "()"
     Skolem {} -> mempty
     TUnknown _ -> mempty
@@ -570,8 +571,8 @@ fromTypeWithParens =
         <+> fromTypeWithParens type'
     PrettyPrintFunction f x ->
       fromTypeWithParens f <+> "->" <+> fromTypeWithParens x
-    PrettyPrintObject type' -> "{" <> hsep (convertRow [] type') <> "}"
-    type'@RCons {} -> "(" <> hsep (convertRow [] type') <> ")"
+    PrettyPrintObject type' -> "{" <> hcat (convertRow [] type') <> "}"
+    type'@RCons {} -> "(" <> hcat (convertRow [] type') <> ")"
     REmpty -> "()"
     Skolem {} -> mempty
     TUnknown _ -> mempty
