@@ -34,7 +34,7 @@ import "path" Path
     , parseAbsFile
     , parseRelFile
     )
-import "path-io" Path.IO                          (makeAbsolute)
+import "path-io" Path.IO                          (makeAbsolute, resolveFile')
 import "parsec" Text.Parsec                       (ParseError)
 
 import qualified "this" Doc.Dynamic
@@ -46,7 +46,7 @@ purty ::
 purty = do
   Args { filePath, formatting } <- view argsL
   PrettyPrintConfig { layoutOptions } <- view prettyPrintConfigL
-  absFilePath <- either pure makeAbsolute filePath
+  absFilePath <- absolutize filePath
   logDebug ("Converted file to absolute: " <> displayShow absFilePath)
   contents <- readFileUtf8 (fromAbsFile absFilePath)
   logDebug "Read file contents:"
@@ -57,9 +57,20 @@ purty = do
       Dynamic -> pure (layoutSmart layoutOptions $ Doc.Dynamic.fromModule m)
       Static  -> pure (layoutSmart layoutOptions $ Doc.Static.fromModule m)
 
+data PurtyFilePath
+  = AbsFile (Path Abs File)
+  | RelFile (Path Rel File)
+  | Unparsed String
+
+absolutize :: MonadIO m => PurtyFilePath -> m (Path Abs File)
+absolutize fp = case fp of
+  AbsFile absolute -> pure absolute
+  RelFile relative -> makeAbsolute relative
+  Unparsed path    -> resolveFile' path
+
 data Args
   = Args
-    { filePath   :: !(Either (Path Abs File) (Path Rel File))
+    { filePath   :: !PurtyFilePath
     , formatting :: !Formatting
     , output     :: !Output
     , verbosity  :: !Verbosity
@@ -78,8 +89,9 @@ instance Display Args where
       <> "}"
       where
       displayFilePath = \case
-        Left absFile -> "Absolute file: " <> displayShow absFile
-        Right relFile -> "Relative file: " <> displayShow relFile
+        AbsFile absFile -> "Absolute file: " <> displayShow absFile
+        RelFile relFile -> "Relative file: " <> displayShow relFile
+        Unparsed maybePath -> "I dunno, man: " <> displayShow maybePath
       displayFormatting = \case
         Dynamic -> "Dynamic"
         Static -> "Static"
@@ -93,15 +105,16 @@ instance Display Args where
 class HasArgs env where
   argsL :: Lens' env Args
 
-parserFilePath :: Parser (Either (Path Abs File) (Path Rel File))
+parserFilePath :: Parser PurtyFilePath
 parserFilePath = argument parser meta
   where
   meta =
     help "PureScript file to pretty print"
       <> metavar "FILE"
   parser =
-    fmap Left (maybeReader parseAbsFile)
-      <|> fmap Right (maybeReader parseRelFile)
+    fmap AbsFile (maybeReader parseAbsFile)
+      <|> fmap RelFile (maybeReader parseRelFile)
+      <|> fmap Unparsed (maybeReader Just)
 
 -- |
 -- How we want to pretty print
@@ -216,7 +229,7 @@ defaultEnv formatting envLogFunc filePath' =
     where
     envArgs = Args { filePath, formatting, output, verbosity }
     envPrettyPrintConfig = defaultPrettyPrintConfig
-    filePath = Left filePath'
+    filePath = AbsFile filePath'
     output = StdOut
     verbosity = Verbose
 

@@ -72,6 +72,7 @@ static =
     [ golden Static "data with parameters" [relfile|test/golden/files/static/DataWithParameters.purs|]
     , golden Static "empty data" [relfile|test/golden/files/static/EmptyData.purs|]
     , golden Static "typeclass instance" [relfile|test/golden/files/static/Instance.purs|]
+    , golden Static "open record types" [relfile|test/golden/files/static/Merge.purs|]
     , golden Static "multi-parameter type class instance head" [relfile|test/golden/files/static/MPTCHead.purs|]
     , golden Static "module header" [relfile|test/golden/files/static/ModuleHeader.purs|]
     , golden Static "newtype record" [relfile|test/golden/files/static/NewtypeRecord.purs|]

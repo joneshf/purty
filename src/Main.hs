@@ -7,7 +7,6 @@ import "optparse-applicative" Options.Applicative            (execParser)
 import "path-io" Path.IO
     ( copyFile
     , copyPermissions
-    , makeAbsolute
     , withSystemTempFile
     )
 import "base" System.Exit                                    (exitFailure)
@@ -17,6 +16,7 @@ import "purty" Purty
     , Env(Env)
     , Output(InPlace, StdOut)
     , Verbosity(Verbose)
+    , absolutize
     , argsInfo
     , defaultPrettyPrintConfig
     , envArgs
@@ -46,7 +46,7 @@ main = do
           logDebug (displayShow $ void stream)
           case output of
             InPlace -> liftIO $ withSystemTempFile "purty.purs" $ \fp h -> do
-              absPath <- either pure makeAbsolute filePath
+              absPath <- absolutize filePath
               renderIO h stream
               hClose h
               copyPermissions absPath fp

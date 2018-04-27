@@ -11,6 +11,20 @@ A WIP pretty printer for PureScript modules.
 
 It's not all that pretty just yet.
 
+## Installation
+
+### npm
+
+You can install the [npm package](https://www.npmjs.com/package/purty)
+
+```sh
+npm install purty
+```
+
+### Precompiled Binary
+
+Binaries are available from [Bintray](https://bintray.com/joneshf/generic/purty/_latestVersion#files)
+
 ## How does it print?
 
 For examples of how `purty` prints, see the [golden tests][].
