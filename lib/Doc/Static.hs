@@ -80,8 +80,8 @@ import "this" Doc
     , fromKind
     , fromObject
     , fromObjectUpdate
+    , fromPSString
     , fromParameters
-    , ppStringWithoutQuotes
     , valueDeclarationFromAnonymousDeclaration
     )
 
@@ -110,7 +110,7 @@ convertRow rest = \case
   REmpty -> reverse rest
   x -> reverse (space <> "|" <+> fromType x : rest)
   where
-    printRowPair l t = pretty (ppStringWithoutQuotes $ runLabel l) <+> "::" <+> fromType t
+    printRowPair l t = fromPSString (runLabel l) <+> "::" <+> fromType t
 
 enclosedWith :: Doc a -> Doc a -> [Doc a] -> Doc a
 enclosedWith open close xs =
@@ -299,7 +299,7 @@ fromExpr :: Expr -> Doc a
 fromExpr = \case
   Abs binder expr ->
     "\\" <> fromBinder binder <+> "->" <> line <> indent 2 (fromExpr expr)
-  Accessor key expr -> fromExpr expr <> "." <> pretty (ppStringWithoutQuotes key)
+  Accessor key expr -> fromExpr expr <> "." <> fromPSString key
   AnonymousArgument -> "_"
   App expr1 expr2 -> fromExpr expr1 <+> fromExpr expr2
   BinaryNoParens op left right ->
@@ -413,9 +413,9 @@ fromModuleImports = \case
 
 fromPathNode :: (PSString, PathNode Expr) -> Doc a
 fromPathNode (key, Leaf expr) =
-  pretty (ppStringWithoutQuotes key) <+> "=" <+> fromExpr expr
+  fromPSString key <+> "=" <+> fromExpr expr
 fromPathNode (key, Branch path) =
-  pretty (ppStringWithoutQuotes key) <+> fromPathTree path
+  fromPSString key <+> fromPathTree path
 
 fromPathTree :: PathTree Expr -> Doc a
 fromPathTree (PathTree paths) =

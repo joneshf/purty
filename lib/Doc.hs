@@ -16,8 +16,8 @@ module Doc
   , fromKind
   , fromObject
   , fromObjectUpdate
+  , fromPSString
   , fromParameters
-  , ppStringWithoutQuotes
   , valueDeclarationFromAnonymousDeclaration
   ) where
 
@@ -132,10 +132,10 @@ fromKind :: Kind -> Doc a
 fromKind = pretty . prettyPrintKind
 
 fromObject :: (PSString, Doc a) -> Doc a
-fromObject (key, val) = pretty (ppStringWithoutQuotes key) <> ":" <+> val
+fromObject (key, val) = fromPSString key <> ":" <+> val
 
 fromObjectUpdate :: (PSString, Doc a) -> Doc a
-fromObjectUpdate (key, val) = pretty (ppStringWithoutQuotes key) <+> "=" <+> val
+fromObjectUpdate (key, val) = fromPSString key <+> "=" <+> val
 
 fromParameter :: (Text, Maybe Kind) -> Doc a
 fromParameter (parameter, Nothing) = pretty parameter
@@ -147,8 +147,8 @@ fromParameters = \case
   [] -> mempty
   parameters -> space <> hsep (fmap fromParameter parameters)
 
-ppStringWithoutQuotes :: PSString -> Text
-ppStringWithoutQuotes = dropAround (== '"') . prettyPrintString
+fromPSString :: PSString -> Doc a
+fromPSString = pretty . dropAround (== '"') . prettyPrintString
 
 valueDeclarationFromAnonymousDeclaration ::
   ((SourceAnn, Ident), NameKind, Expr) ->
