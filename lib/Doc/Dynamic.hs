@@ -96,12 +96,6 @@ convertForAlls vars = \case
 
 convertRow :: [Doc a] -> Language.PureScript.Type -> [Doc a]
 convertRow rest = \case
-  RCons label type' tail@REmpty ->
-    convertRow
-      ( printRowPair label type'
-      : rest
-      )
-      tail
   RCons label type' tail@RCons{} ->
     convertRow
       ( printRowPair label type'
@@ -112,12 +106,11 @@ convertRow rest = \case
   RCons label type' tail ->
     convertRow
       ( printRowPair label type'
-      <+> "|"
       : rest
       )
       tail
   REmpty -> reverse rest
-  x -> reverse (fromType x : rest)
+  x -> reverse (space <> "|" <+> fromType x : rest)
   where
     printRowPair l t = pretty (ppStringWithoutQuotes $ runLabel l) <+> "::" <+> fromType t
 
@@ -246,7 +239,7 @@ fromDeclaration = \case
     fromComments comments
       <> pretty (runIdent tydeclIdent)
       <+> "::"
-      <+> fromType tydeclType
+      <+> group (fromType tydeclType)
   TypeClassDeclaration (_, comments) name parameters constraints funDeps declarations ->
     fromComments comments
       <> "class"
@@ -536,7 +529,10 @@ fromType =
         <> "."
         <> line
         <> fromType type'
-    PrettyPrintFunction f x -> fromType f <+> "->" <+> fromType x
+    PrettyPrintFunction f x ->
+      flatAlt
+        (fromType f <+> "->" <> line <> fromType x)
+        (fromType f <+> "->" <+> fromType x)
     PrettyPrintObject type' -> "{" <> hsep (convertRow [] type') <> "}"
     type'@RCons {} -> "(" <> hsep (convertRow [] type') <> ")"
     REmpty -> "()"
