@@ -25,7 +25,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , (<+>)
     )
 import "purescript" Language.PureScript
-    ( Binder
+    ( Binder(BinaryNoParensBinder, ConstructorBinder, LiteralBinder, NamedBinder, NullBinder, OpBinder, ParensInBinder, PositionedBinder, TypedBinder, VarBinder)
     , CaseAlternative(CaseAlternative, caseAlternativeBinders, caseAlternativeResult)
     , Comment(BlockComment, LineComment)
     , Constraint(Constraint, constraintArgs, constraintClass)
@@ -38,7 +38,7 @@ import "purescript" Language.PureScript
     , FunctionalDependency(FunctionalDependency, fdDetermined, fdDeterminers)
     , Guard(ConditionGuard, PatternGuard)
     , GuardedExpr(GuardedExpr)
-    , Ident
+    , Ident(Ident)
     , ImportDeclarationType(Explicit, Hiding, Implicit)
     , Kind
     , Literal(ArrayLiteral, BooleanLiteral, CharLiteral, NumericLiteral, ObjectLiteral, StringLiteral)
@@ -59,7 +59,6 @@ import "purescript" Language.PureScript
     , everywhereOnTypes
     , everywhereOnTypesTopDown
     , isImportDecl
-    , prettyPrintBinder
     , prettyPrintKind
     , prettyPrintString
     , runAssocList
@@ -74,8 +73,8 @@ import "purescript" Language.PureScript
     , tyRecord
     )
 import "purescript" Language.PureScript.Label    (runLabel)
-import "purescript" Language.PureScript.Names    (Qualified)
-import "purescript" Language.PureScript.PSString (PSString)
+import "purescript" Language.PureScript.Names    (Qualified(Qualified))
+import "purescript" Language.PureScript.PSString (PSString, mkString)
 import "rio" RIO.List                            (repeat, zipWith)
 import "rio" RIO.Text                            (dropAround)
 
@@ -131,7 +130,21 @@ enclosedWith open close =
       ", "
 
 fromBinder :: Binder -> Doc a
-fromBinder = pretty . prettyPrintBinder
+fromBinder = \case
+  BinaryNoParensBinder left op right ->
+    fromBinder left <+> fromBinder op <+> fromBinder right
+  ConstructorBinder name [] -> pretty (showQualified runProperName name)
+  ConstructorBinder name binders ->
+    pretty (showQualified runProperName name) <+> hsep (map fromBinder binders)
+  LiteralBinder literal -> fromLiteralBinder literal
+  NamedBinder name binder -> pretty (runIdent name) <> "@" <> fromBinder binder
+  NullBinder -> "_"
+  OpBinder name -> pretty (showQualified runOpName name)
+  ParensInBinder binder -> enclose "(" ")" (fromBinder binder)
+  PositionedBinder _ comments binder ->
+    fromComments comments <> fromBinder binder
+  TypedBinder type' binder -> fromBinder binder <+> "::" <+> fromType type'
+  VarBinder ident -> pretty (runIdent ident)
 
 fromBinders :: [Binder] -> Doc a
 fromBinders = \case
@@ -370,7 +383,7 @@ fromExpr = \case
       [ "let" <+> align (fromDeclarations declarations)
       , "in" <+> fromExpr expr
       ]
-  Literal literal -> fromLiteral (fmap fromExpr literal)
+  Literal literal -> fromLiteralExpr literal
   ObjectUpdate expr obj ->
     fromExpr expr <+> braces (fmap (fromObjectUpdate . fmap fromExpr) obj)
   ObjectUpdateNested expr pathTree ->
@@ -440,14 +453,26 @@ fromImportType = \case
 fromKind :: Kind -> Doc a
 fromKind = pretty . prettyPrintKind
 
-fromLiteral :: Literal (Doc a) -> Doc a
-fromLiteral = \case
-  ArrayLiteral xs -> brackets xs
+fromLiteralBinder :: Literal Binder -> Doc a
+fromLiteralBinder = \case
+  ArrayLiteral xs ->
+    enclose "[" "]" (hsep $ punctuate comma $ fmap fromBinder xs)
   BooleanLiteral b -> pretty b
   CharLiteral c -> pretty c
   NumericLiteral (Left x) -> pretty x
   NumericLiteral (Right x) -> pretty x
-  ObjectLiteral obj -> braces (fmap fromObject obj)
+  ObjectLiteral obj ->
+    enclose "{" "}" (hsep $ punctuate comma $ fmap fromObjectBinder obj)
+  StringLiteral str -> pretty (prettyPrintString str)
+
+fromLiteralExpr :: Literal Expr -> Doc a
+fromLiteralExpr = \case
+  ArrayLiteral xs -> brackets (fmap fromExpr xs)
+  BooleanLiteral b -> pretty b
+  CharLiteral c -> pretty c
+  NumericLiteral (Left x) -> pretty x
+  NumericLiteral (Right x) -> pretty x
+  ObjectLiteral obj -> braces (fmap fromObjectExpr obj)
   StringLiteral str -> pretty (prettyPrintString str)
 
 fromModule :: Module -> Doc a
@@ -478,8 +503,17 @@ fromModuleImports = \case
   [] -> mempty
   imports -> line <> line <> vsep (fmap fromDeclaration imports)
 
-fromObject :: (PSString, Doc a) -> Doc a
-fromObject (key, val) = pretty (ppStringWithoutQuotes key) <> ":" <+> val
+fromObjectBinder :: (PSString, Binder) -> Doc a
+fromObjectBinder = \case
+  (key, VarBinder (Ident ident))
+    | key == mkString ident -> pretty ident
+  (key, val) -> pretty (ppStringWithoutQuotes key) <> ":" <+> fromBinder val
+
+fromObjectExpr :: (PSString, Expr) -> Doc a
+fromObjectExpr = \case
+  (key, Var (Qualified _ (Ident ident)))
+    | key == mkString ident -> pretty ident
+  (key, val) -> pretty (ppStringWithoutQuotes key) <> ":" <+> fromExpr val
 
 fromObjectUpdate :: (PSString, Doc a) -> Doc a
 fromObjectUpdate (key, val) = pretty (ppStringWithoutQuotes key) <+> "=" <+> val
