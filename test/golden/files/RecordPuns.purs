@@ -2,6 +2,7 @@ module RecordPuns where
 
 import Foo
   (name) 
+
 import Foo as Foo
 
 foo ::
