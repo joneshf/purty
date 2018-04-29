@@ -505,13 +505,17 @@ fromModuleImports = \case
 
 fromObjectBinder :: (PSString, Binder) -> Doc a
 fromObjectBinder = \case
+  (key, PositionedBinder _ comments binder) ->
+    fromComments comments <> fromObjectBinder (key, binder)
   (key, VarBinder (Ident ident))
     | key == mkString ident -> pretty ident
   (key, val) -> pretty (ppStringWithoutQuotes key) <> ":" <+> fromBinder val
 
 fromObjectExpr :: (PSString, Expr) -> Doc a
 fromObjectExpr = \case
-  (key, Var (Qualified _ (Ident ident)))
+  (key, PositionedValue _ comments expr) ->
+    fromComments comments <> fromObjectExpr (key, expr)
+  (key, Var (Qualified Nothing (Ident ident)))
     | key == mkString ident -> pretty ident
   (key, val) -> pretty (ppStringWithoutQuotes key) <> ":" <+> fromExpr val
 
