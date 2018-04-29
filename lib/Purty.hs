@@ -29,29 +29,36 @@ import "optparse-applicative" Options.Applicative
 import "path" Path
     ( Abs
     , File
+    , Dir
     , Path
     , Rel
+    , fileExtension
     , fromAbsFile
     , parseAbsFile
     , parseRelFile
+    , parseAbsDir
+    , parseRelDir
     )
-import "path-io" Path.IO                          (makeAbsolute, resolveFile')
+import "path-io" Path.IO
+    ( makeAbsolute
+    , resolveDir'
+    , resolveFile'
+    , walkDirAccum
+    )
 import "parsec" Text.Parsec                       (ParseError)
 
 import qualified "this" Doc
 
 purty ::
-  (HasArgs env, HasLogFunc env, HasPrettyPrintConfig env) =>
+  (HasLogFunc env, HasPrettyPrintConfig env) =>
+  Path Abs File ->
   RIO env (Either ParseError (SimpleDocStream a))
-purty = do
-  Args { filePath } <- view argsL
+purty absPath = do
   PrettyPrintConfig { layoutOptions } <- view prettyPrintConfigL
-  absFilePath <- absolutize filePath
-  logDebug ("Converted file to absolute: " <> displayShow absFilePath)
-  contents <- readFileUtf8 (fromAbsFile absFilePath)
+  contents <- readFileUtf8 (fromAbsFile absPath)
   logDebug "Read file contents:"
   logDebug (display contents)
-  case parseModuleFromFile id (fromAbsFile absFilePath, contents) of
+  case parseModuleFromFile id (fromAbsFile absPath, contents) of
     Left e -> do
       logDebug "Parsing failed:"
       logDebug (displayShow e)
@@ -64,13 +71,23 @@ purty = do
 data PurtyFilePath
   = AbsFile (Path Abs File)
   | RelFile (Path Rel File)
+  | AbsDir (Path Abs Dir)
+  | RelDir (Path Rel Dir)
   | Unparsed String
 
-absolutize :: MonadIO m => PurtyFilePath -> m (Path Abs File)
+absolutize :: (MonadIO m, Alternative m) => PurtyFilePath -> m ([Path Abs File])
 absolutize fp = case fp of
-  AbsFile absolute -> pure absolute
-  RelFile relative -> makeAbsolute relative
-  Unparsed path    -> resolveFile' path
+  AbsFile absolute -> pure [absolute]
+  AbsDir absolute -> collectPSFiles absolute
+  RelDir relative -> collectPSFiles relative
+  Unparsed path    -> resolveUnparsed path
+  RelFile relative -> fmap pure $ makeAbsolute relative
+  where
+    isPurs file = fileExtension file == ".purs"
+    collectPSFiles = walkDirAccum Nothing (\_ _ -> pure . filter isPurs)
+    resolveUnparsed path =
+      (fmap pure $ resolveFile' path) 
+      <|> (resolveDir' path >>= collectPSFiles)
 
 data Args
   = Args
@@ -86,6 +103,8 @@ instance Display Args where
       displayFilePath = \case
         AbsFile absFile -> "Absolute file: " <> displayShow absFile
         RelFile relFile -> "Relative file: " <> displayShow relFile
+        AbsDir absDir -> "Absolute directory: " <> displayShow absDir
+        RelDir relDir -> "Relative directory: " <> displayShow relDir
         Unparsed maybePath -> "I dunno, man: " <> displayShow maybePath
       displayVerbose = \case
         True -> "Verbose"
@@ -106,6 +125,8 @@ parserFilePath = argument parser meta
   parser =
     fmap AbsFile (maybeReader parseAbsFile)
       <|> fmap RelFile (maybeReader parseRelFile)
+      <|> fmap AbsDir (maybeReader parseAbsDir)
+      <|> fmap RelDir (maybeReader parseRelDir)
       <|> fmap Unparsed (maybeReader Just)
 
 parserVerbose :: Parser Bool

@@ -35,25 +35,29 @@ main = do
   logOptions <- logOptionsHandle stderr verbose
   withLogFunc logOptions $ \envLogFunc -> do
     let env = Env { envArgs, envLogFunc, envPrettyPrintConfig }
+    files <- absolutize filePath
     runRIO env $ do
-      logDebug ("Env: " <> display env)
-      logDebug "Running main `purty` program"
-      stream' <- purty
-      case stream' of
-        Left err -> do
-          logError "Problem parsing module"
-          logError (displayShow err)
-          liftIO exitFailure
-        Right stream -> do
-          logDebug "Successfully created stream for rendering"
+      streams <- for files purty
+      let zippedPartition tuple (ls, rs) = 
+            case tuple of
+              (a, Left b) -> ((a, b):ls, rs)
+              (a, Right c) ->(ls, (a, c):rs)
+          partitionStreams = foldr zippedPartition ([], [])
+          (errors, docs) = partitionStreams $ zip files streams
+      case errors of
+        [] -> for_ docs $ \(path, stream) -> do
+          logDebug "Successfully created streams for rendering"
           logDebug (displayShow $ void stream)
           if inPlace then
             liftIO $ withSystemTempFile "purty.purs" $ \fp h -> do
-              absPath <- absolutize filePath
               renderIO h stream
               hClose h
-              copyPermissions absPath fp
-              copyFile fp absPath
+              copyPermissions path fp
+              copyFile fp path
           else do
               logDebug "Printing to stdout"
               liftIO $ renderIO stdout stream
+        _ -> for_ errors $ \(_, err) -> do
+          logError "Problem parsing module"
+          logError (displayShow err)
+          liftIO exitFailure
