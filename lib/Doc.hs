@@ -135,7 +135,7 @@ fromBinder = \case
     fromBinder left <+> fromBinder op <+> fromBinder right
   ConstructorBinder name [] -> pretty (showQualified runProperName name)
   ConstructorBinder name binders ->
-    pretty (showQualified runProperName name) <+> hsep (map fromBinder binders)
+    pretty (showQualified runProperName name) <+> hsep (fmap fromBinder binders)
   LiteralBinder literal -> fromLiteralBinder literal
   NamedBinder name binder -> pretty (runIdent name) <> "@" <> fromBinder binder
   NullBinder -> "_"
