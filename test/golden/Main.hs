@@ -47,6 +47,7 @@ goldenTests =
     "golden"
     [ golden "data with parameters" [relfile|test/golden/files/DataWithParameters.purs|]
     , golden "empty data" [relfile|test/golden/files/EmptyData.purs|]
+    , golden "imports" [relfile|test/golden/files/Imports.purs|]
     , golden "typeclass instance" [relfile|test/golden/files/Instance.purs|]
     , golden "module header" [relfile|test/golden/files/ModuleHeader.purs|]
     , golden "multi-parameter type class instance head" [relfile|test/golden/files/MPTCHead.purs|]
