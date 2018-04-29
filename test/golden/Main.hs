@@ -51,6 +51,7 @@ goldenTests =
     , golden "module header" [relfile|test/golden/files/ModuleHeader.purs|]
     , golden "multi-parameter type class instance head" [relfile|test/golden/files/MPTCHead.purs|]
     , golden "newtype record" [relfile|test/golden/files/NewtypeRecord.purs|]
+    , golden "record puns" [relfile|test/golden/files/RecordPuns.purs|]
     , golden "sproxy" [relfile|test/golden/files/SProxy.purs|]
     , golden "type synonym newline" [relfile|test/golden/files/TypeSynonymNewline.purs|]
     , golden "type synonym" [relfile|test/golden/files/TypeSynonym.purs|]
