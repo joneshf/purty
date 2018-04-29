@@ -75,7 +75,7 @@ import "purescript" Language.PureScript
 import "purescript" Language.PureScript.Label    (runLabel)
 import "purescript" Language.PureScript.Names    (Qualified(Qualified))
 import "purescript" Language.PureScript.PSString (PSString, mkString)
-import "rio" RIO.List                            (repeat, zipWith)
+import "rio" RIO.List                            (repeat, sortOn, zipWith)
 import "rio" RIO.Text                            (dropAround)
 
 ppStringWithoutQuotes :: PSString -> Text
@@ -479,10 +479,13 @@ fromModule :: Module -> Doc a
 fromModule (Module _ comments name declarations' exports) =
   fromComments comments
     <> fromModuleExports name exports
-    <> fromModuleImports imports
+    <> fromModuleImports openImports
+    <> fromModuleImports explicitImports
+    <> fromModuleImports qualifiedImports
     <> fromModuleDeclarations declarations
   where
   (imports, declarations) = span isImportDecl declarations'
+  (openImports, explicitImports, qualifiedImports) = partitionImports imports
 
 fromModuleDeclarations :: [Declaration] -> Doc a
 fromModuleDeclarations = \case
@@ -657,6 +660,29 @@ fromTypeInstanceWithoutConstraints name types declarations =
 
 parentheses :: [Doc a] -> Doc a
 parentheses = enclosedWith "(" ")"
+
+partitionImports ::
+  [Declaration] ->
+  ([Declaration], [Declaration], [Declaration])
+partitionImports = go ([], [], [])
+  where
+  go (open, explicit, qualified) = \case
+    [] -> (sortImports open, sortImports explicit, sortImports qualified)
+    i@(ImportDeclaration _ _ _ (Just _)) : rest ->
+      go (open, explicit, i : qualified) rest
+    i@(ImportDeclaration _ _ Implicit _) : rest ->
+      go (i : open, explicit, qualified) rest
+    i@ImportDeclaration {} : rest ->
+      go (open, i : explicit, qualified) rest
+    _ : rest -> go (open, explicit, qualified) rest
+
+sortImports :: [Declaration] -> [Declaration]
+sortImports = sortOn importName
+  where
+  importName :: Declaration -> Maybe ModuleName
+  importName = \case
+    ImportDeclaration _ name _ _ -> Just name
+    _ -> Nothing
 
 valueDeclarationFromAnonymousDeclaration ::
   ((SourceAnn, Ident), NameKind, Expr) ->
