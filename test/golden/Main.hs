@@ -55,11 +55,13 @@ dynamic =
     "dynamic"
     [ golden Dynamic "data with parameters" [relfile|test/golden/files/dynamic/DataWithParameters.purs|]
     , golden Dynamic "empty data" [relfile|test/golden/files/dynamic/EmptyData.purs|]
+    , golden Dynamic "imports" [relfile|test/golden/files/dynamic/Imports.purs|]
     , golden Dynamic "typeclass instance" [relfile|test/golden/files/dynamic/Instance.purs|]
     , golden Dynamic "multi-parameter type class instance head" [relfile|test/golden/files/dynamic/MPTCHead.purs|]
     , golden Dynamic "open record types" [relfile|test/golden/files/dynamic/Merge.purs|]
     , golden Dynamic "module header" [relfile|test/golden/files/dynamic/ModuleHeader.purs|]
     , golden Dynamic "newtype record" [relfile|test/golden/files/dynamic/NewtypeRecord.purs|]
+    , golden Dynamic "record puns" [relfile|test/golden/files/dynamic/RecordPuns.purs|]
     , golden Dynamic "sproxy" [relfile|test/golden/files/dynamic/SProxy.purs|]
     , golden Dynamic "typeclass" [relfile|test/golden/files/dynamic/TypeClass.purs|]
     , golden Dynamic "type synonym" [relfile|test/golden/files/dynamic/TypeSynonym.purs|]

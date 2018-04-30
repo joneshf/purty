@@ -85,6 +85,7 @@ import "this" Doc
     , fromPSString
     , fromPSString
     , fromParameters
+    , partitionImports
     , valueDeclarationFromAnonymousDeclaration
     )
 
@@ -434,10 +435,13 @@ fromModule :: Module -> Doc a
 fromModule (Module _ comments name declarations' exports) =
   fromComments comments
     <> fromModuleExports name exports
-    <> fromModuleImports imports
+    <> fromModuleImports openImports
+    <> fromModuleImports explicitImports
+    <> fromModuleImports qualifiedImports
     <> fromModuleDeclarations declarations
   where
   (imports, declarations) = span isImportDecl declarations'
+  (openImports, explicitImports, qualifiedImports) = partitionImports imports
 
 fromModuleDeclarations :: [Declaration] -> Doc a
 fromModuleDeclarations = \case
