@@ -28,16 +28,16 @@ import "optparse-applicative" Options.Applicative
     )
 import "path" Path
     ( Abs
-    , File
     , Dir
+    , File
     , Path
     , Rel
     , fileExtension
     , fromAbsFile
-    , parseAbsFile
-    , parseRelFile
     , parseAbsDir
+    , parseAbsFile
     , parseRelDir
+    , parseRelFile
     )
 import "path-io" Path.IO
     ( makeAbsolute
@@ -75,18 +75,18 @@ data PurtyFilePath
   | RelDir (Path Rel Dir)
   | Unparsed String
 
-absolutize :: (MonadIO m, Alternative m) => PurtyFilePath -> m ([Path Abs File])
+absolutize :: (MonadIO m, Alternative m) => PurtyFilePath -> m [Path Abs File]
 absolutize fp = case fp of
   AbsFile absolute -> pure [absolute]
-  AbsDir absolute -> collectPSFiles absolute
-  RelDir relative -> collectPSFiles relative
+  AbsDir absolute  -> collectPSFiles absolute
+  RelDir relative  -> collectPSFiles relative
   Unparsed path    -> resolveUnparsed path
-  RelFile relative -> fmap pure $ makeAbsolute relative
+  RelFile relative -> pure <$> makeAbsolute relative
   where
     isPurs file = fileExtension file == ".purs"
     collectPSFiles = walkDirAccum Nothing (\_ _ -> pure . filter isPurs)
     resolveUnparsed path =
-      (fmap pure $ resolveFile' path) 
+      (pure <$> resolveFile' path)
       <|> (resolveDir' path >>= collectPSFiles)
 
 data Args

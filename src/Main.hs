@@ -38,9 +38,9 @@ main = do
     files <- absolutize filePath
     runRIO env $ do
       streams <- for files purty
-      let zippedPartition tuple (ls, rs) = 
+      let zippedPartition tuple (ls, rs) =
             case tuple of
-              (a, Left b) -> ((a, b):ls, rs)
+              (a, Left b)  -> ((a, b):ls, rs)
               (a, Right c) ->(ls, (a, c):rs)
           partitionStreams = foldr zippedPartition ([], [])
           (errors, docs) = partitionStreams $ zip files streams
@@ -57,7 +57,6 @@ main = do
           else do
               logDebug "Printing to stdout"
               liftIO $ renderIO stdout stream
-        _ -> for_ errors $ \(_, err) -> do
-          logError "Problem parsing module"
-          logError (displayShow err)
+        _ ->  do
+          _ <- for errors $ \(_, err) -> logError (displayShow err)
           liftIO exitFailure
