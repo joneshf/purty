@@ -37,7 +37,7 @@ golden testName goldenFile =
     absFile <- makeAbsolute goldenFile
     (_, logOptions) <- logOptionsMemory
     withLogFunc logOptions $ \logFunc -> do
-      result <- runRIO (defaultEnv logFunc absFile) purty
+      result <- runRIO (defaultEnv logFunc absFile) $ purty absFile
       stream <- either (const empty) pure result
       pure (fromStrictBytes $ encodeUtf8 $ renderStrict stream)
 
