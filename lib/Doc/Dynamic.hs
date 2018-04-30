@@ -11,6 +11,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , align
     , comma
+    , enclose
     , encloseSep
     , flatAlt
     , group
@@ -27,7 +28,8 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , (<+>)
     )
 import "purescript" Language.PureScript
-    ( CaseAlternative(CaseAlternative, caseAlternativeBinders, caseAlternativeResult)
+    ( Binder(BinaryNoParensBinder, ConstructorBinder, LiteralBinder, NamedBinder, NullBinder, OpBinder, ParensInBinder, PositionedBinder, TypedBinder, VarBinder)
+    , CaseAlternative(CaseAlternative, caseAlternativeBinders, caseAlternativeResult)
     , Constraint(Constraint, constraintArgs, constraintClass)
     , Declaration(BindingGroupDeclaration, BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ExternDataDeclaration, ExternDeclaration, ExternKindDeclaration, FixityDeclaration, ImportDeclaration, TypeClassDeclaration, TypeDeclaration, TypeInstanceDeclaration, TypeSynonymDeclaration, ValueDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
@@ -36,6 +38,7 @@ import "purescript" Language.PureScript
     , FunctionalDependency
     , Guard(ConditionGuard, PatternGuard)
     , GuardedExpr(GuardedExpr)
+    , Ident(Ident)
     , ImportDeclarationType(Explicit, Hiding, Implicit)
     , Kind
     , Literal(ArrayLiteral, BooleanLiteral, CharLiteral, NumericLiteral, ObjectLiteral, StringLiteral)
@@ -64,15 +67,13 @@ import "purescript" Language.PureScript
     , showQualified
     )
 import "purescript" Language.PureScript.Label    (runLabel)
-import "purescript" Language.PureScript.Names    (Qualified)
-import "purescript" Language.PureScript.PSString (PSString)
+import "purescript" Language.PureScript.Names    (Qualified(Qualified))
+import "purescript" Language.PureScript.PSString (PSString, mkString)
 import "rio" RIO.List                            (repeat, zipWith)
 
 import "this" Doc
     ( convertForAlls
     , convertTypeApps
-    , fromBinder
-    , fromBinders
     , fromComments
     , fromConstructors
     , fromDataType
@@ -80,8 +81,8 @@ import "this" Doc
     , fromFunctionalDependencies
     , fromImportQualified
     , fromKind
-    , fromObject
     , fromObjectUpdate
+    , fromPSString
     , fromPSString
     , fromParameters
     , valueDeclarationFromAnonymousDeclaration
@@ -122,6 +123,28 @@ enclosedWith open close =
       (flatAlt (open <> space) open)
       (flatAlt (line <> close) close)
       ", "
+
+fromBinder :: Binder -> Doc a
+fromBinder = \case
+  BinaryNoParensBinder left op right ->
+    fromBinder left <+> fromBinder op <+> fromBinder right
+  ConstructorBinder name [] -> pretty (showQualified runProperName name)
+  ConstructorBinder name binders ->
+    pretty (showQualified runProperName name) <+> hsep (fmap fromBinder binders)
+  LiteralBinder literal -> fromLiteralBinder literal
+  NamedBinder name binder -> pretty (runIdent name) <> "@" <> fromBinder binder
+  NullBinder -> "_"
+  OpBinder name -> pretty (showQualified runOpName name)
+  ParensInBinder binder -> enclose "(" ")" (fromBinder binder)
+  PositionedBinder _ comments binder ->
+    fromComments comments <> fromBinder binder
+  TypedBinder type' binder -> fromBinder binder <+> "::" <+> fromType type'
+  VarBinder ident -> pretty (runIdent ident)
+
+fromBinders :: [Binder] -> Doc a
+fromBinders = \case
+  [] -> mempty
+  binders -> space <> hsep (fmap fromBinder binders)
 
 fromCaseAlternative :: CaseAlternative -> Doc a
 fromCaseAlternative CaseAlternative {caseAlternativeBinders, caseAlternativeResult} =
@@ -334,7 +357,7 @@ fromExpr = \case
       [ "let" <+> align (fromDeclarations declarations)
       , "in" <+> fromExpr expr
       ]
-  Literal literal -> fromLiteral (fmap fromExpr literal)
+  Literal literal -> fromLiteralExpr literal
   ObjectUpdate expr obj ->
     fromExpr expr <+> braces (fmap (fromObjectUpdate . fmap fromExpr) obj)
   ObjectUpdateNested expr pathTree ->
@@ -385,14 +408,26 @@ fromImportType = \case
       (line <> indent 2 ("hiding" <+> fromExports declarationRefs))
   Implicit -> mempty
 
-fromLiteral :: Literal (Doc a) -> Doc a
-fromLiteral = \case
-  ArrayLiteral xs -> brackets xs
+fromLiteralBinder :: Literal Binder -> Doc a
+fromLiteralBinder = \case
+  ArrayLiteral xs ->
+    enclose "[" "]" (hsep $ punctuate comma $ fmap fromBinder xs)
   BooleanLiteral b -> pretty b
   CharLiteral c -> pretty c
   NumericLiteral (Left x) -> pretty x
   NumericLiteral (Right x) -> pretty x
-  ObjectLiteral obj -> braces (fmap fromObject obj)
+  ObjectLiteral obj ->
+    enclose "{" "}" (hsep $ punctuate comma $ fmap fromObjectBinder obj)
+  StringLiteral str -> pretty (prettyPrintString str)
+
+fromLiteralExpr :: Literal Expr -> Doc a
+fromLiteralExpr = \case
+  ArrayLiteral xs -> brackets (fmap fromExpr xs)
+  BooleanLiteral b -> pretty b
+  CharLiteral c -> pretty c
+  NumericLiteral (Left x) -> pretty x
+  NumericLiteral (Right x) -> pretty x
+  ObjectLiteral obj -> braces (fmap fromObjectExpr obj)
   StringLiteral str -> pretty (prettyPrintString str)
 
 fromModule :: Module -> Doc a
@@ -422,6 +457,22 @@ fromModuleImports :: [Declaration] -> Doc a
 fromModuleImports = \case
   [] -> mempty
   imports -> line <> line <> vsep (fmap fromDeclaration imports)
+
+fromObjectBinder :: (PSString, Binder) -> Doc a
+fromObjectBinder = \case
+  (key, PositionedBinder _ comments binder) ->
+    fromComments comments <> fromObjectBinder (key, binder)
+  (key, VarBinder (Ident ident))
+    | key == mkString ident -> pretty ident
+  (key, val) -> fromPSString key <> ":" <+> fromBinder val
+
+fromObjectExpr :: (PSString, Expr) -> Doc a
+fromObjectExpr = \case
+  (key, PositionedValue _ comments expr) ->
+    fromComments comments <> fromObjectExpr (key, expr)
+  (key, Var (Qualified Nothing (Ident ident)))
+    | key == mkString ident -> pretty ident
+  (key, val) -> fromPSString key <> ":" <+> fromExpr val
 
 fromPathNode :: (PSString, PathNode Expr) -> Doc a
 fromPathNode (key, Leaf expr) =

@@ -51,11 +51,17 @@ purty = do
   contents <- readFileUtf8 (fromAbsFile absFilePath)
   logDebug "Read file contents:"
   logDebug (display contents)
-  pure $ do
-    (_, m) <- parseModuleFromFile id (fromAbsFile absFilePath, contents)
-    case formatting of
-      Dynamic -> pure (layoutSmart layoutOptions $ Doc.Dynamic.fromModule m)
-      Static  -> pure (layoutSmart layoutOptions $ Doc.Static.fromModule m)
+  case parseModuleFromFile id (fromAbsFile absFilePath, contents) of
+    Left e -> do
+      logDebug "Parsing failed:"
+      logDebug (displayShow e)
+      pure (Left e)
+    Right (_, m) -> do
+      logDebug "Parsed module:"
+      logDebug (displayShow m)
+      case formatting of
+        Dynamic -> pure (Right $ layoutSmart layoutOptions $ Doc.Dynamic.fromModule m)
+        Static  -> pure (Right $ layoutSmart layoutOptions $ Doc.Static.fromModule m)
 
 data PurtyFilePath
   = AbsFile (Path Abs File)

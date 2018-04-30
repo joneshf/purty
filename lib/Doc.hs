@@ -5,8 +5,6 @@
 module Doc
   ( convertForAlls
   , convertTypeApps
-  , fromBinder
-  , fromBinders
   , fromComments
   , fromConstructors
   , fromDataType
@@ -14,10 +12,10 @@ module Doc
   , fromFunctionalDependencies
   , fromImportQualified
   , fromKind
-  , fromObject
   , fromObjectUpdate
   , fromPSString
   , fromParameters
+  , partitionImports
   , valueDeclarationFromAnonymousDeclaration
   ) where
 
@@ -37,14 +35,15 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , (<+>)
     )
 import "purescript" Language.PureScript
-    ( Binder
-    , Comment(BlockComment, LineComment)
+    ( Comment(BlockComment, LineComment)
     , DataDeclType(Data, Newtype)
+    , Declaration(ImportDeclaration)
     , Expr
     , Fixity(Fixity)
     , FunctionalDependency(FunctionalDependency, fdDetermined, fdDeterminers)
     , GuardedExpr(GuardedExpr)
     , Ident
+    , ImportDeclarationType(Implicit)
     , Kind
     , ModuleName
     , NameKind
@@ -53,7 +52,6 @@ import "purescript" Language.PureScript
     , SourceAnn
     , Type(ForAll, PrettyPrintForAll, PrettyPrintFunction, PrettyPrintObject, TypeApp)
     , ValueDeclarationData(ValueDeclarationData, valdeclBinders, valdeclExpression, valdeclIdent, valdeclName, valdeclSourceAnn)
-    , prettyPrintBinder
     , prettyPrintKind
     , prettyPrintString
     , runModuleName
@@ -63,6 +61,7 @@ import "purescript" Language.PureScript
     , tyRecord
     )
 import "purescript" Language.PureScript.PSString (PSString)
+import "rio" RIO.List                            (sortOn)
 import "rio" RIO.Text                            (dropAround)
 
 convertForAlls :: [Text] -> Language.PureScript.Type -> Language.PureScript.Type
@@ -77,14 +76,6 @@ convertTypeApps = \case
   TypeApp (TypeApp f g) x | f == tyFunction -> PrettyPrintFunction g x
   TypeApp o r | o == tyRecord -> PrettyPrintObject r
   x -> x
-
-fromBinder :: Binder -> Doc a
-fromBinder = pretty . prettyPrintBinder
-
-fromBinders :: [Binder] -> Doc a
-fromBinders = \case
-  [] -> mempty
-  binders -> space <> hsep (fmap fromBinder binders)
 
 fromComment :: Comment -> Doc a
 fromComment = \case
@@ -131,9 +122,6 @@ fromImportQualified name = space <> "as" <+> pretty (runModuleName name)
 fromKind :: Kind -> Doc a
 fromKind = pretty . prettyPrintKind
 
-fromObject :: (PSString, Doc a) -> Doc a
-fromObject (key, val) = fromPSString key <> ":" <+> val
-
 fromObjectUpdate :: (PSString, Doc a) -> Doc a
 fromObjectUpdate (key, val) = fromPSString key <+> "=" <+> val
 
@@ -149,6 +137,29 @@ fromParameters = \case
 
 fromPSString :: PSString -> Doc a
 fromPSString = pretty . dropAround (== '"') . prettyPrintString
+
+partitionImports ::
+  [Declaration] ->
+  ([Declaration], [Declaration], [Declaration])
+partitionImports = go ([], [], [])
+  where
+  go (open, explicit, qualified) = \case
+    [] -> (sortImports open, sortImports explicit, sortImports qualified)
+    i@(ImportDeclaration _ _ _ (Just _)) : rest ->
+      go (open, explicit, i : qualified) rest
+    i@(ImportDeclaration _ _ Implicit _) : rest ->
+      go (i : open, explicit, qualified) rest
+    i@ImportDeclaration {} : rest ->
+      go (open, i : explicit, qualified) rest
+    _ : rest -> go (open, explicit, qualified) rest
+
+sortImports :: [Declaration] -> [Declaration]
+sortImports = sortOn importName
+  where
+  importName :: Declaration -> Maybe ModuleName
+  importName = \case
+    ImportDeclaration _ name _ _ -> Just name
+    _ -> Nothing
 
 valueDeclarationFromAnonymousDeclaration ::
   ((SourceAnn, Ident), NameKind, Expr) ->
