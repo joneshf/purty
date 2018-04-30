@@ -90,7 +90,7 @@ cd "${DIR}"
 debug 'Testing if exit code is non-zero for parse errors'
 debug 'Turning off "errexit" so the command does not exit the script'
 set +o errexit
-"${PURTY}" './acceptance/Unparsable.purs' 2&> /dev/null
+"${PURTY}" './acceptance/failing/Unparsable.purs' 2&> /dev/null
 unparseable_exit_code="${?}"
 debug 'Turning on "errexit" so failed commands exit the script'
 set -o errexit
@@ -99,13 +99,25 @@ debug "unparseable_exit_code: ${unparseable_exit_code}"
 info 'Exit code is non-zero for parse errors'
 
 debug 'Testing if absolute paths work'
-"${PURTY}" "$(pwd)/acceptance/Test.purs" > /dev/null
+"${PURTY}" "$(pwd)/acceptance/passing/Test.purs" > /dev/null
 info 'Absolute file paths work'
 
+debug 'Testing if absolute directories work'
+"${PURTY}" "$(pwd)/acceptance/passing/" > /dev/null
+info 'Absolute directories work'
+
 debug 'Testing if relative paths work'
-"${PURTY}" "./acceptance/Test.purs" > /dev/null
+"${PURTY}" "./acceptance/passing/Test.purs" > /dev/null
 info 'Relative file paths work'
 
+debug 'Testing if relative directories work'
+"${PURTY}" "./acceptance/passing/" > /dev/null
+info 'Relative directories work'
+
 debug 'Testing if paths with .. work'
-"${PURTY}" "../test/acceptance/Test.purs" > /dev/null
+"${PURTY}" "../test/acceptance/passing/Test.purs" > /dev/null
 info 'Paths with .. work'
+
+debug 'Testing if directories with .. work'
+"${PURTY}" "../test/acceptance/passing/" > /dev/null
+info 'Absolute directories work'
