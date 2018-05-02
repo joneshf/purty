@@ -114,8 +114,9 @@ convertRow rest = \case
     printRowPair l t = fromPSString (runLabel l) <+> "::" <+> fromType t
 
 enclosedWith :: Doc a -> Doc a -> [Doc a] -> Doc a
-enclosedWith open close xs =
-  align (vsep (zipWith (<+>) (open : repeat comma) xs) <> line <> close)
+enclosedWith open close = \case
+  [] -> open <> close
+  xs -> align (vsep (zipWith (<+>) (open : repeat comma) xs) <> line <> close)
 
 fromBinder :: Binder -> Doc a
 fromBinder = \case
