@@ -125,6 +125,12 @@ enclosedWith open close =
       (flatAlt (line <> close) close)
       ", "
 
+fromBinaryOp :: Expr -> Doc a
+fromBinaryOp = \case
+  Op op -> pretty (showQualified runOpName op)
+  PositionedValue _ comments expr -> fromComments comments <> fromBinaryOp expr
+  expr -> fromExpr expr
+
 fromBinder :: Binder -> Doc a
 fromBinder = \case
   BinaryNoParensBinder left op right ->
@@ -344,7 +350,7 @@ fromExpr = \case
   AnonymousArgument -> "_"
   App expr1 expr2 -> fromExpr expr1 <+> fromExpr expr2
   BinaryNoParens op left right ->
-    fromExpr left <+> fromExpr op <+> fromExpr right
+    fromExpr left <+> fromBinaryOp op <+> fromExpr right
   Case exprs alternatives ->
     "case"
       <+> hsep (punctuate comma $ fmap fromExpr exprs)
@@ -373,7 +379,7 @@ fromExpr = \case
     fromExpr expr <+> braces (fmap (fromObjectUpdate . fmap fromExpr) obj)
   ObjectUpdateNested expr pathTree ->
     fromExpr expr <+> fromPathTree pathTree
-  Op op -> pretty (showQualified runOpName op)
+  Op op -> enclose "(" ")" (pretty $ showQualified runOpName op)
   Parens expr -> parens (fromExpr expr)
   PositionedValue _ comments expr -> fromComments comments <> fromExpr expr
   TypeClassDictionary {} -> mempty
