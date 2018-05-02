@@ -187,16 +187,22 @@ fromDeclaration = \case
       <> "foreign import data"
       <+> pretty (runProperName name)
       <+> "::"
-      <> line
-      <> indent 2 (align $ fromKind kind)
+      <> group
+        (flatAlt
+          (line <> indent 2 (align $ fromKind kind))
+          (space <> fromKind kind)
+        )
       <> line
   ExternDeclaration (_, comments) ident type' ->
     fromComments comments
       <> "foreign import"
       <+> pretty (runIdent ident)
       <+> "::"
-      <> line
-      <> indent 2 (align $ fromType type')
+      <> group
+        (flatAlt
+          (line <> indent 2 (align $ fromType type'))
+          (space <> fromType type')
+        )
       <> line
   ExternKindDeclaration (_, comments) name ->
     fromComments comments
@@ -228,7 +234,11 @@ fromDeclaration = \case
     fromComments comments
       <> pretty (runIdent tydeclIdent)
       <+> "::"
-      <+> group (fromType tydeclType)
+      <> group
+        (flatAlt
+          (line <> indent 2 (align $ fromType tydeclType))
+          (space <> fromType tydeclType)
+        )
   TypeClassDeclaration (_, comments) name parameters constraints funDeps declarations ->
     fromComments comments
       <> "class"
