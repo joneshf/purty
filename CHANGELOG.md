@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.0
+
+Bug fixes and small features
+
+Most of what happened in this release were bug fixes after being used in a real project.
+
+### Additions
+
+* [Document how to install `purty`](https://gitlab.com/joneshf/purty/issues/34)
+
+### Changes
+
+* [Fix printing of open records](https://gitlab.com/joneshf/purty/issues/30)
+* [Handle paths that contain `..`](https://gitlab.com/joneshf/purty/issues/33)
+* [Sort import declarations](https://gitlab.com/joneshf/purty/issues/19)
+* [Print record puns when possible](https://gitlab.com/joneshf/purty/issues/32)
+
+### Deletions
+
 ## 0.2.0
 
 Infrastructure changes
