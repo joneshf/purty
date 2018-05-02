@@ -3,10 +3,9 @@ module Purty where
 import "rio" RIO
 
 import "prettyprinter" Data.Text.Prettyprint.Doc
-    ( LayoutOptions
+    ( LayoutOptions(LayoutOptions, layoutPageWidth)
     , PageWidth(AvailablePerLine, Unbounded)
     , SimpleDocStream
-    , defaultLayoutOptions
     , layoutPageWidth
     , layoutSmart
     )
@@ -15,6 +14,7 @@ import "optparse-applicative" Options.Applicative
     ( Parser
     , ParserInfo
     , argument
+    , flag
     , fullDesc
     , header
     , help
@@ -24,7 +24,6 @@ import "optparse-applicative" Options.Applicative
     , maybeReader
     , metavar
     , progDesc
-    , switch
     )
 import "path" Path
     ( Abs
@@ -38,13 +37,14 @@ import "path" Path
 import "path-io" Path.IO                          (makeAbsolute, resolveFile')
 import "parsec" Text.Parsec                       (ParseError)
 
-import qualified "this" Doc
+import qualified "this" Doc.Dynamic
+import qualified "this" Doc.Static
 
 purty ::
   (HasArgs env, HasLogFunc env, HasPrettyPrintConfig env) =>
   RIO env (Either ParseError (SimpleDocStream a))
 purty = do
-  Args { filePath } <- view argsL
+  Args { filePath, formatting } <- view argsL
   PrettyPrintConfig { layoutOptions } <- view prettyPrintConfigL
   absFilePath <- absolutize filePath
   logDebug ("Converted file to absolute: " <> displayShow absFilePath)
@@ -59,7 +59,9 @@ purty = do
     Right (_, m) -> do
       logDebug "Parsed module:"
       logDebug (displayShow m)
-      pure (Right $ layoutSmart layoutOptions $ Doc.fromModule m)
+      case formatting of
+        Dynamic -> pure (Right $ layoutSmart layoutOptions $ Doc.Dynamic.fromModule m)
+        Static  -> pure (Right $ layoutSmart layoutOptions $ Doc.Static.fromModule m)
 
 data PurtyFilePath
   = AbsFile (Path Abs File)
@@ -74,25 +76,37 @@ absolutize fp = case fp of
 
 data Args
   = Args
-    { filePath :: !PurtyFilePath
-    , verbose  :: !Bool
-    , inPlace  :: !Bool
+    { filePath   :: !PurtyFilePath
+    , formatting :: !Formatting
+    , output     :: !Output
+    , verbosity  :: !Verbosity
     }
 
 instance Display Args where
-  display Args { filePath, verbose, inPlace } =
-    "{"  <> displayFilePath filePath <> ", " <> displayVerbose verbose <> ", " <> displayInPlace inPlace <> "}"
+  display Args { filePath, formatting, verbosity, output } =
+    "{"
+      <> displayFilePath filePath
+      <> ", "
+      <> displayFormatting formatting
+      <> ", "
+      <> displayOutput output
+      <> ", "
+      <> displayVerbosity verbosity
+      <> "}"
       where
       displayFilePath = \case
         AbsFile absFile -> "Absolute file: " <> displayShow absFile
         RelFile relFile -> "Relative file: " <> displayShow relFile
         Unparsed maybePath -> "I dunno, man: " <> displayShow maybePath
-      displayVerbose = \case
-        True -> "Verbose"
-        False -> "Not verbose"
-      displayInPlace = \case
-        True -> "Formatting files in-place"
-        False -> "Writing formatted files to stdout"
+      displayFormatting = \case
+        Dynamic -> "Dynamic"
+        Static -> "Static"
+      displayVerbosity = \case
+        Verbose -> "Verbose"
+        NotVerbose -> "Not verbose"
+      displayOutput = \case
+        InPlace -> "Formatting files in-place"
+        StdOut -> "Writing formatted files to stdout"
 
 class HasArgs env where
   argsL :: Lens' env Args
@@ -108,15 +122,47 @@ parserFilePath = argument parser meta
       <|> fmap RelFile (maybeReader parseRelFile)
       <|> fmap Unparsed (maybeReader Just)
 
-parserVerbose :: Parser Bool
-parserVerbose = switch meta
+-- |
+-- How we want to pretty print
+--
+-- Dynamic formatting takes line length into account.
+-- Static formatting is always the same.
+data Formatting
+  = Dynamic
+  | Static
+
+parserFormatting :: Parser Formatting
+parserFormatting = flag Static Dynamic meta
+  where
+  meta =
+    help "Pretty print taking line length into account"
+      <> long "dynamic"
+
+-- |
+-- The minimum level of logs to display.
+--
+-- 'Verbose' will display debug logs.
+-- Debug logs are pretty noisy, but useful when diagnosing problems.
+data Verbosity
+  = Verbose
+  | NotVerbose
+  deriving (Eq)
+
+parserVerbosity :: Parser Verbosity
+parserVerbosity = flag NotVerbose Verbose meta
   where
   meta =
     help "Print debugging information to STDERR while running"
       <> long "verbose"
 
-parserInPlace :: Parser Bool
-parserInPlace = switch meta
+-- |
+-- What to do with the pretty printed output
+data Output
+  = InPlace
+  | StdOut
+
+parserOutput :: Parser Output
+parserOutput = flag StdOut InPlace meta
   where
   meta =
     help "Format file in-place"
@@ -126,8 +172,9 @@ args :: Parser Args
 args =
   Args
     <$> parserFilePath
-    <*> parserVerbose
-    <*> parserInPlace
+    <*> parserFormatting
+    <*> parserOutput
+    <*> parserVerbosity
 
 argsInfo :: ParserInfo Args
 argsInfo =
@@ -157,6 +204,16 @@ instance Display PrettyPrintConfig where
 class HasPrettyPrintConfig env where
   prettyPrintConfigL :: Lens' env PrettyPrintConfig
 
+defaultPrettyPrintConfig :: PrettyPrintConfig
+defaultPrettyPrintConfig =
+  PrettyPrintConfig
+    { layoutOptions =
+      LayoutOptions
+      { layoutPageWidth =
+        AvailablePerLine 80 1
+      }
+    }
+
 data Env
   = Env
     { envArgs              :: !Args
@@ -172,13 +229,15 @@ instance Display Env where
       <> display envPrettyPrintConfig
       <> "}"
 
-defaultEnv :: LogFunc -> Path Abs File -> Env
-defaultEnv envLogFunc filePath =
+defaultEnv :: Formatting -> LogFunc -> Path Abs File -> Env
+defaultEnv formatting envLogFunc filePath' =
   Env { envArgs, envLogFunc, envPrettyPrintConfig }
     where
-    envArgs = Args { verbose = True, inPlace = False, filePath = AbsFile filePath }
-    envPrettyPrintConfig =
-      PrettyPrintConfig { layoutOptions = defaultLayoutOptions }
+    envArgs = Args { filePath, formatting, output, verbosity }
+    envPrettyPrintConfig = defaultPrettyPrintConfig
+    filePath = AbsFile filePath'
+    output = StdOut
+    verbosity = Verbose
 
 class HasEnv env where
   envL :: Lens' env Env

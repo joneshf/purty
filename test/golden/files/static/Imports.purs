@@ -1,13 +1,17 @@
 module Foo where
 
-import Prelewd 
-import Prelude 
+import Prelewd
+import Prelude
 
 import Control.Monad.Eff.Console
-  (log) 
+  ( log
+  )
 import Data.List
-  (cons, nil) 
+  ( cons
+  , nil
+  )
 import Data.Maybe
-  (maybe) 
+  ( maybe
+  )
 
 import Data.List as List

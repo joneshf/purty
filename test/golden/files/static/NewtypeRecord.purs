@@ -1,4 +1,8 @@
 module NewtypeRecord where
 
 newtype Foo
-  = Foo { }
+  = Foo {}
+
+foo ::
+  Foo
+foo = Foo {}
