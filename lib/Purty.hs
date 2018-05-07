@@ -2,6 +2,7 @@ module Purty where
 
 import "rio" RIO
 
+import "base" Data.List (isSuffixOf)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( LayoutOptions
     , PageWidth(AvailablePerLine, Unbounded)
@@ -75,7 +76,7 @@ data PurtyFilePath
   | RelDir (Path Rel Dir)
   | Unparsed String
 
-absolutize :: (MonadIO m, Alternative m) => PurtyFilePath -> m [Path Abs File]
+absolutize :: (MonadIO m) => PurtyFilePath -> m [Path Abs File]
 absolutize fp = case fp of
   AbsFile absolute -> pure [absolute]
   AbsDir absolute  -> collectPSFiles absolute
@@ -85,9 +86,9 @@ absolutize fp = case fp of
   where
     isPurs file = fileExtension file == ".purs"
     collectPSFiles = walkDirAccum Nothing (\_ _ -> pure . filter isPurs)
-    resolveUnparsed path =
-      (pure <$> resolveFile' path)
-      <|> (resolveDir' path >>= collectPSFiles)
+    resolveUnparsed path
+      | ".purs" `isSuffixOf` path = pure <$> resolveFile' path
+      | otherwise = resolveDir' path >>= collectPSFiles
 
 data Args
   = Args
