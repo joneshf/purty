@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.4.0
+
+Configuration and customization
+
+This release had only a few additions, but they were big! 
+
+The first allows selecting between dynamic and static printing. Dynamic printing is what most people think of when they think of a pretty printer. Static printing is similar to how `gofmt` and similar tools work.
+
+The second allows configuring `purty` with a file instead of command line arguments. That should allow for more reproducability and ease of use in the future. We're using [Dhall](https://dhall-lang.org) as the configuration language because it should make working with the file easier in the long run.
+
+### Additions
+
+* [Support dynamic and static printing](https://gitlab.com/joneshf/purty/issues/10)
+* [Support configuration via Dhall](https://gitlab.com/joneshf/purty/issues/18)
+
+### Changes
+
+* [Travis webhook busted](https://gitlab.com/joneshf/purty/issues/38)
+* [Distinguish between infix and prefix versions of operators](https://gitlab.com/joneshf/purty/issues/36)
+
+### Deletions
+
 ## 0.3.0
 
 Bug fixes and small features
