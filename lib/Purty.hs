@@ -2,7 +2,7 @@ module Purty where
 
 import "rio" RIO
 
-import "base" Data.List (isSuffixOf)
+import "base" Data.List                           (isSuffixOf)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( LayoutOptions
     , PageWidth(AvailablePerLine, Unbounded)
