@@ -25,6 +25,7 @@ import "optparse-applicative" Options.Applicative
     , metavar
     , progDesc
     )
+import "optparse-text" Options.Applicative.Text   (text)
 import "path" Path
     ( Abs
     , File
@@ -36,6 +37,7 @@ import "path" Path
     , parseRelFile
     )
 import "path-io" Path.IO                          (makeAbsolute, resolveFile')
+import "rio" RIO.Text                             (unpack)
 import "parsec" Text.Parsec                       (ParseError)
 
 import qualified "this" Doc.Dynamic
@@ -66,7 +68,7 @@ purty filePath = do
 data PurtyFilePath
   = AbsFile (Path Abs File)
   | RelFile (Path Rel File)
-  | Unparsed String
+  | Unparsed Text
 
 instance Display PurtyFilePath where
   display = \case
@@ -78,7 +80,7 @@ absolutize :: MonadIO m => PurtyFilePath -> m (Path Abs File)
 absolutize fp = case fp of
   AbsFile absolute -> pure absolute
   RelFile relative -> makeAbsolute relative
-  Unparsed path    -> resolveFile' path
+  Unparsed path    -> resolveFile' (unpack path)
 
 data Args
   = Args
@@ -119,7 +121,7 @@ parserFilePath = argument parser meta
   parser =
     fmap AbsFile (maybeReader parseAbsFile)
       <|> fmap RelFile (maybeReader parseRelFile)
-      <|> fmap Unparsed (maybeReader Just)
+      <|> fmap Unparsed text
 
 -- |
 -- How we want to pretty print
