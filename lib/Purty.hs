@@ -42,9 +42,10 @@ import qualified "this" Doc.Static
 
 purty ::
   (HasArgs env, HasLogFunc env, HasPrettyPrintConfig env) =>
+  PurtyFilePath ->
   RIO env (Either ParseError (SimpleDocStream a))
-purty = do
-  Args { filePath, formatting } <- view argsL
+purty filePath = do
+  Args { formatting } <- view argsL
   PrettyPrintConfig { layoutOptions } <- view prettyPrintConfigL
   absFilePath <- absolutize filePath
   logDebug ("Converted file to absolute: " <> displayShow absFilePath)
@@ -76,17 +77,14 @@ absolutize fp = case fp of
 
 data Args
   = Args
-    { filePath   :: !PurtyFilePath
-    , formatting :: !Formatting
+    { formatting :: !Formatting
     , output     :: !Output
     , verbosity  :: !Verbosity
     }
 
 instance Display Args where
-  display Args { filePath, formatting, verbosity, output } =
+  display Args { formatting, verbosity, output } =
     "{"
-      <> displayFilePath filePath
-      <> ", "
       <> displayFormatting formatting
       <> ", "
       <> displayOutput output
@@ -94,10 +92,6 @@ instance Display Args where
       <> displayVerbosity verbosity
       <> "}"
       where
-      displayFilePath = \case
-        AbsFile absFile -> "Absolute file: " <> displayShow absFile
-        RelFile relFile -> "Relative file: " <> displayShow relFile
-        Unparsed maybePath -> "I dunno, man: " <> displayShow maybePath
       displayFormatting = \case
         Dynamic -> "Dynamic"
         Static -> "Static"
@@ -171,15 +165,14 @@ parserOutput = flag StdOut InPlace meta
 args :: Parser Args
 args =
   Args
-    <$> parserFilePath
-    <*> parserFormatting
+    <$> parserFormatting
     <*> parserOutput
     <*> parserVerbosity
 
-argsInfo :: ParserInfo Args
+argsInfo :: ParserInfo (Args, PurtyFilePath)
 argsInfo =
   info
-    (helper <*> args)
+    (helper <*> ((,) <$> args <*> parserFilePath))
     ( fullDesc
     <> progDesc "Pretty print a PureScript file"
     <> header "purty - A PureScript pretty-printer"
@@ -229,13 +222,12 @@ instance Display Env where
       <> display envPrettyPrintConfig
       <> "}"
 
-defaultEnv :: Formatting -> LogFunc -> Path Abs File -> Env
-defaultEnv formatting envLogFunc filePath' =
+defaultEnv :: Formatting -> LogFunc -> Env
+defaultEnv formatting envLogFunc =
   Env { envArgs, envLogFunc, envPrettyPrintConfig }
     where
-    envArgs = Args { filePath, formatting, output, verbosity }
+    envArgs = Args { formatting, output, verbosity }
     envPrettyPrintConfig = defaultPrettyPrintConfig
-    filePath = AbsFile filePath'
     output = StdOut
     verbosity = Verbose
 

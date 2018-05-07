@@ -12,7 +12,7 @@ import "path-io" Path.IO
 import "base" System.Exit                                    (exitFailure)
 
 import "purty" Purty
-    ( Args(Args, filePath, output, verbosity)
+    ( Args(Args, output, verbosity)
     , Env(Env)
     , Output(InPlace, StdOut)
     , Verbosity(Verbose)
@@ -27,7 +27,7 @@ import "purty" Purty
 
 main :: IO ()
 main = do
-  envArgs@Args{ verbosity, filePath, output } <- execParser argsInfo
+  (envArgs@Args{ verbosity, output }, filePath) <- execParser argsInfo
   let envPrettyPrintConfig = defaultPrettyPrintConfig
   logOptions <- logOptionsHandle stderr (verbosity == Verbose)
   withLogFunc logOptions $ \envLogFunc -> do
@@ -35,7 +35,7 @@ main = do
     runRIO env $ do
       logDebug ("Env: " <> display env)
       logDebug "Running main `purty` program"
-      stream' <- purty
+      stream' <- purty filePath
       case stream' of
         Left err -> do
           logError "Problem parsing module"

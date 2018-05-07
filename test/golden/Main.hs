@@ -23,7 +23,12 @@ import "tasty-golden" Test.Tasty.Golden
     ( goldenVsStringDiff
     )
 
-import "purty" Purty (Formatting(Dynamic, Static), defaultEnv, purty)
+import "purty" Purty
+    ( Formatting(Dynamic, Static)
+    , PurtyFilePath(AbsFile)
+    , defaultEnv
+    , purty
+    )
 
 main :: IO ()
 main = defaultMain goldenTests
@@ -37,7 +42,7 @@ golden formatting testName goldenFile =
     absFile <- makeAbsolute goldenFile
     (_, logOptions) <- logOptionsMemory
     withLogFunc logOptions $ \logFunc -> do
-      result <- runRIO (defaultEnv formatting logFunc absFile) purty
+      result <- runRIO (defaultEnv formatting logFunc) (purty (AbsFile absFile))
       stream <- either (const empty) pure result
       pure (fromStrictBytes $ encodeUtf8 $ renderStrict stream)
 
