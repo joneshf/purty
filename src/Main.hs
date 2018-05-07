@@ -22,12 +22,14 @@ import "purty" Purty
     , envArgs
     , envLogFunc
     , envPrettyPrintConfig
+    , parseConfig
     , purty
     )
 
 main :: IO ()
 main = do
-  (envArgs@Args{ verbosity, output }, filePath) <- execParser argsInfo
+  (cliArgs, filePath) <- execParser argsInfo
+  envArgs@Args{ verbosity, output } <- parseConfig cliArgs
   let envPrettyPrintConfig = defaultPrettyPrintConfig
   logOptions <- logOptionsHandle stderr (verbosity == Verbose)
   withLogFunc logOptions $ \envLogFunc -> do

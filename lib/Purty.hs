@@ -9,6 +9,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , layoutPageWidth
     , layoutSmart
     )
+import "dhall" Dhall                              (Interpret, auto, input)
 import "purescript" Language.PureScript           (parseModuleFromFile)
 import "optparse-applicative" Options.Applicative
     ( Parser
@@ -39,6 +40,8 @@ import "path" Path
 import "path-io" Path.IO                          (makeAbsolute, resolveFile')
 import "rio" RIO.Text                             (unpack)
 import "parsec" Text.Parsec                       (ParseError)
+
+import qualified "rio" RIO.Text.Lazy
 
 import qualified "this" Doc.Dynamic
 import qualified "this" Doc.Static
@@ -88,6 +91,7 @@ data Args
     , output     :: !Output
     , verbosity  :: !Verbosity
     }
+  deriving (Generic)
 
 instance Display Args where
   display Args { formatting, verbosity, output } =
@@ -108,6 +112,27 @@ instance Display Args where
       displayOutput = \case
         InPlace -> "Formatting files in-place"
         StdOut -> "Writing formatted files to stdout"
+
+instance Interpret Args
+
+parseConfig :: (MonadUnliftIO f) => Args -> f Args
+parseConfig cliArgs = do
+  result <- tryIO (readFileUtf8 "./.purty.dhall")
+  case result of
+    Left _         -> pure cliArgs
+    Right contents -> do
+      configArgs <- liftIO (input auto (RIO.Text.Lazy.fromStrict contents))
+      pure Args
+        { formatting = case formatting cliArgs of
+            Static  -> formatting configArgs
+            Dynamic -> Dynamic
+        , output = case output cliArgs of
+            StdOut  -> output configArgs
+            InPlace -> InPlace
+        , verbosity = case verbosity cliArgs of
+            NotVerbose -> verbosity configArgs
+            Verbose    -> Verbose
+        }
 
 class HasArgs env where
   argsL :: Lens' env Args
@@ -131,6 +156,9 @@ parserFilePath = argument parser meta
 data Formatting
   = Dynamic
   | Static
+  deriving (Generic)
+
+instance Interpret Formatting
 
 parserFormatting :: Parser Formatting
 parserFormatting = flag Static Dynamic meta
@@ -147,7 +175,9 @@ parserFormatting = flag Static Dynamic meta
 data Verbosity
   = Verbose
   | NotVerbose
-  deriving (Eq)
+  deriving (Eq, Generic)
+
+instance Interpret Verbosity
 
 parserVerbosity :: Parser Verbosity
 parserVerbosity = flag NotVerbose Verbose meta
@@ -161,6 +191,9 @@ parserVerbosity = flag NotVerbose Verbose meta
 data Output
   = InPlace
   | StdOut
+  deriving (Generic)
+
+instance Interpret Output
 
 parserOutput :: Parser Output
 parserOutput = flag StdOut InPlace meta
