@@ -31,6 +31,7 @@ import "path" Path
     , Path
     , Rel
     , fromAbsFile
+    , fromRelFile
     , parseAbsFile
     , parseRelFile
     )
@@ -42,17 +43,15 @@ import qualified "this" Doc.Static
 
 purty ::
   (HasArgs env, HasLogFunc env, HasPrettyPrintConfig env) =>
-  PurtyFilePath ->
+  Path Abs File ->
   RIO env (Either ParseError (SimpleDocStream a))
 purty filePath = do
   Args { formatting } <- view argsL
   PrettyPrintConfig { layoutOptions } <- view prettyPrintConfigL
-  absFilePath <- absolutize filePath
-  logDebug ("Converted file to absolute: " <> displayShow absFilePath)
-  contents <- readFileUtf8 (fromAbsFile absFilePath)
+  contents <- readFileUtf8 (fromAbsFile filePath)
   logDebug "Read file contents:"
   logDebug (display contents)
-  case parseModuleFromFile id (fromAbsFile absFilePath, contents) of
+  case parseModuleFromFile id (fromAbsFile filePath, contents) of
     Left e -> do
       logDebug "Parsing failed:"
       logDebug (displayShow e)
@@ -68,6 +67,12 @@ data PurtyFilePath
   = AbsFile (Path Abs File)
   | RelFile (Path Rel File)
   | Unparsed String
+
+instance Display PurtyFilePath where
+  display = \case
+    AbsFile path -> "Absolute file: " <> displayShow (fromAbsFile path)
+    RelFile path -> "Relative file: " <> displayShow (fromRelFile path)
+    Unparsed path -> "Unparsed: " <> displayShow path
 
 absolutize :: MonadIO m => PurtyFilePath -> m (Path Abs File)
 absolutize fp = case fp of
