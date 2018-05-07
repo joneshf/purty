@@ -12,7 +12,7 @@ import "path-io" Path.IO
 import "base" System.Exit                                    (exitFailure)
 
 import "purty" Purty
-    ( Args(Args, filePath, output, verbosity)
+    ( Args(Args, output, verbosity)
     , Env(Env)
     , Output(InPlace, StdOut)
     , Verbosity(Verbose)
@@ -22,20 +22,25 @@ import "purty" Purty
     , envArgs
     , envLogFunc
     , envPrettyPrintConfig
+    , parseConfig
     , purty
     )
 
 main :: IO ()
 main = do
-  envArgs@Args{ verbosity, filePath, output } <- execParser argsInfo
+  (cliArgs, filePath) <- execParser argsInfo
+  envArgs@Args{ verbosity, output } <- parseConfig cliArgs
   let envPrettyPrintConfig = defaultPrettyPrintConfig
   logOptions <- logOptionsHandle stderr (verbosity == Verbose)
   withLogFunc logOptions $ \envLogFunc -> do
     let env = Env { envArgs, envLogFunc, envPrettyPrintConfig }
     runRIO env $ do
       logDebug ("Env: " <> display env)
+      logDebug ("Converting " <> display filePath <> " to an absolute path")
+      absPath <- absolutize filePath
+      logDebug ("Converted file to absolute: " <> displayShow absPath)
       logDebug "Running main `purty` program"
-      stream' <- purty
+      stream' <- purty absPath
       case stream' of
         Left err -> do
           logError "Problem parsing module"
@@ -46,7 +51,6 @@ main = do
           logDebug (displayShow $ void stream)
           case output of
             InPlace -> liftIO $ withSystemTempFile "purty.purs" $ \fp h -> do
-              absPath <- absolutize filePath
               renderIO h stream
               hClose h
               copyPermissions absPath fp
