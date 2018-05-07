@@ -66,9 +66,9 @@ purty filePath = do
         Static  -> pure (Right $ layoutSmart layoutOptions $ Doc.Static.fromModule m)
 
 data PurtyFilePath
-  = AbsFile (Path Abs File)
-  | RelFile (Path Rel File)
-  | Unparsed Text
+  = AbsFile !(Path Abs File)
+  | RelFile !(Path Rel File)
+  | Unparsed !Text
 
 instance Display PurtyFilePath where
   display = \case
