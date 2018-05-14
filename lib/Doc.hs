@@ -38,12 +38,13 @@ import "purescript" Language.PureScript
     ( Comment(BlockComment, LineComment)
     , DataDeclType(Data, Newtype)
     , Declaration(ImportDeclaration)
+    , DeclarationRef(TypeRef)
     , Expr
     , Fixity(Fixity)
     , FunctionalDependency(FunctionalDependency, fdDetermined, fdDeterminers)
     , GuardedExpr(GuardedExpr)
     , Ident
-    , ImportDeclarationType(Implicit)
+    , ImportDeclarationType(Explicit, Implicit)
     , Kind
     , ModuleName
     , NameKind
@@ -52,6 +53,7 @@ import "purescript" Language.PureScript
     , SourceAnn
     , Type(ForAll, PrettyPrintForAll, PrettyPrintFunction, PrettyPrintObject, TypeApp)
     , ValueDeclarationData(ValueDeclarationData, valdeclBinders, valdeclExpression, valdeclIdent, valdeclName, valdeclSourceAnn)
+    , compDecRef
     , prettyPrintKind
     , prettyPrintString
     , runModuleName
@@ -61,7 +63,7 @@ import "purescript" Language.PureScript
     , tyRecord
     )
 import "purescript" Language.PureScript.PSString (PSString)
-import "rio" RIO.List                            (sortOn)
+import "rio" RIO.List                            (sort, sortBy, sortOn)
 import "rio" RIO.Text                            (dropAround)
 
 convertForAlls :: [Text] -> Language.PureScript.Type -> Language.PureScript.Type
@@ -154,11 +156,21 @@ partitionImports = go ([], [], [])
     _ : rest -> go (open, explicit, qualified) rest
 
 sortImports :: [Declaration] -> [Declaration]
-sortImports = sortOn importName
+sortImports = mapMaybe sortExplicits . sortOn importName
   where
   importName :: Declaration -> Maybe ModuleName
   importName = \case
     ImportDeclaration _ name _ _ -> Just name
+    _ -> Nothing
+  sortConstructors :: DeclarationRef -> DeclarationRef
+  sortConstructors = \case
+    TypeRef s name constructors -> TypeRef s name (fmap sort constructors)
+    r -> r
+  sortExplicits :: Declaration -> Maybe Declaration
+  sortExplicits = \case
+    ImportDeclaration s name (Explicit refs) moduleName ->
+      Just (ImportDeclaration s name (Explicit (sortConstructors <$> sortBy compDecRef refs)) moduleName)
+    i@ImportDeclaration {} -> Just i
     _ -> Nothing
 
 valueDeclarationFromAnonymousDeclaration ::
