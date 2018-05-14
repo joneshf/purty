@@ -3,7 +3,6 @@ before_deploy:
   - appveyor PushArtifact purty-%APPVEYOR_REPO_TAG_NAME%-win.tar.gz
 
 build_script:
-  - chcp 65001
   - stack setup
   - stack build --copy-bins --local-bin-path bin --no-run-tests --test
   - stack build --test
