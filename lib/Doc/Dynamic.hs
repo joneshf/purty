@@ -319,7 +319,7 @@ fromDeclaration = \case
       <> line
 
 fromDeclarations :: [Declaration] -> Doc a
-fromDeclarations = foldMap fromDeclaration
+fromDeclarations = vsep . fmap fromDeclaration
 
 fromDoElement :: DoNotationElement -> Doc a
 fromDoElement = \case
