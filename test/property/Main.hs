@@ -5,7 +5,8 @@ import "rio" RIO
 import "prettyprinter" Data.Text.Prettyprint.Doc             (Doc, layoutSmart)
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 import "hedgehog" Hedgehog
-    ( Group(Group, groupName, groupProperties)
+    ( Gen
+    , Group(Group, groupName, groupProperties)
     , Property
     , checkParallel
     , forAll
@@ -40,23 +41,29 @@ main = do
 
 prop_dynamic_char_binder :: Property
 prop_dynamic_char_binder = property $ do
-  c <- forAll Hedgehog.Gen.unicodeAll
+  c <- forAll char
   renderText (Doc.Dynamic.fromLiteralBinder (CharLiteral c)) === pack (show c)
 
 prop_dynamic_char_expr :: Property
 prop_dynamic_char_expr = property $ do
-  c <- forAll Hedgehog.Gen.unicodeAll
+  c <- forAll char
   renderText (Doc.Dynamic.fromLiteralExpr (CharLiteral c)) === pack (show c)
 
 prop_static_char_binder :: Property
 prop_static_char_binder = property $ do
-  c <- forAll Hedgehog.Gen.unicodeAll
+  c <- forAll char
   renderText (Doc.Static.fromLiteralBinder (CharLiteral c)) === pack (show c)
 
 prop_static_char_expr :: Property
 prop_static_char_expr = property $ do
-  c <- forAll Hedgehog.Gen.unicodeAll
+  c <- forAll char
   renderText (Doc.Static.fromLiteralExpr (CharLiteral c)) === pack (show c)
+
+-- PureScript only supports this range of characters.
+-- For more information and the source of this decision, see:
+-- https://github.com/purescript/purescript/blob/15d7330b3adb7f8d941052a7cfc4df075724d248/src/Language/PureScript/Parser/Lexer.hs#L263-L269
+char :: Gen Char
+char = Hedgehog.Gen.enum '\0' '\xFFFF'
 
 renderText :: Doc a -> Text
 renderText = renderStrict . layoutSmart (layoutOptions defaultPrettyPrintConfig)
