@@ -27,6 +27,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , pretty
     , punctuate
     , space
+    , viaShow
     , vsep
     , (<+>)
     )
@@ -413,7 +414,7 @@ fromLiteralBinder = \case
   ArrayLiteral xs ->
     enclose "[" "]" (hsep $ punctuate comma $ fmap fromBinder xs)
   BooleanLiteral b -> pretty b
-  CharLiteral c -> pretty c
+  CharLiteral c -> viaShow c
   NumericLiteral (Left x) -> pretty x
   NumericLiteral (Right x) -> pretty x
   ObjectLiteral obj ->
@@ -424,7 +425,7 @@ fromLiteralExpr :: Literal Expr -> Doc a
 fromLiteralExpr = \case
   ArrayLiteral xs -> brackets (fmap fromExpr xs)
   BooleanLiteral b -> pretty b
-  CharLiteral c -> pretty c
+  CharLiteral c -> viaShow c
   NumericLiteral (Left x) -> pretty x
   NumericLiteral (Right x) -> pretty x
   ObjectLiteral obj -> braces (fmap fromObjectExpr obj)
