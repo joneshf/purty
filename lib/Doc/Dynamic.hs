@@ -2,7 +2,12 @@
 -- analysis on the module, like unused binds.
 -- Don't mis-interpret the export list as saying what the private/public API is.
 -- If you need something from this module, export it.
-module Doc.Dynamic (fromModule, fromType) where
+module Doc.Dynamic
+  ( fromLiteralBinder
+  , fromLiteralExpr
+  , fromModule
+  , fromType
+  ) where
 
 import "rio" RIO
 

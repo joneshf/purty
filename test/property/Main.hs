@@ -1,0 +1,62 @@
+module Main where
+
+import "rio" RIO
+
+import "prettyprinter" Data.Text.Prettyprint.Doc             (Doc, layoutSmart)
+import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
+import "hedgehog" Hedgehog
+    ( Group(Group, groupName, groupProperties)
+    , Property
+    , checkParallel
+    , forAll
+    , property
+    , (===)
+    )
+import "purescript" Language.PureScript
+    ( Literal(CharLiteral)
+    )
+import "rio" RIO.Text                                        (pack)
+import "base" System.Exit                                    (exitFailure)
+
+import qualified "hedgehog" Hedgehog.Gen
+
+import "purty" Purty (defaultPrettyPrintConfig, layoutOptions)
+
+import qualified "purty" Doc.Dynamic
+import qualified "purty" Doc.Static
+
+main :: IO ()
+main = do
+  passed <- checkParallel
+    Group { groupName = "char can be parsed"
+          , groupProperties =
+            [ ("prop_dynamic_char_binder", prop_dynamic_char_binder)
+            , ("prop_dynamic_char_expr", prop_dynamic_char_expr)
+            , ("prop_static_char_binder", prop_static_char_binder)
+            , ("prop_static_char_expr", prop_static_char_expr)
+            ]
+          }
+  unless passed exitFailure
+
+prop_dynamic_char_binder :: Property
+prop_dynamic_char_binder = property $ do
+  c <- forAll Hedgehog.Gen.unicodeAll
+  renderText (Doc.Dynamic.fromLiteralBinder (CharLiteral c)) === pack (show c)
+
+prop_dynamic_char_expr :: Property
+prop_dynamic_char_expr = property $ do
+  c <- forAll Hedgehog.Gen.unicodeAll
+  renderText (Doc.Dynamic.fromLiteralExpr (CharLiteral c)) === pack (show c)
+
+prop_static_char_binder :: Property
+prop_static_char_binder = property $ do
+  c <- forAll Hedgehog.Gen.unicodeAll
+  renderText (Doc.Static.fromLiteralBinder (CharLiteral c)) === pack (show c)
+
+prop_static_char_expr :: Property
+prop_static_char_expr = property $ do
+  c <- forAll Hedgehog.Gen.unicodeAll
+  renderText (Doc.Static.fromLiteralExpr (CharLiteral c)) === pack (show c)
+
+renderText :: Doc a -> Text
+renderText = renderStrict . layoutSmart (layoutOptions defaultPrettyPrintConfig)
