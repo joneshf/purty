@@ -2,7 +2,12 @@
 -- analysis on the module, like unused binds.
 -- Don't mis-interpret the export list as saying what the private/public API is.
 -- If you need something from this module, export it.
-module Doc.Static (fromModule, fromType) where
+module Doc.Static
+  ( fromLiteralBinder
+  , fromLiteralExpr
+  , fromModule
+  , fromType
+  ) where
 
 import "rio" RIO
 
@@ -22,6 +27,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , pretty
     , punctuate
     , space
+    , viaShow
     , vsep
     , (<+>)
     )
@@ -408,7 +414,7 @@ fromLiteralBinder = \case
   ArrayLiteral xs ->
     enclose "[" "]" (hsep $ punctuate comma $ fmap fromBinder xs)
   BooleanLiteral b -> pretty b
-  CharLiteral c -> pretty c
+  CharLiteral c -> viaShow c
   NumericLiteral (Left x) -> pretty x
   NumericLiteral (Right x) -> pretty x
   ObjectLiteral obj ->
@@ -419,7 +425,7 @@ fromLiteralExpr :: Literal Expr -> Doc a
 fromLiteralExpr = \case
   ArrayLiteral xs -> brackets (fmap fromExpr xs)
   BooleanLiteral b -> pretty b
-  CharLiteral c -> pretty c
+  CharLiteral c -> viaShow c
   NumericLiteral (Left x) -> pretty x
   NumericLiteral (Right x) -> pretty x
   ObjectLiteral obj -> braces (fmap fromObjectExpr obj)

@@ -53,7 +53,8 @@ dynamic :: TestTree
 dynamic =
   testGroup
     "dynamic"
-    [ golden Dynamic "data with parameters" [relfile|test/golden/files/dynamic/DataWithParameters.purs|]
+    [ golden Dynamic "char" [relfile|test/golden/files/dynamic/Char.purs|]
+    , golden Dynamic "data with parameters" [relfile|test/golden/files/dynamic/DataWithParameters.purs|]
     , golden Dynamic "empty data" [relfile|test/golden/files/dynamic/EmptyData.purs|]
     , golden Dynamic "imports" [relfile|test/golden/files/dynamic/Imports.purs|]
     , golden Dynamic "typeclass instance" [relfile|test/golden/files/dynamic/Instance.purs|]
@@ -74,7 +75,8 @@ static :: TestTree
 static =
   testGroup
     "static"
-    [ golden Static "data with parameters" [relfile|test/golden/files/static/DataWithParameters.purs|]
+    [ golden Static "char" [relfile|test/golden/files/static/Char.purs|]
+    , golden Static "data with parameters" [relfile|test/golden/files/static/DataWithParameters.purs|]
     , golden Static "empty data" [relfile|test/golden/files/static/EmptyData.purs|]
     , golden Static "imports" [relfile|test/golden/files/static/Imports.purs|]
     , golden Static "typeclass instance" [relfile|test/golden/files/static/Instance.purs|]
