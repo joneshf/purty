@@ -169,7 +169,7 @@ sortImports = mapMaybe sortExplicits . sortOn importName
   sortExplicits :: Declaration -> Maybe Declaration
   sortExplicits = \case
     ImportDeclaration s name (Explicit refs) moduleName ->
-      Just (ImportDeclaration s name (Explicit (fmap sortConstructors $ sortBy compDecRef refs)) moduleName)
+      Just (ImportDeclaration s name (Explicit (sortConstructors <$> sortBy compDecRef refs)) moduleName)
     i@ImportDeclaration {} -> Just i
     _ -> Nothing
 
