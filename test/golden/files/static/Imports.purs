@@ -21,17 +21,17 @@ import Data.Maybe
   , maybe
   )
 import Prelude
-  ( class Semiring
-  , Ordering(LT, EQ, GT)
-  , Void
+  ( class EuclideanRing
+  , class Semiring
+  , Ordering(EQ, GT, LT)
   , Unit
+  , Void
   , compose
-  , class EuclideanRing
-  , one
   , flap
+  , one
+  , (&&)
   , (<<<)
   , (~>)
-  , (&&)
   )
 
 import Data.List as List
