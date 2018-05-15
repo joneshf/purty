@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.0
+
+Small bug fixes
+
+Not much happened in this release. There were a couple of bug fixes and a change to import sorting.
+
+### Additions
+
+### Changes
+
+* [`Char`s are not printed properly](https://gitlab.com/joneshf/purty/issues/45)
+* [Let bindings with type signatures print incorrectly](https://gitlab.com/joneshf/purty/issues/41)
+* [Sort imported values in import lists](https://gitlab.com/joneshf/purty/issues/44)
+
+### Deletions
+
 ## 0.4.0
 
 Configuration and customization
