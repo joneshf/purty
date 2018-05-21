@@ -87,15 +87,18 @@ absolutize fp = case fp of
 
 data Args
   = Args
-    { argsFormatting :: !Formatting
+    { argsFilePath   :: !PurtyFilePath
+    , argsFormatting :: !Formatting
     , argsOutput     :: !Output
     , argsVerbosity  :: !Verbosity
     }
   deriving (Generic)
 
 instance Display Args where
-  display Args { argsFormatting, argsVerbosity, argsOutput } =
+  display Args { argsFilePath, argsFormatting, argsVerbosity, argsOutput } =
     "{"
+      <> display argsFilePath
+      <> ", "
       <> display argsFormatting
       <> ", "
       <> display argsOutput
@@ -233,14 +236,15 @@ parserOutput = flag StdOut InPlace meta
 args :: Parser Args
 args =
   Args
-    <$> parserFormatting
+    <$> parserFilePath
+    <*> parserFormatting
     <*> parserOutput
     <*> parserVerbosity
 
-argsInfo :: ParserInfo (Args, PurtyFilePath)
+argsInfo :: ParserInfo Args
 argsInfo =
   info
-    (helper <*> ((,) <$> args <*> parserFilePath))
+    (helper <*> args)
     ( fullDesc
     <> progDesc "Pretty print a PureScript file"
     <> header "purty - A PureScript pretty-printer"

@@ -12,7 +12,8 @@ import "path-io" Path.IO
 import "base" System.Exit                                    (exitFailure)
 
 import "purty" Purty
-    ( Config(Config, output, verbosity)
+    ( Args(Args, argsFilePath)
+    , Config(Config, output, verbosity)
     , Env(Env)
     , Output(InPlace, StdOut)
     , Verbosity(Verbose)
@@ -28,7 +29,7 @@ import "purty" Purty
 
 main :: IO ()
 main = do
-  (cliArgs, filePath) <- execParser argsInfo
+  cliArgs@Args { argsFilePath } <- execParser argsInfo
   envConfig@Config{ verbosity, output } <- parseConfig cliArgs
   let envPrettyPrintConfig = defaultPrettyPrintConfig
   logOptions <- logOptionsHandle stderr (verbosity == Verbose)
@@ -36,8 +37,8 @@ main = do
     let env = Env { envConfig, envLogFunc, envPrettyPrintConfig }
     runRIO env $ do
       logDebug ("Env: " <> display env)
-      logDebug ("Converting " <> display filePath <> " to an absolute path")
-      absPath <- absolutize filePath
+      logDebug ("Converting " <> display argsFilePath <> " to an absolute path")
+      absPath <- absolutize argsFilePath
       logDebug ("Converted file to absolute: " <> displayShow absPath)
       logDebug "Running main `purty` program"
       stream' <- purty absPath
