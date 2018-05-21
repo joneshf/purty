@@ -9,13 +9,19 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , layoutPageWidth
     , layoutSmart
     )
-import "dhall" Dhall                              (Interpret, auto, input)
+import "dhall" Dhall
+    ( Inject
+    , Interpret
+    , auto
+    , input
+    )
 import "purescript" Language.PureScript           (parseModuleFromFile)
 import "optparse-applicative" Options.Applicative
     ( Parser
     , ParserInfo
     , argument
     , flag
+    , flag'
     , fullDesc
     , header
     , help
@@ -47,11 +53,11 @@ import qualified "this" Doc.Dynamic
 import qualified "this" Doc.Static
 
 purty ::
-  (HasArgs env, HasLogFunc env, HasPrettyPrintConfig env) =>
+  (HasConfig env, HasLogFunc env, HasPrettyPrintConfig env) =>
   Path Abs File ->
   RIO env (Either ParseError (SimpleDocStream a))
 purty filePath = do
-  Args { formatting } <- view argsL
+  Config { formatting } <- view configL
   PrettyPrintConfig { layoutOptions } <- view prettyPrintConfigL
   contents <- readFileUtf8 (fromAbsFile filePath)
   logDebug "Read file contents:"
@@ -87,55 +93,86 @@ absolutize fp = case fp of
 
 data Args
   = Args
+    { argsFilePath   :: !PurtyFilePath
+    , argsFormatting :: !Formatting
+    , argsOutput     :: !Output
+    , argsVerbosity  :: !Verbosity
+    }
+  | Defaults
+  deriving (Generic)
+
+instance Display Args where
+  display = \case
+    Args { argsFilePath, argsFormatting, argsVerbosity, argsOutput } ->
+      "{"
+        <> display argsFilePath
+        <> ", "
+        <> display argsFormatting
+        <> ", "
+        <> display argsOutput
+        <> ", "
+        <> display argsVerbosity
+        <> "}"
+    Defaults -> "Defaults"
+
+data Config
+  = Config
     { formatting :: !Formatting
     , output     :: !Output
     , verbosity  :: !Verbosity
     }
   deriving (Generic)
 
-instance Display Args where
-  display Args { formatting, verbosity, output } =
+instance Display Config where
+  display Config { formatting, verbosity, output } =
     "{"
-      <> displayFormatting formatting
+      <> display formatting
       <> ", "
-      <> displayOutput output
+      <> display output
       <> ", "
-      <> displayVerbosity verbosity
+      <> display verbosity
       <> "}"
-      where
-      displayFormatting = \case
-        Dynamic -> "Dynamic"
-        Static -> "Static"
-      displayVerbosity = \case
-        Verbose -> "Verbose"
-        NotVerbose -> "Not verbose"
-      displayOutput = \case
-        InPlace -> "Formatting files in-place"
-        StdOut -> "Writing formatted files to stdout"
 
-instance Interpret Args
+instance Inject Config
 
-parseConfig :: (MonadUnliftIO f) => Args -> f Args
-parseConfig cliArgs = do
-  result <- tryIO (readFileUtf8 "./.purty.dhall")
-  case result of
-    Left _         -> pure cliArgs
-    Right contents -> do
-      configArgs <- liftIO (input auto (RIO.Text.Lazy.fromStrict contents))
-      pure Args
-        { formatting = case formatting cliArgs of
-            Static  -> formatting configArgs
-            Dynamic -> Dynamic
-        , output = case output cliArgs of
-            StdOut  -> output configArgs
-            InPlace -> InPlace
-        , verbosity = case verbosity cliArgs of
-            NotVerbose -> verbosity configArgs
-            Verbose    -> Verbose
-        }
+instance Interpret Config
 
-class HasArgs env where
-  argsL :: Lens' env Args
+class HasConfig env where
+  configL :: Lens' env Config
+
+parseConfig :: (MonadUnliftIO f) => Args -> f Config
+parseConfig = \case
+  Args { argsFormatting, argsOutput, argsVerbosity } -> do
+    result <- tryIO (readFileUtf8 "./.purty.dhall")
+    case result of
+      Left _ ->
+        pure Config
+          { formatting = argsFormatting
+          , output = argsOutput
+          , verbosity = argsVerbosity
+          }
+      Right contents -> do
+        config <- liftIO (input auto (RIO.Text.Lazy.fromStrict contents))
+        pure Config
+          { formatting = case argsFormatting of
+              Static  -> formatting config
+              Dynamic -> Dynamic
+          , output = case argsOutput of
+              StdOut  -> output config
+              InPlace -> InPlace
+          , verbosity = case argsVerbosity of
+              NotVerbose -> verbosity config
+              Verbose    -> Verbose
+          }
+  Defaults -> pure defaultConfig
+
+defaultConfig :: Config
+defaultConfig =
+  Config
+    { formatting = Static
+    , output = StdOut
+    , verbosity = NotVerbose
+    }
 
 parserFilePath :: Parser PurtyFilePath
 parserFilePath = argument parser meta
@@ -148,6 +185,16 @@ parserFilePath = argument parser meta
       <|> fmap RelFile (maybeReader parseRelFile)
       <|> fmap Unparsed text
 
+parserDefaults :: Parser Args
+parserDefaults = flag' Defaults meta
+  where
+  meta =
+    help
+      ( "Display default values for configuration."
+      <> " You can save this to `.purty.dhall` as a starting point"
+      )
+      <> long "defaults"
+
 -- |
 -- How we want to pretty print
 --
@@ -157,6 +204,13 @@ data Formatting
   = Dynamic
   | Static
   deriving (Generic)
+
+instance Display Formatting where
+  display = \case
+    Dynamic -> "Dynamic"
+    Static -> "Static"
+
+instance Inject Formatting
 
 instance Interpret Formatting
 
@@ -177,6 +231,13 @@ data Verbosity
   | NotVerbose
   deriving (Eq, Generic)
 
+instance Display Verbosity where
+  display = \case
+    Verbose -> "Verbose"
+    NotVerbose -> "Not verbose"
+
+instance Inject Verbosity
+
 instance Interpret Verbosity
 
 parserVerbosity :: Parser Verbosity
@@ -193,6 +254,13 @@ data Output
   | StdOut
   deriving (Generic)
 
+instance Display Output where
+  display = \case
+    InPlace -> "Formatting files in-place"
+    StdOut -> "Writing formatted files to stdout"
+
+instance Inject Output
+
 instance Interpret Output
 
 parserOutput :: Parser Output
@@ -204,15 +272,17 @@ parserOutput = flag StdOut InPlace meta
 
 args :: Parser Args
 args =
-  Args
-    <$> parserFormatting
-    <*> parserOutput
-    <*> parserVerbosity
+  parserDefaults
+    <|> Args
+      <$> parserFilePath
+      <*> parserFormatting
+      <*> parserOutput
+      <*> parserVerbosity
 
-argsInfo :: ParserInfo (Args, PurtyFilePath)
+argsInfo :: ParserInfo Args
 argsInfo =
   info
-    (helper <*> ((,) <$> args <*> parserFilePath))
+    (helper <*> args)
     ( fullDesc
     <> progDesc "Pretty print a PureScript file"
     <> header "purty - A PureScript pretty-printer"
@@ -249,24 +319,24 @@ defaultPrettyPrintConfig =
 
 data Env
   = Env
-    { envArgs              :: !Args
+    { envConfig            :: !Config
     , envLogFunc           :: !LogFunc
     , envPrettyPrintConfig :: !PrettyPrintConfig
     }
 
 instance Display Env where
-  display Env { envArgs, envPrettyPrintConfig } =
-    "{Args: "
-      <> display envArgs
+  display Env { envConfig, envPrettyPrintConfig } =
+    "{Config: "
+      <> display envConfig
       <> ", PrettyPrintConfig: "
       <> display envPrettyPrintConfig
       <> "}"
 
 defaultEnv :: Formatting -> LogFunc -> Env
 defaultEnv formatting envLogFunc =
-  Env { envArgs, envLogFunc, envPrettyPrintConfig }
+  Env { envConfig, envLogFunc, envPrettyPrintConfig }
     where
-    envArgs = Args { formatting, output, verbosity }
+    envConfig = Config { formatting, output, verbosity }
     envPrettyPrintConfig = defaultPrettyPrintConfig
     output = StdOut
     verbosity = Verbose
@@ -274,8 +344,8 @@ defaultEnv formatting envLogFunc =
 class HasEnv env where
   envL :: Lens' env Env
 
-instance HasArgs Env where
-  argsL f env = (\envArgs -> env { envArgs }) <$> f (envArgs env)
+instance HasConfig Env where
+  configL f env = (\envConfig -> env { envConfig }) <$> f (envConfig env)
 
 instance HasEnv Env where
   envL = id
