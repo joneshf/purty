@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.6.0
+
+Tiny release
+
+One small addition for configuration.
+
+### Additions
+
+* [Provide a default configuration](https://gitlab.com/joneshf/purty/issues/46)
+
+### Changes
+
+### Deletions
+
 ## 0.5.0
 
 Small bug fixes
