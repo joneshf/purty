@@ -15,6 +15,7 @@ stages:
 
 Build purty:
   before_script:
+    - mkdir --parents $HOME/.local/bin
     - ci/install-stack.sh --verbose
     - stack setup
   script:
