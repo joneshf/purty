@@ -8,6 +8,7 @@ cache:
     - .stack-work
 
 variables:
+  PATH: $HOME/.local/bin:$PATH
   STACK_ROOT: $CI_PROJECT_DIR/.stack-root
   
 stages:
