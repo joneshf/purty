@@ -8,7 +8,6 @@ cache:
     - .stack-work
 
 variables:
-  PATH: $HOME/.local/bin:$PATH
   STACK_ROOT: $CI_PROJECT_DIR/.stack-root
   
 stages:
@@ -16,6 +15,7 @@ stages:
 
 Build purty:
   before_script:
+    - export PATH=$HOME/.local/bin:$PATH
     - mkdir --parents $HOME/.local/bin
     - ci/install-stack.sh --verbose
     - stack setup
