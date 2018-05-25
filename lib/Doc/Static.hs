@@ -38,7 +38,7 @@ import "purescript" Language.PureScript
     , Declaration(BindingGroupDeclaration, BoundValueDeclaration, DataBindingGroupDeclaration, DataDeclaration, ExternDataDeclaration, ExternDeclaration, ExternKindDeclaration, FixityDeclaration, ImportDeclaration, TypeClassDeclaration, TypeDeclaration, TypeInstanceDeclaration, TypeSynonymDeclaration, ValueDeclaration)
     , DeclarationRef(KindRef, ModuleRef, ReExportRef, TypeClassRef, TypeInstanceRef, TypeOpRef, TypeRef, ValueOpRef, ValueRef)
     , DoNotationElement(DoNotationBind, DoNotationLet, DoNotationValue, PositionedDoNotationElement)
-    , Expr(Abs, Accessor, AnonymousArgument, App, BinaryNoParens, Case, Constructor, DeferredDictionary, Do, Hole, IfThenElse, Let, Literal, ObjectUpdate, ObjectUpdateNested, Op, Parens, PositionedValue, TypeClassDictionary, TypeClassDictionaryAccessor, TypeClassDictionaryConstructorApp, TypedValue, UnaryMinus, Var)
+    , Expr(Abs, Accessor, Ado, AnonymousArgument, App, BinaryNoParens, Case, Constructor, DeferredDictionary, Do, Hole, IfThenElse, Let, Literal, ObjectUpdate, ObjectUpdateNested, Op, Parens, PositionedValue, TypeClassDictionary, TypeClassDictionaryAccessor, TypeClassDictionaryConstructorApp, TypedValue, UnaryMinus, Var)
     , FunctionalDependency
     , Guard(ConditionGuard, PatternGuard)
     , GuardedExpr(GuardedExpr)
@@ -58,6 +58,7 @@ import "purescript" Language.PureScript
     , TypeInstanceBody(DerivedInstance, ExplicitInstance, NewtypeInstance, NewtypeInstanceWithDictionary)
     , ValueDeclarationData(ValueDeclarationData, valdeclBinders, valdeclExpression, valdeclIdent, valdeclSourceAnn)
     , ValueFixity(ValueFixity)
+    , WhereProvenance(FromLet, FromWhere)
     , everywhereOnTypes
     , everywhereOnTypesTopDown
     , isImportDecl
@@ -126,7 +127,7 @@ enclosedWith open close = \case
 
 fromBinaryOp :: Expr -> Doc a
 fromBinaryOp = \case
-  Op op -> pretty (showQualified runOpName op)
+  Op _ op -> pretty (showQualified runOpName op)
   PositionedValue _ comments expr -> fromComments comments <> fromBinaryOp expr
   expr -> fromExpr expr
 
@@ -134,18 +135,18 @@ fromBinder :: Binder -> Doc a
 fromBinder = \case
   BinaryNoParensBinder left op right ->
     fromBinder left <+> fromBinder op <+> fromBinder right
-  ConstructorBinder name [] -> pretty (showQualified runProperName name)
-  ConstructorBinder name binders ->
+  ConstructorBinder _ name [] -> pretty (showQualified runProperName name)
+  ConstructorBinder _ name binders ->
     pretty (showQualified runProperName name) <+> hsep (fmap fromBinder binders)
-  LiteralBinder literal -> fromLiteralBinder literal
-  NamedBinder name binder -> pretty (runIdent name) <> "@" <> fromBinder binder
+  LiteralBinder _ literal -> fromLiteralBinder literal
+  NamedBinder _ name binder -> pretty (runIdent name) <> "@" <> fromBinder binder
   NullBinder -> "_"
-  OpBinder name -> pretty (showQualified runOpName name)
+  OpBinder _ name -> pretty (showQualified runOpName name)
   ParensInBinder binder -> enclose "(" ")" (fromBinder binder)
   PositionedBinder _ comments binder ->
     fromComments comments <> fromBinder binder
   TypedBinder type' binder -> fromBinder binder <+> "::" <+> fromType type'
-  VarBinder ident -> pretty (runIdent ident)
+  VarBinder _ ident -> pretty (runIdent ident)
 
 fromBinders :: [Binder] -> Doc a
 fromBinders = \case
@@ -245,8 +246,9 @@ fromDeclaration = \case
       <> fromTypeClassConstraints "<=" constraints
       <> line
       <> indent 2 (fromTypeClassWithoutConstraints name parameters funDeps declarations)
-  TypeInstanceDeclaration (_, comments) ident constraints name types DerivedInstance ->
+  TypeInstanceDeclaration (_, comments) _ index ident constraints name types DerivedInstance ->
     fromComments comments
+      <> (if index /= 0 then "else" <> space else mempty)
       <> "derive instance"
       <+> pretty (runIdent ident)
       <+> "::"
@@ -256,16 +258,18 @@ fromDeclaration = \case
                   <+> hsep (fmap fromType types)
                   )
       <> line
-  TypeInstanceDeclaration (_, comments) ident constraints name types (ExplicitInstance declarations) ->
+  TypeInstanceDeclaration (_, comments) _ index ident constraints name types (ExplicitInstance declarations) ->
     fromComments comments
+      <> (if index /= 0 then "else" <> space else mempty)
       <> "instance"
       <+> pretty (runIdent ident)
       <+> "::"
       <> fromTypeClassConstraints "=>" constraints
       <> line
       <> indent 2 (fromTypeInstanceWithoutConstraints name types declarations)
-  TypeInstanceDeclaration (_, comments) ident constraints name types NewtypeInstance ->
+  TypeInstanceDeclaration (_, comments) _ index ident constraints name types NewtypeInstance ->
     fromComments comments
+      <> (if index /= 0 then "else" <> space else mempty)
       <> "derive newtype instance"
       <+> pretty (runIdent ident)
       <+> "::"
@@ -275,8 +279,9 @@ fromDeclaration = \case
                   <+> hsep (fmap fromType types)
                   )
       <> line
-  TypeInstanceDeclaration (_, comments) ident constraints name types (NewtypeInstanceWithDictionary _) ->
+  TypeInstanceDeclaration (_, comments) _ index ident constraints name types (NewtypeInstanceWithDictionary _) ->
     fromComments comments
+      <> (if index /= 0 then "else" <> space else mempty)
       <> "derive newtype instance"
       <+> pretty (runIdent ident)
       <+> "::"
@@ -336,6 +341,12 @@ fromExpr = \case
   Abs binder expr ->
     "\\" <> fromBinder binder <+> "->" <> line <> indent 2 (fromExpr expr)
   Accessor key expr -> fromExpr expr <> "." <> fromPSString key
+  Ado elements expr ->
+    "ado"
+      <> line
+      <> indent 2 (vsep $ fmap fromDoElement elements)
+      <> line
+      <> indent 2 ("in" <+> fromExpr expr)
   AnonymousArgument -> "_"
   App expr1 expr2 -> fromExpr expr1 <+> fromExpr expr2
   BinaryNoParens op left right ->
@@ -346,7 +357,7 @@ fromExpr = \case
       <+> "of"
       <> line
       <> indent 2 (vsep $ fmap fromCaseAlternative alternatives)
-  Constructor name -> pretty (showQualified runProperName name)
+  Constructor _ name -> pretty (showQualified runProperName name)
   DeferredDictionary _ _ -> mempty
   Do elements ->
     "do"
@@ -358,25 +369,29 @@ fromExpr = \case
       [ "if" <+> fromExpr b <+> "then" <> line <> indent 2 (fromExpr t)
       , "else" <> line <> indent 2 (fromExpr f)
       ]
-  Let declarations expr ->
+  Let FromLet declarations expr ->
     align $ vsep
       [ "let" <+> align (fromDeclarations declarations)
       , "in" <+> fromExpr expr
       ]
-  Literal literal -> fromLiteralExpr literal
+  Let FromWhere declarations expr ->
+    fromExpr expr
+      <> line
+      <> indent 2 (align $ vsep ["where", fromDeclarations declarations])
+  Literal _ literal -> fromLiteralExpr literal
   ObjectUpdate expr obj ->
     fromExpr expr <+> braces (fmap (fromObjectUpdate . fmap fromExpr) obj)
   ObjectUpdateNested expr pathTree ->
     fromExpr expr <+> fromPathTree pathTree
-  Op op -> enclose "(" ")" (pretty $ showQualified runOpName op)
+  Op _ op -> enclose "(" ")" (pretty $ showQualified runOpName op)
   Parens expr -> parens (fromExpr expr)
   PositionedValue _ comments expr -> fromComments comments <> fromExpr expr
   TypeClassDictionary {} -> mempty
   TypeClassDictionaryAccessor _ _ -> mempty
   TypeClassDictionaryConstructorApp _ _ -> mempty
   TypedValue _ expr exprType -> fromExpr expr <+> "::" <+> fromType exprType
-  UnaryMinus expr -> "-" <> fromExpr expr
-  Var ident -> pretty (showQualified runIdent ident)
+  UnaryMinus _ expr -> "-" <> fromExpr expr
+  Var _ ident -> pretty (showQualified runIdent ident)
 
 fromGuard :: Guard -> Doc a
 fromGuard = \case
@@ -466,7 +481,7 @@ fromObjectBinder :: (PSString, Binder) -> Doc a
 fromObjectBinder = \case
   (key, PositionedBinder _ comments binder) ->
     fromComments comments <> fromObjectBinder (key, binder)
-  (key, VarBinder (Ident ident))
+  (key, VarBinder _ (Ident ident))
     | key == mkString ident -> pretty ident
   (key, val) -> fromPSString key <> ":" <+> fromBinder val
 
@@ -474,7 +489,7 @@ fromObjectExpr :: (PSString, Expr) -> Doc a
 fromObjectExpr = \case
   (key, PositionedValue _ comments expr) ->
     fromComments comments <> fromObjectExpr (key, expr)
-  (key, Var (Qualified Nothing (Ident ident)))
+  (key, Var _ (Qualified Nothing (Ident ident)))
     | key == mkString ident -> pretty ident
   (key, val) -> fromPSString key <> ":" <+> fromExpr val
 
