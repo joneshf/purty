@@ -1,9 +1,8 @@
-image: buildpack-deps:18.04
+image: buildpack-deps:18.04-scm
 
 cache:
   key: purty
   paths:
-    - $HOME/.local/bin
     - .stack-root
     - .stack-work
 
@@ -15,9 +14,10 @@ stages:
 
 Build purty:
   before_script:
+    - apt-get update
+    - apt-get install --yes haskell-stack
+    - stack upgrade --binary-only
     - export PATH=$HOME/.local/bin:$PATH
-    - mkdir --parents $HOME/.local/bin
-    - ci/install-stack.sh --verbose
     - stack setup
   script:
     - ci/lint/stylish-haskell.sh --verbose
