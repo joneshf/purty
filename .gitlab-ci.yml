@@ -1,4 +1,4 @@
-image: haskell:8.2.1
+image: buildpack-deps:18.04
 
 cache:
   key: purty
@@ -13,11 +13,16 @@ stages:
   - build
 
 Build purty:
+  before_script:
+    - apt-get update
+    - apt-get install --yes haskell-stack
+    - stack upgrade --binary-only
+    - export PATH=$HOME/.local/bin:$PATH
+    - stack setup
   script:
-    - stack --system-ghc setup
-    - ci/lint/stylish-haskell.sh --system-ghc --verbose
-    - ci/lint/hlint.sh --system-ghc --verbose
-    - stack --system-ghc build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
-    - stack --system-ghc build --coverage --test
+    - ci/lint/stylish-haskell.sh --verbose
+    - ci/lint/hlint.sh --verbose
+    - stack build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
+    - stack build --coverage --test
     - test/acceptance.sh --verbose
   stage: build

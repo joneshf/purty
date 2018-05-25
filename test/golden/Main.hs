@@ -53,11 +53,13 @@ dynamic :: TestTree
 dynamic =
   testGroup
     "dynamic"
-    [ golden Dynamic "char" [relfile|test/golden/files/dynamic/Char.purs|]
+    [ golden Dynamic "ado" [relfile|test/golden/files/dynamic/Ado.purs|]
+    , golden Dynamic "char" [relfile|test/golden/files/dynamic/Char.purs|]
     , golden Dynamic "data with parameters" [relfile|test/golden/files/dynamic/DataWithParameters.purs|]
     , golden Dynamic "empty data" [relfile|test/golden/files/dynamic/EmptyData.purs|]
     , golden Dynamic "imports" [relfile|test/golden/files/dynamic/Imports.purs|]
     , golden Dynamic "typeclass instance" [relfile|test/golden/files/dynamic/Instance.purs|]
+    , golden Dynamic "instance chain" [relfile|test/golden/files/dynamic/InstanceChain.purs|]
     , golden Dynamic "let" [relfile|test/golden/files/dynamic/Let.purs|]
     , golden Dynamic "long type signature" [relfile|test/golden/files/dynamic/LongTypeSignature.purs|]
     , golden Dynamic "multi-parameter type class instance head" [relfile|test/golden/files/dynamic/MPTCHead.purs|]
@@ -70,17 +72,20 @@ dynamic =
     , golden Dynamic "typeclass" [relfile|test/golden/files/dynamic/TypeClass.purs|]
     , golden Dynamic "type synonym" [relfile|test/golden/files/dynamic/TypeSynonym.purs|]
     , golden Dynamic "type synonym newline" [relfile|test/golden/files/dynamic/TypeSynonymNewline.purs|]
+    , golden Dynamic "where" [relfile|test/golden/files/dynamic/Where.purs|]
     ]
 
 static :: TestTree
 static =
   testGroup
     "static"
-    [ golden Static "char" [relfile|test/golden/files/static/Char.purs|]
+    [ golden Static "ado" [relfile|test/golden/files/static/Ado.purs|]
+    , golden Static "char" [relfile|test/golden/files/static/Char.purs|]
     , golden Static "data with parameters" [relfile|test/golden/files/static/DataWithParameters.purs|]
     , golden Static "empty data" [relfile|test/golden/files/static/EmptyData.purs|]
     , golden Static "imports" [relfile|test/golden/files/static/Imports.purs|]
     , golden Static "typeclass instance" [relfile|test/golden/files/static/Instance.purs|]
+    , golden Static "instance chain" [relfile|test/golden/files/static/InstanceChain.purs|]
     , golden Static "let" [relfile|test/golden/files/static/Let.purs|]
     , golden Static "long type signature" [relfile|test/golden/files/static/LongTypeSignature.purs|]
     , golden Static "multi-parameter type class instance head" [relfile|test/golden/files/static/MPTCHead.purs|]
@@ -93,4 +98,5 @@ static =
     , golden Static "typeclass" [relfile|test/golden/files/static/TypeClass.purs|]
     , golden Static "type synonym" [relfile|test/golden/files/static/TypeSynonym.purs|]
     , golden Static "type synonym newline" [relfile|test/golden/files/static/TypeSynonymNewline.purs|]
+    , golden Static "where" [relfile|test/golden/files/static/Where.purs|]
     ]
