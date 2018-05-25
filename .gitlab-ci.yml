@@ -1,4 +1,4 @@
-image: haskell:8.2.1
+image: haskell:8.2.2
 
 cache:
   key: purty
