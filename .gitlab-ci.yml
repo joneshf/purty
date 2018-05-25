@@ -1,4 +1,4 @@
-image: buildpack-deps:18.04-scm
+image: buildpack-deps:18.04
 
 cache:
   key: purty
