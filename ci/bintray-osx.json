@@ -1,8 +1,8 @@
 {
   "files": [
     {
-      "includePattern": "purty-0.6.0-osx.tar.gz",
-      "uploadPattern": "purty-0.6.0-osx.tar.gz"
+      "includePattern": "purty-1.0.0-osx.tar.gz",
+      "uploadPattern": "purty-1.0.0-osx.tar.gz"
     }
   ],
   "package": {
@@ -15,7 +15,7 @@
     "vcs_url": "https://gitlab.com/joneshf/purty.git"
   },
   "version": {
-    "name": "0.6.0",
-    "released": "2018-05-21"
+    "name": "1.0.0",
+    "released": "2018-05-29"
   }
 }

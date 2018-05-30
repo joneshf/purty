@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.0.0
+
+Official release
+
+It's finally here! The 1.0.0 release!
+
+Let's talk about what 1.0.0 **doesn't** mean: `purty` is now "done," `purty` has now become "stable," `purty` is now "production ready," `purty` generates "nice looking code."
+* `purty` will probably never be "done." A project like this is almost never "done." There will always be some improvement to make, a bug to fix, or a syntax to update. Just as languages continue to evolve, so do do styles of those languages.
+* `purty` will not be stable for quite some time. There are many new features in the future and most of these will alter the way modules are formatted.
+* `purty` has been "production ready" since about the 0.3.0 or 0.4.0 release. There are still bugs, there are still improvements to make for the formatting. But, running `purty` should not "eat your code", change the semantics of a module, or break in an otherwise bad way.
+* Generating "nice looking code" is entirely subjective. There's probably a consensus around what most people would consider nice, but there's no way to put a stamp on things and say `purty` generates "nice looking code."
+
+1.0.0 is only the beginning. `purty` does enough now to be "useful." It's no longer a proof of concept, it's a useful tool. It will still have bugs, they will still get fixed. It will still have improvements.
+
+This version also supports PureScript 0.12.0. It _should_ be backwards compatible with PureScript 0.11.7, but there are no guarantees.
+
+### Additions
+
+### Changes
+
+* [Support `where` clauses](https://gitlab.com/joneshf/purty/issues/20)
+
+### Deletions
+
 ## 0.6.0
 
 Tiny release
