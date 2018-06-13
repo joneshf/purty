@@ -15,6 +15,7 @@ module Doc
   , fromObjectUpdate
   , fromPSString
   , fromParameters
+  , fromBool
   , partitionImports
   , valueDeclarationFromAnonymousDeclaration
   ) where
@@ -136,6 +137,9 @@ fromParameters :: [(Text, Maybe Kind)] -> Doc a
 fromParameters = \case
   [] -> mempty
   parameters -> space <> hsep (fmap fromParameter parameters)
+
+fromBool :: Bool -> Doc a
+fromBool b = if b then "true" else "false"
 
 fromPSString :: PSString -> Doc a
 fromPSString = pretty . dropAround (== '"') . prettyPrintString

@@ -54,6 +54,7 @@ dynamic =
   testGroup
     "dynamic"
     [ golden Dynamic "ado" [relfile|test/golden/files/dynamic/Ado.purs|]
+    , golden Dynamic "booleans" [relfile|test/golden/files/dynamic/Booleans.purs|]
     , golden Dynamic "char" [relfile|test/golden/files/dynamic/Char.purs|]
     , golden Dynamic "data with parameters" [relfile|test/golden/files/dynamic/DataWithParameters.purs|]
     , golden Dynamic "empty data" [relfile|test/golden/files/dynamic/EmptyData.purs|]
@@ -80,6 +81,7 @@ static =
   testGroup
     "static"
     [ golden Static "ado" [relfile|test/golden/files/static/Ado.purs|]
+    , golden Static "booleans" [relfile|test/golden/files/static/Booleans.purs|]
     , golden Static "char" [relfile|test/golden/files/static/Char.purs|]
     , golden Static "data with parameters" [relfile|test/golden/files/static/DataWithParameters.purs|]
     , golden Static "empty data" [relfile|test/golden/files/static/EmptyData.purs|]
