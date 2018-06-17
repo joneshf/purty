@@ -79,6 +79,7 @@ import "rio" RIO.List                            (repeat, zipWith)
 import "this" Doc
     ( convertForAlls
     , convertTypeApps
+    , fromBool
     , fromComments
     , fromConstructors
     , fromDataType
@@ -428,7 +429,7 @@ fromLiteralBinder :: Literal Binder -> Doc a
 fromLiteralBinder = \case
   ArrayLiteral xs ->
     enclose "[" "]" (hsep $ punctuate comma $ fmap fromBinder xs)
-  BooleanLiteral b -> pretty b
+  BooleanLiteral b -> fromBool b
   CharLiteral c -> viaShow c
   NumericLiteral (Left x) -> pretty x
   NumericLiteral (Right x) -> pretty x
@@ -439,7 +440,7 @@ fromLiteralBinder = \case
 fromLiteralExpr :: Literal Expr -> Doc a
 fromLiteralExpr = \case
   ArrayLiteral xs -> brackets (fmap fromExpr xs)
-  BooleanLiteral b -> pretty b
+  BooleanLiteral b -> fromBool b
   CharLiteral c -> viaShow c
   NumericLiteral (Left x) -> pretty x
   NumericLiteral (Right x) -> pretty x
