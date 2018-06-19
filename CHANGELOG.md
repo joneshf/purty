@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.0.1
+
+Minor bug fix.
+
+A fix for boolean literals.
+
+### Additions
+
+### Changes
+
+* [fix printing of booleans](https://gitlab.com/joneshf/purty/issues/53)
+
+### Deletions
+
 ## 1.0.0
 
 Official release
