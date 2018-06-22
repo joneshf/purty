@@ -1,9 +1,8 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Main where
 
-import "rio" RIO
+import "rio" RIO hiding (handle)
 
-import "base" Control.Applicative                            (empty)
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 import "path" Path
     ( File
@@ -13,6 +12,7 @@ import "path" Path
     , toFilePath
     )
 import "path-io" Path.IO                                     (makeAbsolute)
+import "base" System.Exit                                    (exitFailure)
 import "tasty" Test.Tasty
     ( TestName
     , TestTree
@@ -22,8 +22,16 @@ import "tasty" Test.Tasty
 import "tasty-golden" Test.Tasty.Golden
     ( goldenVsStringDiff
     )
+import "parsec" Text.Parsec                                  (ParseError)
 
-import "purty" Purty (Formatting(Dynamic, Static), defaultEnv, purty)
+import "purty" Purty
+    ( Formatting(Dynamic, Static)
+    , Purty
+    , defaultEnv
+    , handle
+    , purty
+    , run
+    )
 
 main :: IO ()
 main = defaultMain goldenTests
@@ -37,9 +45,15 @@ golden formatting testName goldenFile =
     absFile <- makeAbsolute goldenFile
     (_, logOptions) <- logOptionsMemory
     withLogFunc logOptions $ \logFunc -> do
-      result <- runRIO (defaultEnv formatting logFunc) (purty absFile)
-      stream <- either (const empty) pure result
+      let env = defaultEnv formatting logFunc
+      stream <- run env (purty absFile `handle` parseError)
       pure (fromStrictBytes $ encodeUtf8 $ renderStrict stream)
+
+parseError :: (HasLogFunc env) => ParseError -> Purty env error a
+parseError err = do
+  logError "Problem parsing module"
+  logError (displayShow err)
+  liftIO exitFailure
 
 goldenTests :: TestTree
 goldenTests =

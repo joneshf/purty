@@ -2,6 +2,14 @@ module Purty where
 
 import "rio" RIO
 
+import "lens" Control.Lens                        (Prism', prism)
+import "lens" Control.Monad.Error.Lens            (throwing)
+import "mtl" Control.Monad.Except
+    ( ExceptT
+    , MonadError
+    , runExceptT
+    )
+import "transformers" Control.Monad.Trans.Except  (catchE)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( LayoutOptions(LayoutOptions, layoutPageWidth)
     , PageWidth(AvailablePerLine, Unbounded)
@@ -53,9 +61,9 @@ import qualified "this" Doc.Dynamic
 import qualified "this" Doc.Static
 
 purty ::
-  (HasFormatting env, HasLayoutOptions env, HasLogFunc env) =>
+  (HasFormatting env, HasLayoutOptions env, HasLogFunc env, IsParseError error) =>
   Path Abs File ->
-  RIO env (Either ParseError (SimpleDocStream a))
+  Purty env error (SimpleDocStream a)
 purty filePath = do
   formatting <- view formattingL
   layoutOptions <- view layoutOptionsL
@@ -66,13 +74,40 @@ purty filePath = do
     Left e -> do
       logDebug "Parsing failed:"
       logDebug (displayShow e)
-      pure (Left e)
+      throwing _ParseError e
     Right (_, m) -> do
       logDebug "Parsed module:"
       logDebug (displayShow m)
       case formatting of
-        Dynamic -> pure (Right $ layoutSmart layoutOptions $ Doc.Dynamic.fromModule m)
-        Static  -> pure (Right $ layoutSmart layoutOptions $ Doc.Static.fromModule m)
+        Dynamic -> pure (layoutSmart layoutOptions $ Doc.Dynamic.fromModule m)
+        Static  -> pure (layoutSmart layoutOptions $ Doc.Static.fromModule m)
+
+newtype Purty env error c
+  = Purty (ReaderT env (ExceptT error IO) c)
+  deriving
+    ( Applicative
+    , Functor
+    , Monad
+    , MonadError error
+    , MonadIO
+    , MonadReader env
+    )
+
+handle :: Purty a b c -> (b -> Purty a d c) -> Purty a d c
+handle (Purty (ReaderT f)) g = Purty $ ReaderT $ \env ->
+  catchE (f env) $ \y -> case g y of
+    Purty h -> runReaderT h env
+
+run :: a -> Purty a Void b -> IO b
+run env (Purty f) = do
+  result <- runExceptT (runReaderT f env)
+  either absurd pure result
+
+class IsParseError error where
+  _ParseError :: Prism' error ParseError
+
+instance IsParseError ParseError where
+  _ParseError = prism id Right
 
 data PurtyFilePath
   = AbsFile !(Path Abs File)
