@@ -29,9 +29,9 @@ import "purty" Env
     , prettyPrintConfig
     )
 import "purty" Error (Error, errors)
-import "purty" Purty (purty)
 
 import qualified "purty" App
+import qualified "purty" Purty
 
 main :: IO ()
 main = do
@@ -53,7 +53,7 @@ program = \case
     absPath <- absolutize filePath
     logDebug ("Converted file to absolute: " <> displayShow absPath)
     logDebug "Running main `purty` program"
-    stream <- purty absPath
+    stream <- Purty.fromAbsFile absPath
     logDebug "Successfully created stream for rendering"
     logDebug (displayShow $ void stream)
     case output of

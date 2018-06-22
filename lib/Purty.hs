@@ -5,7 +5,7 @@ import "rio" RIO
 import "lens" Control.Monad.Error.Lens           (throwing)
 import "prettyprinter" Data.Text.Prettyprint.Doc (SimpleDocStream, layoutSmart)
 import "purescript" Language.PureScript          (parseModuleFromFile)
-import "path" Path                               (Abs, File, Path, fromAbsFile)
+import "path" Path                               (Abs, File, Path)
 
 import "this" Env
     ( Formatting(Dynamic, Static)
@@ -15,11 +15,13 @@ import "this" Env
 import "this" Error (IsParseError(_ParseError))
 import "this" App (App)
 
+import qualified "path" Path
+
 import qualified "this" Purty.AST
 import qualified "this" Purty.Doc.Dynamic
 import qualified "this" Purty.Doc.Static
 
-purty ::
+fromAbsFile ::
   ( HasFormatting env
   , HasLayoutOptions env
   , HasLogFunc env
@@ -28,13 +30,13 @@ purty ::
   ) =>
   Path Abs File ->
   App env error (SimpleDocStream a)
-purty filePath = do
+fromAbsFile filePath = do
   formatting <- view formattingL
   layoutOptions <- view layoutOptionsL
-  contents <- readFileUtf8 (fromAbsFile filePath)
+  contents <- readFileUtf8 (Path.fromAbsFile filePath)
   logDebug "Read file contents:"
   logDebug (display contents)
-  (_, m) <- either (throwing _ParseError) pure (parseModuleFromFile id (fromAbsFile filePath, contents))
+  (_, m) <- either (throwing _ParseError) pure (parseModuleFromFile id (Path.fromAbsFile filePath, contents))
   logDebug "Parsed module:"
   logDebug (displayShow m)
   ast <- Purty.AST.fromPureScript m

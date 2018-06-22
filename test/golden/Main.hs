@@ -24,9 +24,9 @@ import "tasty-golden" Test.Tasty.Golden
 
 import "purty" Env   (Formatting(Dynamic, Static), defaultEnv)
 import "purty" Error (errors)
-import "purty" Purty (purty)
 
 import qualified "purty" App
+import qualified "purty" Purty
 
 main :: IO ()
 main = defaultMain goldenTests
@@ -41,7 +41,7 @@ golden formatting testName goldenFile =
     (_, logOptions) <- logOptionsMemory
     withLogFunc logOptions $ \logFunc -> do
       let env = defaultEnv formatting logFunc
-      stream <- App.run env (purty absFile `App.handle` errors)
+      stream <- App.run env (Purty.fromAbsFile absFile `App.handle` errors)
       pure (fromStrictBytes $ encodeUtf8 $ renderStrict stream)
 
 goldenTests :: TestTree
