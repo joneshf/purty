@@ -53,12 +53,12 @@ import qualified "this" Doc.Dynamic
 import qualified "this" Doc.Static
 
 purty ::
-  (HasConfig env, HasLogFunc env, HasPrettyPrintConfig env) =>
+  (HasFormatting env, HasLayoutOptions env, HasLogFunc env) =>
   Path Abs File ->
   RIO env (Either ParseError (SimpleDocStream a))
 purty filePath = do
-  Config { formatting } <- view configL
-  PrettyPrintConfig { layoutOptions } <- view prettyPrintConfigL
+  formatting <- view formattingL
+  layoutOptions <- view layoutOptionsL
   contents <- readFileUtf8 (fromAbsFile filePath)
   logDebug "Read file contents:"
   logDebug (display contents)
