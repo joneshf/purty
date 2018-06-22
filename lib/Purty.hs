@@ -133,11 +133,20 @@ instance Display Config where
       <> display verbosity
       <> "}"
 
+instance HasFormatting Config where
+  formattingL = lens formatting (\config formatting -> config { formatting })
+
+instance HasOutput Config where
+  outputL = lens output (\config output -> config { output })
+
+instance HasVerbosity Config where
+  verbosityL = lens verbosity (\config verbosity -> config { verbosity })
+
 instance Inject Config
 
 instance Interpret Config
 
-class HasConfig env where
+class (HasFormatting env, HasOutput env, HasVerbosity env) => HasConfig env where
   configL :: Lens' env Config
 
 parseConfig :: (MonadUnliftIO f) => Args -> f Config
@@ -214,6 +223,12 @@ instance Inject Formatting
 
 instance Interpret Formatting
 
+class HasFormatting env where
+  formattingL :: Lens' env Formatting
+
+instance HasFormatting Formatting where
+  formattingL = id
+
 parserFormatting :: Parser Formatting
 parserFormatting = flag Static Dynamic meta
   where
@@ -240,6 +255,12 @@ instance Inject Verbosity
 
 instance Interpret Verbosity
 
+class HasVerbosity env where
+  verbosityL :: Lens' env Verbosity
+
+instance HasVerbosity Verbosity where
+  verbosityL = id
+
 parserVerbosity :: Parser Verbosity
 parserVerbosity = flag NotVerbose Verbose meta
   where
@@ -262,6 +283,12 @@ instance Display Output where
 instance Inject Output
 
 instance Interpret Output
+
+class HasOutput env where
+  outputL :: Lens' env Output
+
+instance HasOutput Output where
+  outputL = id
 
 parserOutput :: Parser Output
 parserOutput = flag StdOut InPlace meta
@@ -288,6 +315,12 @@ argsInfo =
     <> header "purty - A PureScript pretty-printer"
     )
 
+class HasLayoutOptions env where
+  layoutOptionsL :: Lens' env LayoutOptions
+
+instance HasLayoutOptions LayoutOptions where
+  layoutOptionsL = id
+
 newtype PrettyPrintConfig
   = PrettyPrintConfig
     { layoutOptions :: LayoutOptions
@@ -304,8 +337,14 @@ instance Display PrettyPrintConfig where
           <> "}"
       Unbounded -> "Unbounded"
 
-class HasPrettyPrintConfig env where
+instance HasLayoutOptions PrettyPrintConfig where
+  layoutOptionsL = lens layoutOptions (\config layoutOptions -> config { layoutOptions })
+
+class (HasLayoutOptions env) => HasPrettyPrintConfig env where
   prettyPrintConfigL :: Lens' env PrettyPrintConfig
+
+instance HasPrettyPrintConfig PrettyPrintConfig where
+  prettyPrintConfigL = id
 
 defaultPrettyPrintConfig :: PrettyPrintConfig
 defaultPrettyPrintConfig =
@@ -341,17 +380,29 @@ defaultEnv formatting envLogFunc =
     output = StdOut
     verbosity = Verbose
 
-class HasEnv env where
+class (HasConfig env, HasLogFunc env, HasPrettyPrintConfig env) => HasEnv env where
   envL :: Lens' env Env
 
 instance HasConfig Env where
-  configL f env = (\envConfig -> env { envConfig }) <$> f (envConfig env)
+  configL = lens envConfig (\env envConfig -> env { envConfig })
 
 instance HasEnv Env where
   envL = id
 
+instance HasFormatting Env where
+  formattingL = configL.formattingL
+
+instance HasLayoutOptions Env where
+  layoutOptionsL = prettyPrintConfigL.layoutOptionsL
+
 instance HasLogFunc Env where
-  logFuncL f env = (\envLogFunc -> env { envLogFunc }) <$> f (envLogFunc env)
+  logFuncL = lens envLogFunc (\env envLogFunc -> env { envLogFunc })
+
+instance HasOutput Env where
+  outputL = configL.outputL
 
 instance HasPrettyPrintConfig Env where
-  prettyPrintConfigL f env = (\envPrettyPrintConfig -> env { envPrettyPrintConfig }) <$> f (envPrettyPrintConfig env)
+  prettyPrintConfigL = lens envPrettyPrintConfig (\env envPrettyPrintConfig -> env { envPrettyPrintConfig })
+
+instance HasVerbosity Env where
+  verbosityL = configL.verbosityL
