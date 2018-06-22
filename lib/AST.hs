@@ -1,4 +1,4 @@
-module Purty.AST where
+module AST where
 
 import "rio" RIO
 

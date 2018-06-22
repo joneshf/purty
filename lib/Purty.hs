@@ -33,7 +33,7 @@ import "this" Error (IsParseError(_ParseError))
 
 import qualified "path" Path
 
-import qualified "this" Purty.AST
+import qualified "this" AST
 import qualified "this" Purty.Doc.Dynamic
 import qualified "this" Purty.Doc.Static
 
@@ -41,7 +41,7 @@ fromAbsFile ::
   ( HasFormatting env
   , HasLayoutOptions env
   , HasLogFunc env
-  , Purty.AST.IsMissingName error
+  , AST.IsMissingName error
   , IsParseError error
   ) =>
   Path Abs File ->
@@ -55,7 +55,7 @@ fromAbsFile filePath = do
   (_, m) <- either (throwing _ParseError) pure (parseModuleFromFile id (Path.fromAbsFile filePath, contents))
   logDebug "Parsed module:"
   logDebug (displayShow m)
-  ast <- Purty.AST.fromPureScript m
+  ast <- AST.fromPureScript m
   logDebug "Converted AST:"
   logDebug (display ast)
   case formatting of
@@ -64,7 +64,7 @@ fromAbsFile filePath = do
 
 fromPurtyFilePath ::
   ( HasEnv env
-  , Purty.AST.IsMissingName error
+  , AST.IsMissingName error
   , IsParseError error
   ) =>
   PurtyFilePath ->

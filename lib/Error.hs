@@ -6,21 +6,21 @@ import "lens" Control.Lens  (Prism', prism)
 import "base" System.Exit   (exitFailure)
 import "parsec" Text.Parsec (ParseError)
 
-import qualified "this" Purty.AST
+import qualified "this" AST
 
 data Error
-  = AST Purty.AST.Error
+  = AST AST.Error
   | Parse ParseError
 
-instance Purty.AST.IsMissingName Error where
-  _MissingName = Purty.AST._Error.Purty.AST._MissingName
+instance AST.IsMissingName Error where
+  _MissingName = AST._Error.AST._MissingName
 
-instance Purty.AST.IsError Error where
+instance AST.IsError Error where
   _Error = prism AST $ \case
     AST x -> Right x
     x -> Left x
 
-class (Purty.AST.IsError error, IsParseError error) => IsError error where
+class (AST.IsError error, IsParseError error) => IsError error where
   _Error :: Prism' error Error
 
 instance IsError Error where
