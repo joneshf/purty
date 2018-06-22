@@ -12,25 +12,27 @@ import "path-io" Path.IO
     , withSystemTempFile
     )
 
-import "purty" Purty
-    ( Args(Args, Defaults, argsFilePath)
-    , Config(Config, verbosity)
+import "purty" Env
+    ( Config(Config, verbosity)
     , Env(Env)
-    , Error
     , Output(InPlace, StdOut)
-    , Purty
     , Verbosity(Verbose)
     , absolutize
-    , argsInfo
+    , config
     , defaultConfig
     , defaultPrettyPrintConfig
-    , envConfig
     , envL
-    , envLogFunc
-    , envPrettyPrintConfig
+    , logFunc
+    , outputL
+    , prettyPrintConfig
+    )
+import "purty" Purty
+    ( Args(Args, Defaults, argsFilePath)
+    , Error
+    , Purty
+    , argsInfo
     , errors
     , handle
-    , outputL
     , parseConfig
     , purty
     , run
@@ -39,11 +41,11 @@ import "purty" Purty
 main :: IO ()
 main = do
   cliArgs <- execParser argsInfo
-  envConfig@Config{ verbosity } <- parseConfig cliArgs
-  let envPrettyPrintConfig = defaultPrettyPrintConfig
+  config@Config{ verbosity } <- parseConfig cliArgs
+  let prettyPrintConfig = defaultPrettyPrintConfig
   logOptions <- logOptionsHandle stderr (verbosity == Verbose)
-  withLogFunc logOptions $ \envLogFunc -> do
-    let env = Env { envConfig, envLogFunc, envPrettyPrintConfig }
+  withLogFunc logOptions $ \logFunc -> do
+    let env = Env { config, logFunc, prettyPrintConfig }
     run env (program cliArgs `handle` errors)
 
 program :: Args -> Purty Env Error ()

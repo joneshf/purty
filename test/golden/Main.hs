@@ -22,14 +22,8 @@ import "tasty-golden" Test.Tasty.Golden
     ( goldenVsStringDiff
     )
 
-import "purty" Purty
-    ( Formatting(Dynamic, Static)
-    , defaultEnv
-    , errors
-    , handle
-    , purty
-    , run
-    )
+import "purty" Env   (Formatting(Dynamic, Static), defaultEnv)
+import "purty" Purty (errors, handle, purty, run)
 
 main :: IO ()
 main = defaultMain goldenTests
