@@ -1,6 +1,6 @@
 module Main where
 
-import "rio" RIO hiding (handle, withSystemTempFile)
+import "rio" RIO hiding (withSystemTempFile)
 
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (putDoc, renderIO)
 import "dhall" Dhall                                         (embed, inject)
@@ -12,6 +12,7 @@ import "path-io" Path.IO
     , withSystemTempFile
     )
 
+import "purty" App   (App)
 import "purty" Args  (Args(Args, Defaults, filePath), argsInfo, parseConfig)
 import "purty" Env
     ( Config(Config, verbosity)
@@ -28,7 +29,9 @@ import "purty" Env
     , prettyPrintConfig
     )
 import "purty" Error (Error, errors)
-import "purty" Purty (Purty, handle, purty, run)
+import "purty" Purty (purty)
+
+import qualified "purty" App
 
 main :: IO ()
 main = do
@@ -38,9 +41,9 @@ main = do
   logOptions <- logOptionsHandle stderr (verbosity == Verbose)
   withLogFunc logOptions $ \logFunc -> do
     let env = Env { config, logFunc, prettyPrintConfig }
-    run env (program cliArgs `handle` errors)
+    App.run env (program cliArgs `App.handle` errors)
 
-program :: Args -> Purty Env Error ()
+program :: Args -> App Env Error ()
 program = \case
   Args { filePath } -> do
     env <- view envL

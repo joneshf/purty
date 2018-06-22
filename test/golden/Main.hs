@@ -1,7 +1,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Main where
 
-import "rio" RIO hiding (handle)
+import "rio" RIO
 
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 import "path" Path
@@ -24,7 +24,9 @@ import "tasty-golden" Test.Tasty.Golden
 
 import "purty" Env   (Formatting(Dynamic, Static), defaultEnv)
 import "purty" Error (errors)
-import "purty" Purty (handle, purty, run)
+import "purty" Purty (purty)
+
+import qualified "purty" App
 
 main :: IO ()
 main = defaultMain goldenTests
@@ -39,7 +41,7 @@ golden formatting testName goldenFile =
     (_, logOptions) <- logOptionsMemory
     withLogFunc logOptions $ \logFunc -> do
       let env = defaultEnv formatting logFunc
-      stream <- run env (purty absFile `handle` errors)
+      stream <- App.run env (purty absFile `App.handle` errors)
       pure (fromStrictBytes $ encodeUtf8 $ renderStrict stream)
 
 goldenTests :: TestTree
