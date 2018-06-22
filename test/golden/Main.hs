@@ -22,10 +22,10 @@ import "tasty" Test.Tasty
 import "tasty-golden" Test.Tasty.Golden
     ( goldenVsStringDiff
     )
-import "parsec" Text.Parsec                                  (ParseError)
 
 import "purty" Purty
-    ( Formatting(Dynamic, Static)
+    ( Error(AST, Parse)
+    , Formatting(Dynamic, Static)
     , Purty
     , defaultEnv
     , handle
@@ -46,14 +46,19 @@ golden formatting testName goldenFile =
     (_, logOptions) <- logOptionsMemory
     withLogFunc logOptions $ \logFunc -> do
       let env = defaultEnv formatting logFunc
-      stream <- run env (purty absFile `handle` parseError)
+      stream <- run env (purty absFile `handle` errors)
       pure (fromStrictBytes $ encodeUtf8 $ renderStrict stream)
 
-parseError :: (HasLogFunc env) => ParseError -> Purty env error a
-parseError err = do
-  logError "Problem parsing module"
-  logError (displayShow err)
-  liftIO exitFailure
+errors :: (HasLogFunc env) => Error -> Purty env error a
+errors = \case
+  AST err -> do
+    logError "Problem converting to our AST"
+    logError (display err)
+    liftIO exitFailure
+  Parse err -> do
+    logError "Problem parsing module"
+    logError (displayShow err)
+    liftIO exitFailure
 
 goldenTests :: TestTree
 goldenTests =

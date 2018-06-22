@@ -12,12 +12,12 @@ import "path-io" Path.IO
     , withSystemTempFile
     )
 import "base" System.Exit                                    (exitFailure)
-import "parsec" Text.Parsec                                  (ParseError)
 
 import "purty" Purty
     ( Args(Args, Defaults, argsFilePath)
     , Config(Config, verbosity)
     , Env(Env)
+    , Error(AST, Parse)
     , Output(InPlace, StdOut)
     , Purty
     , Verbosity(Verbose)
@@ -44,15 +44,20 @@ main = do
   logOptions <- logOptionsHandle stderr (verbosity == Verbose)
   withLogFunc logOptions $ \envLogFunc -> do
     let env = Env { envConfig, envLogFunc, envPrettyPrintConfig }
-    run env (program cliArgs `handle` parseError)
+    run env (program cliArgs `handle` errors)
 
-parseError :: ParseError -> Purty Env error a
-parseError err = do
-  logError "Problem parsing module"
-  logError (displayShow err)
-  liftIO exitFailure
+errors :: Error -> Purty Env error a
+errors = \case
+  AST err -> do
+    logError "Problem converting to our AST"
+    logError (display err)
+    liftIO exitFailure
+  Parse err -> do
+    logError "Problem parsing module"
+    logError (displayShow err)
+    liftIO exitFailure
 
-program :: Args -> Purty Env ParseError ()
+program :: Args -> Purty Env Error ()
 program = \case
   Args { argsFilePath } -> do
     env <- view envL

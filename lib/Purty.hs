@@ -57,11 +57,17 @@ import "parsec" Text.Parsec                       (ParseError)
 
 import qualified "rio" RIO.Text.Lazy
 
-import qualified "this" Doc.Dynamic
-import qualified "this" Doc.Static
+import qualified "this" Purty.AST
+import qualified "this" Purty.Doc.Dynamic
+import qualified "this" Purty.Doc.Static
 
 purty ::
-  (HasFormatting env, HasLayoutOptions env, HasLogFunc env, IsParseError error) =>
+  ( HasFormatting env
+  , HasLayoutOptions env
+  , HasLogFunc env
+  , Purty.AST.IsMissingName error
+  , IsParseError error
+  ) =>
   Path Abs File ->
   Purty env error (SimpleDocStream a)
 purty filePath = do
@@ -73,9 +79,12 @@ purty filePath = do
   (_, m) <- either (throwing _ParseError) pure (parseModuleFromFile id (fromAbsFile filePath, contents))
   logDebug "Parsed module:"
   logDebug (displayShow m)
+  ast <- Purty.AST.fromPureScript m
+  logDebug "Converted AST:"
+  logDebug (display ast)
   case formatting of
-    Dynamic -> pure (layoutSmart layoutOptions $ Doc.Dynamic.fromModule m)
-    Static  -> pure (layoutSmart layoutOptions $ Doc.Static.fromModule m)
+    Dynamic -> pure (layoutSmart layoutOptions $ Purty.Doc.Dynamic.fromModule ast)
+    Static  -> pure (layoutSmart layoutOptions $ Purty.Doc.Static.fromModule ast)
 
 newtype Purty env error c
   = Purty (ReaderT env (ExceptT error IO) c)
@@ -98,11 +107,34 @@ run env (Purty f) = do
   result <- runExceptT (runReaderT f env)
   either absurd pure result
 
+data Error
+  = AST Purty.AST.Error
+  | Parse ParseError
+
+instance Purty.AST.IsMissingName Error where
+  _MissingName = Purty.AST._Error.Purty.AST._MissingName
+
+instance Purty.AST.IsError Error where
+  _Error = prism AST $ \case
+    AST x -> Right x
+    x -> Left x
+
+class (Purty.AST.IsError error, IsParseError error) => IsError error where
+  _Error :: Prism' error Error
+
+instance IsError Error where
+  _Error = prism id Right
+
 class IsParseError error where
   _ParseError :: Prism' error ParseError
 
 instance IsParseError ParseError where
   _ParseError = prism id Right
+
+instance IsParseError Error where
+  _ParseError = prism Parse $ \case
+    Parse x -> Right x
+    x -> Left x
 
 data PurtyFilePath
   = AbsFile !(Path Abs File)
