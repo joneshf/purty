@@ -12,6 +12,7 @@ import "path-io" Path.IO
     , withSystemTempFile
     )
 
+import "purty" Args  (Args(Args, Defaults, filePath), argsInfo, parseConfig)
 import "purty" Env
     ( Config(Config, verbosity)
     , Env(Env)
@@ -27,15 +28,7 @@ import "purty" Env
     , prettyPrintConfig
     )
 import "purty" Error (Error, errors)
-import "purty" Purty
-    ( Args(Args, Defaults, argsFilePath)
-    , Purty
-    , argsInfo
-    , handle
-    , parseConfig
-    , purty
-    , run
-    )
+import "purty" Purty (Purty, handle, purty, run)
 
 main :: IO ()
 main = do
@@ -49,12 +42,12 @@ main = do
 
 program :: Args -> Purty Env Error ()
 program = \case
-  Args { argsFilePath } -> do
+  Args { filePath } -> do
     env <- view envL
     output <- view outputL
     logDebug ("Env: " <> display env)
-    logDebug ("Converting " <> display argsFilePath <> " to an absolute path")
-    absPath <- absolutize argsFilePath
+    logDebug ("Converting " <> display filePath <> " to an absolute path")
+    absPath <- absolutize filePath
     logDebug ("Converted file to absolute: " <> displayShow absPath)
     logDebug "Running main `purty` program"
     stream <- purty absPath

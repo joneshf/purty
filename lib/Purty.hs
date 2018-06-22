@@ -2,58 +2,23 @@ module Purty where
 
 import "rio" RIO
 
-import "lens" Control.Monad.Error.Lens            (throwing)
+import "lens" Control.Monad.Error.Lens           (throwing)
 import "mtl" Control.Monad.Except
     ( ExceptT
     , MonadError
     , runExceptT
     )
-import "transformers" Control.Monad.Trans.Except  (catchE)
-import "prettyprinter" Data.Text.Prettyprint.Doc  (SimpleDocStream, layoutSmart)
-import "dhall" Dhall                              (auto, input)
-import "purescript" Language.PureScript           (parseModuleFromFile)
-import "optparse-applicative" Options.Applicative
-    ( Parser
-    , ParserInfo
-    , argument
-    , flag
-    , flag'
-    , fullDesc
-    , header
-    , help
-    , helper
-    , info
-    , long
-    , maybeReader
-    , metavar
-    , progDesc
-    )
-import "optparse-text" Options.Applicative.Text   (text)
-import "path" Path
-    ( Abs
-    , File
-    , Path
-    , fromAbsFile
-    , parseAbsFile
-    , parseRelFile
-    )
+import "transformers" Control.Monad.Trans.Except (catchE)
+import "prettyprinter" Data.Text.Prettyprint.Doc (SimpleDocStream, layoutSmart)
+import "purescript" Language.PureScript          (parseModuleFromFile)
+import "path" Path                               (Abs, File, Path, fromAbsFile)
 
 import "this" Env
-    ( Config(Config)
-    , Formatting(Dynamic, Static)
+    ( Formatting(Dynamic, Static)
     , HasFormatting(formattingL)
     , HasLayoutOptions(layoutOptionsL)
-    , Output(InPlace, StdOut)
-    , PurtyFilePath(AbsFile, RelFile, Unparsed)
-    , Verbosity(NotVerbose, Verbose)
-    , defaultConfig
-    , formatting
-    , output
-    , verbosity
     )
 import "this" Error (IsParseError(_ParseError))
-
-import qualified "rio" RIO.Text.Lazy
 
 import qualified "this" Purty.AST
 import qualified "this" Purty.Doc.Dynamic
@@ -104,113 +69,3 @@ run :: a -> Purty a Void b -> IO b
 run env (Purty f) = do
   result <- runExceptT (runReaderT f env)
   either absurd pure result
-
-data Args
-  = Args
-    { argsFilePath   :: !PurtyFilePath
-    , argsFormatting :: !Formatting
-    , argsOutput     :: !Output
-    , argsVerbosity  :: !Verbosity
-    }
-  | Defaults
-  deriving (Generic)
-
-instance Display Args where
-  display = \case
-    Args { argsFilePath, argsFormatting, argsVerbosity, argsOutput } ->
-      "{"
-        <> display argsFilePath
-        <> ", "
-        <> display argsFormatting
-        <> ", "
-        <> display argsOutput
-        <> ", "
-        <> display argsVerbosity
-        <> "}"
-    Defaults -> "Defaults"
-
-parseConfig :: (MonadUnliftIO f) => Args -> f Config
-parseConfig = \case
-  Args { argsFormatting, argsOutput, argsVerbosity } -> do
-    result <- tryIO (readFileUtf8 "./.purty.dhall")
-    case result of
-      Left _ ->
-        pure Config
-          { formatting = argsFormatting
-          , output = argsOutput
-          , verbosity = argsVerbosity
-          }
-      Right contents -> do
-        config <- liftIO (input auto (RIO.Text.Lazy.fromStrict contents))
-        pure Config
-          { formatting = case argsFormatting of
-              Static  -> formatting config
-              Dynamic -> Dynamic
-          , output = case argsOutput of
-              StdOut  -> output config
-              InPlace -> InPlace
-          , verbosity = case argsVerbosity of
-              NotVerbose -> verbosity config
-              Verbose    -> Verbose
-          }
-  Defaults -> pure defaultConfig
-
-parserFilePath :: Parser PurtyFilePath
-parserFilePath = argument parser meta
-  where
-  meta =
-    help "PureScript file to pretty print"
-      <> metavar "FILE"
-  parser =
-    fmap AbsFile (maybeReader parseAbsFile)
-      <|> fmap RelFile (maybeReader parseRelFile)
-      <|> fmap Unparsed text
-
-parserDefaults :: Parser Args
-parserDefaults = flag' Defaults meta
-  where
-  meta =
-    help
-      ( "Display default values for configuration."
-      <> " You can save this to `.purty.dhall` as a starting point"
-      )
-      <> long "defaults"
-
-parserFormatting :: Parser Formatting
-parserFormatting = flag Static Dynamic meta
-  where
-  meta =
-    help "Pretty print taking line length into account"
-      <> long "dynamic"
-
-parserVerbosity :: Parser Verbosity
-parserVerbosity = flag NotVerbose Verbose meta
-  where
-  meta =
-    help "Print debugging information to STDERR while running"
-      <> long "verbose"
-
-parserOutput :: Parser Output
-parserOutput = flag StdOut InPlace meta
-  where
-  meta =
-    help "Format file in-place"
-      <> long "write"
-
-args :: Parser Args
-args =
-  parserDefaults
-    <|> Args
-      <$> parserFilePath
-      <*> parserFormatting
-      <*> parserOutput
-      <*> parserVerbosity
-
-argsInfo :: ParserInfo Args
-argsInfo =
-  info
-    (helper <*> args)
-    ( fullDesc
-    <> progDesc "Pretty print a PureScript file"
-    <> header "purty - A PureScript pretty-printer"
-    )
