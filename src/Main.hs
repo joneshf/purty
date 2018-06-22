@@ -11,13 +11,12 @@ import "path-io" Path.IO
     , copyPermissions
     , withSystemTempFile
     )
-import "base" System.Exit                                    (exitFailure)
 
 import "purty" Purty
     ( Args(Args, Defaults, argsFilePath)
     , Config(Config, verbosity)
     , Env(Env)
-    , Error(AST, Parse)
+    , Error
     , Output(InPlace, StdOut)
     , Purty
     , Verbosity(Verbose)
@@ -29,6 +28,7 @@ import "purty" Purty
     , envL
     , envLogFunc
     , envPrettyPrintConfig
+    , errors
     , handle
     , outputL
     , parseConfig
@@ -45,17 +45,6 @@ main = do
   withLogFunc logOptions $ \envLogFunc -> do
     let env = Env { envConfig, envLogFunc, envPrettyPrintConfig }
     run env (program cliArgs `handle` errors)
-
-errors :: Error -> Purty Env error a
-errors = \case
-  AST err -> do
-    logError "Problem converting to our AST"
-    logError (display err)
-    liftIO exitFailure
-  Parse err -> do
-    logError "Problem parsing module"
-    logError (displayShow err)
-    liftIO exitFailure
 
 program :: Args -> Purty Env Error ()
 program = \case

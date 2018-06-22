@@ -53,6 +53,7 @@ import "path" Path
     )
 import "path-io" Path.IO                          (makeAbsolute, resolveFile')
 import "rio" RIO.Text                             (unpack)
+import "base" System.Exit                         (exitFailure)
 import "parsec" Text.Parsec                       (ParseError)
 
 import qualified "rio" RIO.Text.Lazy
@@ -135,6 +136,17 @@ instance IsParseError Error where
   _ParseError = prism Parse $ \case
     Parse x -> Right x
     x -> Left x
+
+errors :: Error -> Purty Env error a
+errors = \case
+  AST err -> do
+    logError "Problem converting to our AST"
+    logError (display err)
+    liftIO exitFailure
+  Parse err -> do
+    logError "Problem parsing module"
+    logError (displayShow err)
+    liftIO exitFailure
 
 data PurtyFilePath
   = AbsFile !(Path Abs File)

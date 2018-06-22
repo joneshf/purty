@@ -12,7 +12,6 @@ import "path" Path
     , toFilePath
     )
 import "path-io" Path.IO                                     (makeAbsolute)
-import "base" System.Exit                                    (exitFailure)
 import "tasty" Test.Tasty
     ( TestName
     , TestTree
@@ -24,10 +23,9 @@ import "tasty-golden" Test.Tasty.Golden
     )
 
 import "purty" Purty
-    ( Error(AST, Parse)
-    , Formatting(Dynamic, Static)
-    , Purty
+    ( Formatting(Dynamic, Static)
     , defaultEnv
+    , errors
     , handle
     , purty
     , run
@@ -48,17 +46,6 @@ golden formatting testName goldenFile =
       let env = defaultEnv formatting logFunc
       stream <- run env (purty absFile `handle` errors)
       pure (fromStrictBytes $ encodeUtf8 $ renderStrict stream)
-
-errors :: (HasLogFunc env) => Error -> Purty env error a
-errors = \case
-  AST err -> do
-    logError "Problem converting to our AST"
-    logError (display err)
-    liftIO exitFailure
-  Parse err -> do
-    logError "Problem parsing module"
-    logError (displayShow err)
-    liftIO exitFailure
 
 goldenTests :: TestTree
 goldenTests =
