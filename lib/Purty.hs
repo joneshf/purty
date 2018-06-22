@@ -70,17 +70,12 @@ purty filePath = do
   contents <- readFileUtf8 (fromAbsFile filePath)
   logDebug "Read file contents:"
   logDebug (display contents)
-  case parseModuleFromFile id (fromAbsFile filePath, contents) of
-    Left e -> do
-      logDebug "Parsing failed:"
-      logDebug (displayShow e)
-      throwing _ParseError e
-    Right (_, m) -> do
-      logDebug "Parsed module:"
-      logDebug (displayShow m)
-      case formatting of
-        Dynamic -> pure (layoutSmart layoutOptions $ Doc.Dynamic.fromModule m)
-        Static  -> pure (layoutSmart layoutOptions $ Doc.Static.fromModule m)
+  (_, m) <- either (throwing _ParseError) pure (parseModuleFromFile id (fromAbsFile filePath, contents))
+  logDebug "Parsed module:"
+  logDebug (displayShow m)
+  case formatting of
+    Dynamic -> pure (layoutSmart layoutOptions $ Doc.Dynamic.fromModule m)
+    Static  -> pure (layoutSmart layoutOptions $ Doc.Static.fromModule m)
 
 newtype Purty env error c
   = Purty (ReaderT env (ExceptT error IO) c)
