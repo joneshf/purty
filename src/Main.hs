@@ -26,12 +26,11 @@ import "purty" Env
     , outputL
     , prettyPrintConfig
     )
+import "purty" Error (Error, errors)
 import "purty" Purty
     ( Args(Args, Defaults, argsFilePath)
-    , Error
     , Purty
     , argsInfo
-    , errors
     , handle
     , parseConfig
     , purty

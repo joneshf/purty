@@ -23,7 +23,8 @@ import "tasty-golden" Test.Tasty.Golden
     )
 
 import "purty" Env   (Formatting(Dynamic, Static), defaultEnv)
-import "purty" Purty (errors, handle, purty, run)
+import "purty" Error (errors)
+import "purty" Purty (handle, purty, run)
 
 main :: IO ()
 main = defaultMain goldenTests
