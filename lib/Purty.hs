@@ -1,19 +1,35 @@
 module Purty where
 
-import "rio" RIO
+import "rio" RIO hiding (withSystemTempFile)
 
-import "lens" Control.Monad.Error.Lens           (throwing)
-import "prettyprinter" Data.Text.Prettyprint.Doc (SimpleDocStream, layoutSmart)
-import "purescript" Language.PureScript          (parseModuleFromFile)
-import "path" Path                               (Abs, File, Path)
+import "lens" Control.Monad.Error.Lens                       (throwing)
+import "prettyprinter" Data.Text.Prettyprint.Doc
+    ( SimpleDocStream
+    , layoutSmart
+    )
+import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderIO)
+import "purescript" Language.PureScript
+    ( parseModuleFromFile
+    )
+import "path" Path                                           (Abs, File, Path)
+import "path-io" Path.IO
+    ( copyFile
+    , copyPermissions
+    , withSystemTempFile
+    )
 
+import "this" App   (App)
 import "this" Env
     ( Formatting(Dynamic, Static)
+    , HasEnv(envL)
     , HasFormatting(formattingL)
     , HasLayoutOptions(layoutOptionsL)
+    , HasOutput(outputL)
+    , Output(InPlace, StdOut)
+    , PurtyFilePath
+    , absolutize
     )
 import "this" Error (IsParseError(_ParseError))
-import "this" App (App)
 
 import qualified "path" Path
 
@@ -45,3 +61,31 @@ fromAbsFile filePath = do
   case formatting of
     Dynamic -> pure (layoutSmart layoutOptions $ Purty.Doc.Dynamic.fromModule ast)
     Static  -> pure (layoutSmart layoutOptions $ Purty.Doc.Static.fromModule ast)
+
+fromPurtyFilePath ::
+  ( HasEnv env
+  , Purty.AST.IsMissingName error
+  , IsParseError error
+  ) =>
+  PurtyFilePath ->
+  App env error ()
+fromPurtyFilePath filePath = do
+  env <- view envL
+  output <- view outputL
+  logDebug ("Env: " <> display env)
+  logDebug ("Converting " <> display filePath <> " to an absolute path")
+  absPath <- absolutize filePath
+  logDebug ("Converted file to absolute: " <> displayShow absPath)
+  logDebug "Running main `purty` program"
+  stream <- Purty.fromAbsFile absPath
+  logDebug "Successfully created stream for rendering"
+  logDebug (displayShow $ void stream)
+  case output of
+    InPlace -> liftIO $ withSystemTempFile "purty.purs" $ \fp h -> do
+      renderIO h stream
+      hClose h
+      copyPermissions absPath fp
+      copyFile fp absPath
+    StdOut -> do
+      logDebug "Printing to stdout"
+      liftIO $ renderIO stdout stream
