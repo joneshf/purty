@@ -37,10 +37,12 @@ instance Display ProperName where
     ProperName name -> "ProperName: " <> display name
 
 data Export
-  = ExportValue Ident
+  = ExportModule ModuleName
+  | ExportValue Ident
 
 instance Display Export where
   display = \case
+    ExportModule name -> "Export module: " <> display name
     ExportValue ident -> "Export value: " <> display ident
 
 newtype Ident
@@ -112,15 +114,21 @@ instance IsNotImplemented NotImplemented where
     NotImplemented x -> Right x
 
 fromExport ::
-  (IsInvalidExport e, IsNotImplemented e, MonadError e f) =>
+  (IsInvalidExport e, IsMissingName e, IsNotImplemented e, MonadError e f) =>
   Language.PureScript.DeclarationRef ->
   f Export
 fromExport = \case
+  Language.PureScript.ModuleRef _ name -> fmap ExportModule (fromModuleName name)
   Language.PureScript.ValueRef _ ident -> fmap ExportValue (fromIdent ident)
   ref -> throwing _NotImplemented (displayShow ref)
 
 fromExports ::
-  (IsEmptyExplicitExports e, IsInvalidExport e, IsNotImplemented e, MonadError e f) =>
+  ( IsEmptyExplicitExports e
+  , IsInvalidExport e
+  , IsMissingName e
+  , IsNotImplemented e
+  , MonadError e f
+  ) =>
   [Language.PureScript.DeclarationRef] ->
   f (NonEmpty Export)
 fromExports =

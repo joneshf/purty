@@ -29,6 +29,7 @@ data Variations a
 
 fromExport :: AST.Export -> Doc a
 fromExport = \case
+  AST.ExportModule name -> "module" <+> fromModuleName name
   AST.ExportValue ident -> fromIdent ident
 
 fromIdent :: AST.Ident -> Doc a
