@@ -10,38 +10,55 @@ import "semigroupoids" Data.Semigroup.Foldable (intercalateMap1)
 
 import qualified "purescript" Language.PureScript
 
-data Module
-  = Module ModuleName (Maybe (NonEmpty Export))
+data Module a
+  = Module a (ModuleName a) (Maybe (NonEmpty (Export a)))
+  deriving (Functor)
 
-instance Display Module where
+instance (Display a) => Display (Module a) where
   display = \case
-    Module name exports ->
-      "{Module name: "
+    Module ann name exports ->
+      "{Module "
+        <> "annotation: "
+        <> display ann
+        <> ", name: "
         <> display name
         <> foldMap (\x -> ", exports: " <> intercalateMap1 ", " display x) exports
         <> "}"
 
-newtype ModuleName
-  = ModuleName (NonEmpty ProperName)
+newtype ModuleName a
+  = ModuleName (NonEmpty (ProperName a))
+  deriving (Functor)
 
-instance Display ModuleName where
+instance (Display a) => Display (ModuleName a) where
   display = \case
     ModuleName names ->
       "ModuleName: [" <> intercalateMap1 ", " display names <> "]"
 
-newtype ProperName
-  = ProperName Text
+data ProperName a
+  = ProperName a Text
+  deriving (Functor)
 
-instance Display ProperName where
+instance (Display a) => Display (ProperName a) where
   display = \case
-    ProperName name -> "ProperName: " <> display name
+    ProperName ann name ->
+      "ProperName annotation: "
+        <> display ann
+        <> ", name: "
+        <> display name
 
-data Export
-  = ExportModule ModuleName
+data Export a
+  = ExportAnnotation a (Export a)
+  | ExportModule (ModuleName a)
   | ExportValue Ident
+  deriving (Functor)
 
-instance Display Export where
+instance (Display a) => Display (Export a) where
   display = \case
+    ExportAnnotation ann export ->
+      "Export annotation: "
+        <> display ann
+        <> ", export: "
+        <> display export
     ExportModule name -> "Export module: " <> display name
     ExportValue ident -> "Export value: " <> display ident
 
@@ -51,6 +68,13 @@ newtype Ident
 instance Display Ident where
   display = \case
     Ident x -> "Ident: " <> display x
+
+data Unannotated
+  = Unannotated
+
+instance Display Unannotated where
+  display = \case
+    Unannotated -> "Unannotated"
 
 data Error
   = EmptyExplicitExports
@@ -116,7 +140,7 @@ instance IsNotImplemented NotImplemented where
 fromExport ::
   (IsInvalidExport e, IsMissingName e, IsNotImplemented e, MonadError e f) =>
   Language.PureScript.DeclarationRef ->
-  f Export
+  f (Export Unannotated)
 fromExport = \case
   Language.PureScript.ModuleRef _ name -> fmap ExportModule (fromModuleName name)
   Language.PureScript.ValueRef _ ident -> fmap ExportValue (fromIdent ident)
@@ -130,7 +154,7 @@ fromExports ::
   , MonadError e f
   ) =>
   [Language.PureScript.DeclarationRef] ->
-  f (NonEmpty Export)
+  f (NonEmpty (Export Unannotated))
 fromExports =
   maybe (throwing_ _EmptyExplicitExports) (traverse fromExport) . nonEmpty
 
@@ -145,23 +169,23 @@ fromIdent = \case
 fromPureScript ::
   (IsError e, IsNotImplemented e, MonadError e f) =>
   Language.PureScript.Module ->
-  f Module
+  f (Module Unannotated)
 fromPureScript = \case
   Language.PureScript.Module _ _ name' _ exports' -> do
     name <- fromModuleName name'
     exports <- traverse fromExports exports'
-    pure (Module name exports)
+    pure (Module Unannotated name exports)
 
 fromModuleName ::
   (IsMissingName e, MonadError e f) =>
   Language.PureScript.ModuleName ->
-  f ModuleName
+  f (ModuleName Unannotated)
 fromModuleName = \case
   Language.PureScript.ModuleName names' ->
     maybe (throwing_ _MissingName) pure $ do
       names <- nonEmpty (fmap fromProperName names')
       pure (ModuleName names)
 
-fromProperName :: Language.PureScript.ProperName a -> ProperName
+fromProperName :: Language.PureScript.ProperName a -> ProperName Unannotated
 fromProperName = \case
-  Language.PureScript.ProperName name -> ProperName name
+  Language.PureScript.ProperName name -> ProperName Unannotated name

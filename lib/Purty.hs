@@ -46,7 +46,7 @@ fromAbsFile ::
   , IsParseError error
   ) =>
   Path Abs File ->
-  App env error (SimpleDocStream a)
+  App env error (SimpleDocStream AST.Unannotated)
 fromAbsFile filePath = do
   formatting <- view formattingL
   layoutOptions <- view layoutOptionsL
