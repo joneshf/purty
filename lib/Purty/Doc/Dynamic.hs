@@ -24,8 +24,8 @@ import qualified "this" AST
 
 data Variations a
   = Variations
-    { multiLine  :: a
-    , singleLine :: a
+    { multiLine  :: !a
+    , singleLine :: !a
     }
 
 fromExport :: AST.Export a -> Doc a

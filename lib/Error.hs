@@ -9,9 +9,9 @@ import "parsec" Text.Parsec (ParseError)
 import qualified "this" AST
 
 data Error
-  = AST AST.Error
-  | NotImplemented AST.NotImplemented
-  | Parse ParseError
+  = AST !AST.Error
+  | NotImplemented !AST.NotImplemented
+  | Parse !ParseError
 
 instance AST.IsEmptyExplicitExports Error where
   _EmptyExplicitExports = AST._Error.AST._EmptyExplicitExports

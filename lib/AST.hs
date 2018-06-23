@@ -11,7 +11,7 @@ import "semigroupoids" Data.Semigroup.Foldable (intercalateMap1)
 import qualified "purescript" Language.PureScript
 
 data Module a
-  = Module a (ModuleName a) (Maybe (NonEmpty (Export a)))
+  = Module !a !(ModuleName a) !(Maybe (NonEmpty (Export a)))
   deriving (Functor)
 
 instance (Display a) => Display (Module a) where
@@ -35,7 +35,7 @@ instance (Display a) => Display (ModuleName a) where
       "ModuleName: [" <> intercalateMap1 ", " display names <> "]"
 
 data ProperName a
-  = ProperName a Text
+  = ProperName !a !Text
   deriving (Functor)
 
 instance (Display a) => Display (ProperName a) where
@@ -47,9 +47,9 @@ instance (Display a) => Display (ProperName a) where
         <> display name
 
 data Export a
-  = ExportAnnotation a (Export a)
-  | ExportModule (ModuleName a)
-  | ExportValue Ident
+  = ExportAnnotation !a !(Export a)
+  | ExportModule !(ModuleName a)
+  | ExportValue !Ident
   deriving (Functor)
 
 instance (Display a) => Display (Export a) where
@@ -78,7 +78,7 @@ instance Display Unannotated where
 
 data Error
   = EmptyExplicitExports
-  | InvalidExport Language.PureScript.Ident
+  | InvalidExport !Language.PureScript.Ident
   | MissingName
 
 instance Display Error where
