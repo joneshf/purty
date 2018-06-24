@@ -13,26 +13,6 @@ import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
 
-data Error
-  = Missing
-
-instance Display Error where
-  display = \case
-    Missing -> "Module missing a name"
-
-class (IsMissing error) => IsError error where
-    _Error :: Prism' error Error
-
-instance IsError Error where
-  _Error = prism id Right
-
-class IsMissing error where
-  _Missing :: Prism' error ()
-
-instance IsMissing Error where
-  _Missing = prism (const Missing) $ \case
-    Missing -> Right ()
-
 newtype Class a
   = Class (Proper a)
   deriving (Eq, Functor, Ord)
@@ -113,3 +93,25 @@ proper = \case
 docFromProper :: Proper a -> Doc b
 docFromProper = \case
   Proper _ann name -> pretty name
+
+-- Errors
+
+data Error
+  = Missing
+
+instance Display Error where
+  display = \case
+    Missing -> "Module missing a name"
+
+class (IsMissing error) => IsError error where
+    _Error :: Prism' error Error
+
+instance IsError Error where
+  _Error = prism id Right
+
+class IsMissing error where
+  _Missing :: Prism' error ()
+
+instance IsMissing Error where
+  _Missing = prism (const Missing) $ \case
+    Missing -> Right ()

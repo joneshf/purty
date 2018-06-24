@@ -40,20 +40,6 @@ instance (Display a) => Display (Module a) where
         <> foldMap (\x -> ", exports: " <> intercalateMap1 ", " display x) exports
         <> "}"
 
-newtype NotImplemented
-  = NotImplemented Utf8Builder
-
-instance Display NotImplemented where
-  display = \case
-    NotImplemented x -> "We have not yet implemented: " <> x
-
-class IsNotImplemented error where
-  _NotImplemented :: Prism' error Utf8Builder
-
-instance IsNotImplemented NotImplemented where
-  _NotImplemented = prism NotImplemented $ \case
-    NotImplemented x -> Right x
-
 dynamic :: Module Annotation.Sorted -> Doc a
 dynamic = \case
   Module _ann name (Just exports') -> doc
@@ -96,3 +82,25 @@ static = \case
   Module _ann name Nothing ->
     "module" <+> Name.docFromModule name <+> "where"
       <> line
+
+-- Errors
+
+data Error
+  = NotImplemented !Utf8Builder
+
+instance Display Error where
+  display = \case
+    NotImplemented x -> "We have not yet implemented: " <> x
+
+class (IsNotImplemented error) => IsError error where
+    _Error :: Prism' error Error
+
+instance IsError Error where
+  _Error = prism id Right
+
+class IsNotImplemented error where
+  _NotImplemented :: Prism' error Utf8Builder
+
+instance IsNotImplemented Error where
+  _NotImplemented = prism NotImplemented $ \case
+    NotImplemented x -> Right x

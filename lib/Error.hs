@@ -13,7 +13,7 @@ import qualified "this" Name
 data Error
   = Export !Export.Error
   | Name !Name.Error
-  | NotImplemented !Module.NotImplemented
+  | Module !Module.Error
   | Parse !ParseError
 
 instance Export.IsEmptyExplicitExports Error where
@@ -34,11 +34,12 @@ instance Export.IsError Error where
     x -> Left x
 
 instance Module.IsNotImplemented Error where
-  _NotImplemented = notImplemented . Module._NotImplemented
-    where
-    notImplemented = prism NotImplemented $ \case
-      NotImplemented x -> Right x
-      x -> Left x
+  _NotImplemented = Module._Error . Module._NotImplemented
+
+instance Module.IsError Error where
+  _Error = prism Module $ \case
+    Module x -> Right x
+    x -> Left x
 
 instance Name.IsError Error where
   _Error = prism Name $ \case
@@ -80,7 +81,7 @@ errors = \case
     logError "Problem converting a name"
     logError (display err)
     liftIO exitFailure
-  NotImplemented err -> do
+  Module (Module.NotImplemented err) -> do
     logError (display err)
     logError "Report this to https://gitlab.com/joneshf/purty"
     liftIO exitFailure

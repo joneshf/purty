@@ -25,72 +25,6 @@ import qualified "this" Annotation
 import qualified "this" Name
 import qualified "this" Variations
 
-data Error
-  = EmptyExplicitExports
-  | InstanceExported !Language.PureScript.Ident
-  | InvalidExport !Language.PureScript.Ident
-  | ReExportExported !Language.PureScript.ModuleName !Language.PureScript.DeclarationRef
-
-instance Display Error where
-  display = \case
-    EmptyExplicitExports -> "Module has an empty export list"
-    InstanceExported ident ->
-      "Module exports a type class instance: "
-        <> displayShow ident
-        <> ". This is probably a problem in PureScript."
-    InvalidExport ident ->
-      "Module exports an invalid identifier: " <> displayShow ident
-    ReExportExported name ref ->
-      "Module exports a re-export explicitly: module name: "
-        <> displayShow name
-        <> ", declaration ref: "
-        <> displayShow ref
-        <> ". This is probably a problem in PureScript."
-
-class
-  ( IsEmptyExplicitExports error
-  , IsInstanceExported error
-  , IsInvalidExport error
-  , IsReExportExported error
-  ) =>
-  IsError error where
-    _Error :: Prism' error Error
-
-instance IsError Error where
-  _Error = prism id Right
-
-class IsEmptyExplicitExports error where
-  _EmptyExplicitExports :: Prism' error ()
-
-instance IsEmptyExplicitExports Error where
-  _EmptyExplicitExports = prism (const EmptyExplicitExports) $ \case
-    EmptyExplicitExports -> Right ()
-    x -> Left x
-
-class IsInstanceExported error where
-  _InstanceExported :: Prism' error Language.PureScript.Ident
-
-instance IsInstanceExported Error where
-  _InstanceExported = prism InstanceExported $ \case
-    InstanceExported ident -> Right ident
-    x -> Left x
-
-class IsInvalidExport error where
-  _InvalidExport :: Prism' error Language.PureScript.Ident
-
-instance IsInvalidExport Error where
-  _InvalidExport = prism InvalidExport $ \case
-    InvalidExport ident -> Right ident
-    x -> Left x
-
-class IsReExportExported error where
-  _ReExportExported :: Prism' error (Language.PureScript.ModuleName, Language.PureScript.DeclarationRef)
-
-instance IsReExportExported Error where
-  _ReExportExported = prism (uncurry ReExportExported) $ \case
-    ReExportExported name ref -> Right (name, ref)
-    x -> Left x
-
 data Constructors a
   = ConstructorsAnnotation !a !(Constructors a)
   | ConstructorsNone
@@ -373,3 +307,71 @@ sort = sortBy compareExport . fmap go
     ExportTypeOperator x -> ExportTypeOperator (Annotation.Sorted <$ x)
     ExportValue x -> ExportValue (Annotation.Sorted <$ x)
     ExportValueOperator x -> ExportValueOperator (Annotation.Sorted <$ x)
+
+-- Errors
+
+data Error
+  = EmptyExplicitExports
+  | InstanceExported !Language.PureScript.Ident
+  | InvalidExport !Language.PureScript.Ident
+  | ReExportExported !Language.PureScript.ModuleName !Language.PureScript.DeclarationRef
+
+instance Display Error where
+  display = \case
+    EmptyExplicitExports -> "Module has an empty export list"
+    InstanceExported ident ->
+      "Module exports a type class instance: "
+        <> displayShow ident
+        <> ". This is probably a problem in PureScript."
+    InvalidExport ident ->
+      "Module exports an invalid identifier: " <> displayShow ident
+    ReExportExported name ref ->
+      "Module exports a re-export explicitly: module name: "
+        <> displayShow name
+        <> ", declaration ref: "
+        <> displayShow ref
+        <> ". This is probably a problem in PureScript."
+
+class
+  ( IsEmptyExplicitExports error
+  , IsInstanceExported error
+  , IsInvalidExport error
+  , IsReExportExported error
+  ) =>
+  IsError error where
+    _Error :: Prism' error Error
+
+instance IsError Error where
+  _Error = prism id Right
+
+class IsEmptyExplicitExports error where
+  _EmptyExplicitExports :: Prism' error ()
+
+instance IsEmptyExplicitExports Error where
+  _EmptyExplicitExports = prism (const EmptyExplicitExports) $ \case
+    EmptyExplicitExports -> Right ()
+    x -> Left x
+
+class IsInstanceExported error where
+  _InstanceExported :: Prism' error Language.PureScript.Ident
+
+instance IsInstanceExported Error where
+  _InstanceExported = prism InstanceExported $ \case
+    InstanceExported ident -> Right ident
+    x -> Left x
+
+class IsInvalidExport error where
+  _InvalidExport :: Prism' error Language.PureScript.Ident
+
+instance IsInvalidExport Error where
+  _InvalidExport = prism InvalidExport $ \case
+    InvalidExport ident -> Right ident
+    x -> Left x
+
+class IsReExportExported error where
+  _ReExportExported :: Prism' error (Language.PureScript.ModuleName, Language.PureScript.DeclarationRef)
+
+instance IsReExportExported Error where
+  _ReExportExported = prism (uncurry ReExportExported) $ \case
+    ReExportExported name ref -> Right (name, ref)
+    x -> Left x
