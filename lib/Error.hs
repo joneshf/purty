@@ -6,14 +6,14 @@ import "lens" Control.Lens  (Prism', prism)
 import "base" System.Exit   (exitFailure)
 import "parsec" Text.Parsec (ParseError)
 
-import qualified "this" AST
 import qualified "this" Export
+import qualified "this" Module
 import qualified "this" Name
 
 data Error
   = Export !Export.Error
   | Name !Name.Error
-  | NotImplemented !AST.NotImplemented
+  | NotImplemented !Module.NotImplemented
   | Parse !ParseError
 
 instance Export.IsEmptyExplicitExports Error where
@@ -33,8 +33,8 @@ instance Export.IsError Error where
     Export x -> Right x
     x -> Left x
 
-instance AST.IsNotImplemented Error where
-  _NotImplemented = notImplemented.AST._NotImplemented
+instance Module.IsNotImplemented Error where
+  _NotImplemented = notImplemented . Module._NotImplemented
     where
     notImplemented = prism NotImplemented $ \case
       NotImplemented x -> Right x
@@ -50,7 +50,7 @@ instance Name.IsMissing Error where
 
 class
   ( Export.IsError error
-  , AST.IsNotImplemented error
+  , Module.IsNotImplemented error
   , IsParseError error
   ) =>
   IsError error where

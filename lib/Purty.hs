@@ -34,8 +34,8 @@ import "this" Error (IsParseError(_ParseError))
 import qualified "path" Path
 
 import qualified "this" Annotation
-import qualified "this" AST
 import qualified "this" Export
+import qualified "this" Module
 import qualified "this" Name
 
 fromAbsFile ::
@@ -57,13 +57,13 @@ fromAbsFile filePath = do
   (_, m) <- either (throwing _ParseError) pure (parseModuleFromFile id (Path.fromAbsFile filePath, contents))
   logDebug "Parsed module:"
   logDebug (displayShow m)
-  ast <- AST.fromPureScript m
+  ast <- Module.fromPureScript m
   logDebug "Converted AST:"
   logDebug (display ast)
-  let sorted = AST.sortExports ast
+  let sorted = Module.sortExports ast
       doc = case formatting of
-        Dynamic -> AST.dynamic sorted
-        Static  -> AST.static sorted
+        Dynamic -> Module.dynamic sorted
+        Static  -> Module.static sorted
       stream = layoutSmart layoutOptions doc
   logDebug "Sorted AST:"
   logDebug (display sorted)

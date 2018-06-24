@@ -1,4 +1,4 @@
-module AST where
+module Module where
 
 import "rio" RIO
 
