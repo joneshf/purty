@@ -1,6 +1,7 @@
 module Exports
-  ( foo
+  ( module Bar
+  , module Foo
   , bar
-  , module Prelude
   , baz
+  , foo
   ) where

@@ -46,7 +46,7 @@ fromAbsFile ::
   , IsParseError error
   ) =>
   Path Abs File ->
-  App env error (SimpleDocStream AST.Unannotated)
+  App env error (SimpleDocStream AST.Sorted)
 fromAbsFile filePath = do
   formatting <- view formattingL
   layoutOptions <- view layoutOptionsL
@@ -59,9 +59,18 @@ fromAbsFile filePath = do
   ast <- AST.fromPureScript m
   logDebug "Converted AST:"
   logDebug (display ast)
-  case formatting of
-    Dynamic -> pure (layoutSmart layoutOptions $ Purty.Doc.Dynamic.fromModule ast)
-    Static  -> pure (layoutSmart layoutOptions $ Purty.Doc.Static.fromModule ast)
+  let sorted = AST.sortExports ast
+      doc = case formatting of
+        Dynamic -> Purty.Doc.Dynamic.fromModule sorted
+        Static  -> Purty.Doc.Static.fromModule sorted
+      stream = layoutSmart layoutOptions doc
+  logDebug "Sorted AST:"
+  logDebug (display sorted)
+  logDebug "Doc:"
+  logDebug (displayShow doc)
+  logDebug "Stream:"
+  logDebug (displayShow stream)
+  pure stream
 
 fromPurtyFilePath ::
   ( HasEnv env

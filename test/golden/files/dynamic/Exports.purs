@@ -1,1 +1,1 @@
-module Exports (foo, bar, module Prelude, baz) where
+module Exports (module Prelude, bar, baz, foo) where

@@ -7,7 +7,6 @@ import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , align
-    , annotate
     , comma
     , flatAlt
     , group
@@ -28,9 +27,9 @@ data Variations a
     , singleLine :: !a
     }
 
-fromExport :: AST.Export a -> Doc a
+fromExport :: AST.Export AST.Sorted -> Doc a
 fromExport = \case
-  AST.ExportAnnotation ann export -> annotate ann (fromExport export)
+  AST.ExportAnnotation _ann export -> fromExport export
   AST.ExportModule name -> "module" <+> fromModuleName name
   AST.ExportValue ident -> fromIdent ident
 
@@ -38,9 +37,9 @@ fromIdent :: AST.Ident -> Doc a
 fromIdent = \case
   AST.Ident name -> pretty name
 
-fromModule :: AST.Module a -> Doc a
+fromModule :: AST.Module AST.Sorted -> Doc a
 fromModule = \case
-  AST.Module ann name (Just exports') -> annotate ann doc
+  AST.Module _ann name (Just exports') -> doc
     where
     doc =
       "module" <+> fromModuleName name <> group (flatAlt multi single)
@@ -48,19 +47,17 @@ fromModule = \case
     multi = line <> indent 2 (multiLine <+> "where")
     single = space <> singleLine <+> "where"
     Variations { multiLine, singleLine } = parenthesize fromExport exports'
-  AST.Module ann name Nothing -> annotate ann doc
-    where
-    doc =
-      "module" <+> fromModuleName name <+> "where"
-        <> line
+  AST.Module _ann name Nothing ->
+    "module" <+> fromModuleName name <+> "where"
+      <> line
 
-fromModuleName :: AST.ModuleName a -> Doc a
+fromModuleName :: AST.ModuleName a -> Doc b
 fromModuleName = \case
   AST.ModuleName names -> intercalateMap1 "." fromProperName names
 
-fromProperName :: AST.ProperName a -> Doc a
+fromProperName :: AST.ProperName a -> Doc b
 fromProperName = \case
-  AST.ProperName ann name -> annotate ann (pretty name)
+  AST.ProperName _ann name -> pretty name
 
 parenthesize :: (a -> Doc b) -> NonEmpty a -> Variations (Doc b)
 parenthesize f xs = Variations { multiLine, singleLine }

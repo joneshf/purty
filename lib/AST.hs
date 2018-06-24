@@ -5,7 +5,7 @@ import "rio" RIO
 import "lens" Control.Lens                     (Prism', prism)
 import "lens" Control.Monad.Error.Lens         (throwing, throwing_)
 import "mtl" Control.Monad.Except              (MonadError)
-import "base" Data.List.NonEmpty               (NonEmpty, nonEmpty)
+import "base" Data.List.NonEmpty               (NonEmpty, nonEmpty, sortBy)
 import "semigroupoids" Data.Semigroup.Foldable (intercalateMap1)
 
 import qualified "purescript" Language.PureScript
@@ -27,7 +27,7 @@ instance (Display a) => Display (Module a) where
 
 newtype ModuleName a
   = ModuleName (NonEmpty (ProperName a))
-  deriving (Functor)
+  deriving (Eq, Functor, Ord)
 
 instance (Display a) => Display (ModuleName a) where
   display = \case
@@ -36,7 +36,7 @@ instance (Display a) => Display (ModuleName a) where
 
 data ProperName a
   = ProperName !a !Text
-  deriving (Functor)
+  deriving (Eq, Functor, Ord)
 
 instance (Display a) => Display (ProperName a) where
   display = \case
@@ -64,6 +64,7 @@ instance (Display a) => Display (Export a) where
 
 newtype Ident
   = Ident Text
+  deriving (Eq, Ord)
 
 instance Display Ident where
   display = \case
@@ -137,6 +138,23 @@ instance IsNotImplemented NotImplemented where
   _NotImplemented = prism NotImplemented $ \case
     NotImplemented x -> Right x
 
+data Sorted
+  = Sorted
+  deriving (Show)
+
+instance Display Sorted where
+  display = \case
+    Sorted -> "Sorted"
+
+compareExport :: Export a -> Export b -> Ordering
+compareExport x' y' = case (x', y') of
+  (ExportAnnotation _annX x, _)    -> compareExport x y'
+  (_, ExportAnnotation _annY y)    -> compareExport x' y
+  (ExportModule x, ExportModule y) -> compare (void x) (void y)
+  (ExportModule _, ExportValue _)  -> LT
+  (ExportValue _, ExportModule _)  -> GT
+  (ExportValue x, ExportValue y)   -> compare x y
+
 fromExport ::
   (IsInvalidExport e, IsMissingName e, IsNotImplemented e, MonadError e f) =>
   Language.PureScript.DeclarationRef ->
@@ -189,3 +207,8 @@ fromModuleName = \case
 fromProperName :: Language.PureScript.ProperName a -> ProperName Unannotated
 fromProperName = \case
   Language.PureScript.ProperName name -> ProperName Unannotated name
+
+sortExports :: Module a -> Module Sorted
+sortExports = \case
+  Module ann name exports ->
+    Sorted <$ Module ann name (fmap (sortBy compareExport) exports)
