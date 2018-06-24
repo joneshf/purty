@@ -2,16 +2,28 @@ module AST where
 
 import "rio" RIO
 
-import "lens" Control.Lens                     (Prism', prism)
-import "mtl" Control.Monad.Except              (MonadError)
-import "base" Data.List.NonEmpty               (NonEmpty)
-import "semigroupoids" Data.Semigroup.Foldable (intercalateMap1)
+import "lens" Control.Lens                       (Prism', prism)
+import "mtl" Control.Monad.Except                (MonadError)
+import "base" Data.List.NonEmpty                 (NonEmpty)
+import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
+import "prettyprinter" Data.Text.Prettyprint.Doc
+    ( Doc
+    , flatAlt
+    , group
+    , indent
+    , line
+    , space
+    , (<+>)
+    )
 
 import qualified "purescript" Language.PureScript
+
+import "this" Variations (Variations(Variations, multiLine, singleLine))
 
 import qualified "this" Annotation
 import qualified "this" Export
 import qualified "this" Name
+import qualified "this" Variations
 
 data Module a
   = Module !a !(Name.Module a) !(Maybe (NonEmpty (Export.Export a)))
@@ -42,6 +54,21 @@ instance IsNotImplemented NotImplemented where
   _NotImplemented = prism NotImplemented $ \case
     NotImplemented x -> Right x
 
+dynamic :: Module Annotation.Sorted -> Doc a
+dynamic = \case
+  Module _ann name (Just exports') -> doc
+    where
+    doc =
+      "module" <+> Name.docFromModule name <> group (flatAlt multi single)
+        <> line
+    multi = line <> indent 2 (multiLine <+> "where")
+    single = space <> singleLine <+> "where"
+    Variations { multiLine, singleLine } =
+      Variations.parenthesize Export.docFromExport exports'
+  Module _ann name Nothing ->
+    "module" <+> Name.docFromModule name <+> "where"
+      <> line
+
 fromPureScript ::
   (Export.IsError e, Name.IsMissing e, MonadError e f) =>
   Language.PureScript.Module ->
@@ -56,3 +83,16 @@ sortExports :: Module a -> Module Annotation.Sorted
 sortExports = \case
   Module _ann name exports ->
     Module Annotation.Sorted (Annotation.Sorted <$ name) (fmap Export.sort exports)
+
+static :: Module Annotation.Sorted -> Doc a
+static = \case
+  Module _ann name (Just exports') -> doc
+    where
+    doc =
+      "module" <+> Name.docFromModule name
+        <> line <> indent 2 (Variations.multiLine exports <+> "where")
+        <> line
+    exports = Variations.parenthesize Export.docFromExport exports'
+  Module _ann name Nothing ->
+    "module" <+> Name.docFromModule name <+> "where"
+      <> line

@@ -37,8 +37,6 @@ import qualified "this" Annotation
 import qualified "this" AST
 import qualified "this" Export
 import qualified "this" Name
-import qualified "this" Purty.Doc.Dynamic
-import qualified "this" Purty.Doc.Static
 
 fromAbsFile ::
   ( HasFormatting env
@@ -64,8 +62,8 @@ fromAbsFile filePath = do
   logDebug (display ast)
   let sorted = AST.sortExports ast
       doc = case formatting of
-        Dynamic -> Purty.Doc.Dynamic.fromModule sorted
-        Static  -> Purty.Doc.Static.fromModule sorted
+        Dynamic -> AST.dynamic sorted
+        Static  -> AST.static sorted
       stream = layoutSmart layoutOptions doc
   logDebug "Sorted AST:"
   logDebug (display sorted)

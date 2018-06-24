@@ -7,12 +7,23 @@ import "lens" Control.Monad.Error.Lens           (throwing, throwing_)
 import "mtl" Control.Monad.Except                (MonadError)
 import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty, sortBy)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
-import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, parens, pretty)
+import "prettyprinter" Data.Text.Prettyprint.Doc
+    ( Doc
+    , dot
+    , indent
+    , line
+    , parens
+    , pretty
+    , (<+>)
+    )
 
 import qualified "purescript" Language.PureScript
 
+import "this" Variations (Variations(Variations, multiLine, singleLine))
+
 import qualified "this" Annotation
 import qualified "this" Name
+import qualified "this" Variations
 
 data Error
   = EmptyExplicitExports
@@ -99,6 +110,20 @@ instance (Display a) => Display (Constructors a) where
       "Some constructors: [" <> intercalateMap1 ", " display names <> "]"
     ConstructorsAll -> "All constructors"
 
+docFromConstructors :: Constructors Annotation.Sorted -> Variations (Doc a)
+docFromConstructors = \case
+  ConstructorsAnnotation _ann constructors -> docFromConstructors constructors
+  ConstructorsNone -> pure mempty
+  ConstructorsSome constructors' ->
+    Variations
+      { multiLine = line <> indent 4 (multiLine constructors)
+      , singleLine = singleLine constructors
+      }
+    where
+    constructors =
+      Variations.parenthesize (pure . Name.docFromProper) constructors'
+  ConstructorsAll -> pure (parens (dot <> dot))
+
 data Export a
   = ExportAnnotation !a !(Export a)
   | ExportClass !(Name.Class a)
@@ -179,6 +204,17 @@ compareExport x' y' = case (x', y') of
   (ExportValueOperator _, ExportValue _)         -> LT
   (ExportValueOperator x, ExportValueOperator y) -> compare (void x) (void y)
 
+docFromExport :: Export Annotation.Sorted -> Variations (Doc a)
+docFromExport = \case
+  ExportAnnotation _ann export' -> docFromExport export'
+  ExportClass name -> pure ("class" <+> Name.docFromClass name)
+  ExportKind name -> pure ("kind" <+> Name.docFromKind name)
+  ExportModule name -> pure ("module" <+> Name.docFromModule name)
+  ExportType ty -> docFromType ty
+  ExportTypeOperator op -> pure ("type" <+> Export.docFromTypeOperator op)
+  ExportValue value' -> pure (Export.docFromValue value')
+  ExportValueOperator op -> pure (Export.docFromValueOperator op)
+
 export ::
   ( IsInstanceExported e
   , IsInvalidExport e
@@ -216,6 +252,11 @@ instance (Display a) => Display (Type a) where
         <> ", constructors: ("
         <> display constructors
         <> ")"
+
+docFromType :: Type Annotation.Sorted -> Variations (Doc b)
+docFromType = \case
+  Type name constructors ->
+    fmap (Name.docFromProper name <>) (docFromConstructors constructors)
 
 type' ::
   Language.PureScript.ProperName 'Language.PureScript.TypeName ->
