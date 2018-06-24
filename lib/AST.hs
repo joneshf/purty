@@ -46,8 +46,17 @@ instance (Display a) => Display (ProperName a) where
         <> ", name: "
         <> display name
 
+newtype KindName a
+  = KindName (ProperName a)
+  deriving (Eq, Functor, Ord)
+
+instance (Display a) => Display (KindName a) where
+  display = \case
+    KindName name -> "KindName: " <> display name
+
 data Export a
   = ExportAnnotation !a !(Export a)
+  | ExportKind !(KindName a)
   | ExportModule !(ModuleName a)
   | ExportValue !Ident
   deriving (Functor)
@@ -59,6 +68,7 @@ instance (Display a) => Display (Export a) where
         <> display ann
         <> ", export: "
         <> display export
+    ExportKind name -> "Export kind: " <> display name
     ExportModule name -> "Export module: " <> display name
     ExportValue ident -> "Export value: " <> display ident
 
@@ -150,8 +160,13 @@ compareExport :: Export a -> Export b -> Ordering
 compareExport x' y' = case (x', y') of
   (ExportAnnotation _annX x, _)    -> compareExport x y'
   (_, ExportAnnotation _annY y)    -> compareExport x' y
+  (ExportKind x, ExportKind y)  -> compare (void x) (void y)
+  (ExportKind _, ExportModule _) -> GT
+  (ExportKind _, ExportValue _)  -> LT
+  (ExportModule _, ExportKind _)  -> LT
   (ExportModule x, ExportModule y) -> compare (void x) (void y)
   (ExportModule _, ExportValue _)  -> LT
+  (ExportValue _, ExportKind _)  -> GT
   (ExportValue _, ExportModule _)  -> GT
   (ExportValue x, ExportValue y)   -> compare x y
 
@@ -160,6 +175,7 @@ fromExport ::
   Language.PureScript.DeclarationRef ->
   f (Export Unannotated)
 fromExport = \case
+  Language.PureScript.KindRef _ name -> pure (ExportKind $ fromKindName name)
   Language.PureScript.ModuleRef _ name -> fmap ExportModule (fromModuleName name)
   Language.PureScript.ValueRef _ ident -> fmap ExportValue (fromIdent ident)
   ref -> throwing _NotImplemented (displayShow ref)
@@ -183,6 +199,11 @@ fromIdent ::
 fromIdent = \case
   Language.PureScript.Ident ident -> pure (Ident ident)
   ident -> throwing _InvalidExport ident
+
+fromKindName ::
+  Language.PureScript.ProperName 'Language.PureScript.KindName ->
+  KindName Unannotated
+fromKindName = KindName . fromProperName
 
 fromPureScript ::
   (IsError e, IsNotImplemented e, MonadError e f) =>

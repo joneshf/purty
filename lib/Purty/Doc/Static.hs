@@ -22,12 +22,17 @@ import qualified "this" AST
 fromExport :: AST.Export AST.Sorted -> Doc a
 fromExport = \case
   AST.ExportAnnotation _ann export -> fromExport export
+  AST.ExportKind name -> "kind" <+> fromKindName name
   AST.ExportModule name -> "module" <+> fromModuleName name
   AST.ExportValue ident -> fromIdent ident
 
 fromIdent :: AST.Ident -> Doc a
 fromIdent = \case
   AST.Ident name -> pretty name
+
+fromKindName :: AST.KindName a -> Doc b
+fromKindName = \case
+  AST.KindName name -> fromProperName name
 
 fromModule :: AST.Module AST.Sorted -> Doc a
 fromModule = \case
