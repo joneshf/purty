@@ -7,29 +7,30 @@ import "base" System.Exit   (exitFailure)
 import "parsec" Text.Parsec (ParseError)
 
 import qualified "this" AST
+import qualified "this" Export
 import qualified "this" Name
 
 data Error
-  = AST !AST.Error
+  = Export !Export.Error
   | Name !Name.Error
   | NotImplemented !AST.NotImplemented
   | Parse !ParseError
 
-instance AST.IsEmptyExplicitExports Error where
-  _EmptyExplicitExports = AST._Error.AST._EmptyExplicitExports
+instance Export.IsEmptyExplicitExports Error where
+  _EmptyExplicitExports = Export._Error.Export._EmptyExplicitExports
 
-instance AST.IsInstanceExported Error where
-  _InstanceExported = AST._Error.AST._InstanceExported
+instance Export.IsInstanceExported Error where
+  _InstanceExported = Export._Error.Export._InstanceExported
 
-instance AST.IsInvalidExport Error where
-  _InvalidExport = AST._Error.AST._InvalidExport
+instance Export.IsInvalidExport Error where
+  _InvalidExport = Export._Error.Export._InvalidExport
 
-instance AST.IsReExportExported Error where
-  _ReExportExported = AST._Error.AST._ReExportExported
+instance Export.IsReExportExported Error where
+  _ReExportExported = Export._Error.Export._ReExportExported
 
-instance AST.IsError Error where
-  _Error = prism AST $ \case
-    AST x -> Right x
+instance Export.IsError Error where
+  _Error = prism Export $ \case
+    Export x -> Right x
     x -> Left x
 
 instance AST.IsNotImplemented Error where
@@ -48,7 +49,7 @@ instance Name.IsMissing Error where
   _Missing = Name._Error . Name._Missing
 
 class
-  ( AST.IsError error
+  ( Export.IsError error
   , AST.IsNotImplemented error
   , IsParseError error
   ) =>
@@ -71,8 +72,8 @@ instance IsParseError Error where
 
 errors :: (HasLogFunc env, MonadIO f, MonadReader env f) => Error -> f a
 errors = \case
-  AST err -> do
-    logError "Problem converting to our AST"
+  Export err -> do
+    logError "Problem converting the exports"
     logError (display err)
     liftIO exitFailure
   Name err -> do

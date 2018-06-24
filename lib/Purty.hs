@@ -35,6 +35,7 @@ import qualified "path" Path
 
 import qualified "this" Annotation
 import qualified "this" AST
+import qualified "this" Export
 import qualified "this" Name
 import qualified "this" Purty.Doc.Dynamic
 import qualified "this" Purty.Doc.Static
@@ -43,7 +44,7 @@ fromAbsFile ::
   ( HasFormatting env
   , HasLayoutOptions env
   , HasLogFunc env
-  , AST.IsError error
+  , Export.IsError error
   , Name.IsError error
   , IsParseError error
   ) =>
@@ -76,7 +77,7 @@ fromAbsFile filePath = do
 
 fromPurtyFilePath ::
   ( HasEnv env
-  , AST.IsError error
+  , Export.IsError error
   , Name.IsError error
   , IsParseError error
   ) =>

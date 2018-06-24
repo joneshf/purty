@@ -14,13 +14,13 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , indent
     , line
     , parens
-    , pretty
     , space
     , (<+>)
     )
 
 import qualified "this" Annotation
 import qualified "this" AST
+import qualified "this" Export
 import qualified "this" Name
 
 data Variations a
@@ -29,30 +29,26 @@ data Variations a
     , singleLine :: !a
     }
 
-fromConstructors :: AST.Constructors Annotation.Sorted -> Doc a
+fromConstructors :: Export.Constructors Annotation.Sorted -> Doc a
 fromConstructors = \case
-  AST.ConstructorsAnnotation _ann constructors -> fromConstructors constructors
-  AST.ConstructorsNone -> mempty
-  AST.ConstructorsSome constructors -> group (flatAlt multiLine singleLine)
+  Export.ConstructorsAnnotation _ann constructors -> fromConstructors constructors
+  Export.ConstructorsNone -> mempty
+  Export.ConstructorsSome constructors -> group (flatAlt multiLine singleLine)
     where
     Variations { multiLine, singleLine } =
       parenthesize Name.docFromProper constructors
-  AST.ConstructorsAll -> parens (dot <> dot)
+  Export.ConstructorsAll -> parens (dot <> dot)
 
-fromExport :: AST.Export Annotation.Sorted -> Doc a
+fromExport :: Export.Export Annotation.Sorted -> Doc a
 fromExport = \case
-  AST.ExportAnnotation _ann export -> fromExport export
-  AST.ExportClass name -> "class" <+> Name.docFromClass name
-  AST.ExportKind name -> "kind" <+> Name.docFromKind name
-  AST.ExportModule name -> "module" <+> Name.docFromModule name
-  AST.ExportType ty -> fromType ty
-  AST.ExportTypeOperator op -> "type" <+> fromTypeOperator op
-  AST.ExportValue ident -> fromIdent ident
-  AST.ExportValueOperator op -> fromValueOperator op
-
-fromIdent :: AST.Ident -> Doc a
-fromIdent = \case
-  AST.Ident name -> pretty name
+  Export.ExportAnnotation _ann export -> fromExport export
+  Export.ExportClass name -> "class" <+> Name.docFromClass name
+  Export.ExportKind name -> "kind" <+> Name.docFromKind name
+  Export.ExportModule name -> "module" <+> Name.docFromModule name
+  Export.ExportType ty -> fromType ty
+  Export.ExportTypeOperator op -> "type" <+> Export.docFromTypeOperator op
+  Export.ExportValue value -> Export.docFromValue value
+  Export.ExportValueOperator op -> Export.docFromValueOperator op
 
 fromModule :: AST.Module Annotation.Sorted -> Doc a
 fromModule = \case
@@ -68,18 +64,10 @@ fromModule = \case
     "module" <+> Name.docFromModule name <+> "where"
       <> line
 
-fromType :: AST.Type Annotation.Sorted -> Doc b
+fromType :: Export.Type Annotation.Sorted -> Doc b
 fromType = \case
-  AST.Type name constructors ->
+  Export.Type name constructors ->
     Name.docFromProper name <> fromConstructors constructors
-
-fromTypeOperator :: AST.TypeOperator a -> Doc b
-fromTypeOperator = \case
-  AST.TypeOperator _ann op -> parens (pretty op)
-
-fromValueOperator :: AST.ValueOperator a -> Doc b
-fromValueOperator = \case
-  AST.ValueOperator _ann op -> parens (pretty op)
 
 parenthesize :: (a -> Doc b) -> NonEmpty a -> Variations (Doc b)
 parenthesize f xs = Variations { multiLine, singleLine }
