@@ -6,24 +6,13 @@ import "lens" Control.Lens                       (Prism', prism)
 import "mtl" Control.Monad.Except                (MonadError)
 import "base" Data.List.NonEmpty                 (NonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
-import "prettyprinter" Data.Text.Prettyprint.Doc
-    ( Doc
-    , flatAlt
-    , group
-    , indent
-    , line
-    , space
-    , (<+>)
-    )
+import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, line, (<+>))
 
 import qualified "purescript" Language.PureScript
-
-import "this" Variations (Variations(Variations, multiLine, singleLine))
 
 import qualified "this" Annotation
 import qualified "this" Export
 import qualified "this" Name
-import qualified "this" Variations
 
 data Module a
   = Module !a !(Name.Module a) !(Maybe (NonEmpty (Export.Export a)))
@@ -42,17 +31,8 @@ instance (Display a) => Display (Module a) where
 
 dynamic :: Module Annotation.Sorted -> Doc a
 dynamic = \case
-  Module _ann name (Just exports') -> doc
-    where
-    doc =
-      "module" <+> Name.docFromModule name <> group (flatAlt multi single)
-        <> line
-    multi = line <> indent 2 (multiLine <+> "where")
-    single = space <> singleLine <+> "where"
-    Variations { multiLine, singleLine } =
-      Variations.parenthesize Export.docFromExport exports'
-  Module _ann name Nothing ->
-    "module" <+> Name.docFromModule name <+> "where"
+  Module _ann name exports ->
+    "module" <+> Name.docFromModule name <> Export.dynamic exports <+> "where"
       <> line
 
 fromPureScript ::
@@ -72,15 +52,8 @@ sortExports = \case
 
 static :: Module Annotation.Sorted -> Doc a
 static = \case
-  Module _ann name (Just exports') -> doc
-    where
-    doc =
-      "module" <+> Name.docFromModule name
-        <> line <> indent 2 (Variations.multiLine exports <+> "where")
-        <> line
-    exports = Variations.parenthesize Export.docFromExport exports'
-  Module _ann name Nothing ->
-    "module" <+> Name.docFromModule name <+> "where"
+  Module _ann name exports ->
+    "module" <+> Name.docFromModule name <> Export.static exports <+> "where"
       <> line
 
 -- Errors

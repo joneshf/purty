@@ -10,10 +10,13 @@ import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , dot
+    , flatAlt
+    , group
     , indent
     , line
     , parens
     , pretty
+    , space
     , (<+>)
     )
 
@@ -149,6 +152,14 @@ docFromExport = \case
   ExportValue value' -> pure (Export.docFromValue value')
   ExportValueOperator op -> pure (Export.docFromValueOperator op)
 
+dynamic :: (Foldable f) => f (NonEmpty (Export Annotation.Sorted)) -> Doc a
+dynamic = foldMap $ \exports' ->
+  let multi = line <> indent 2 multiLine
+      single = space <> singleLine
+      Variations { multiLine, singleLine } =
+        Variations.parenthesize Export.docFromExport exports'
+  in group (flatAlt multi single)
+
 export ::
   ( IsInstanceExported e
   , IsInvalidExport e
@@ -173,6 +184,11 @@ export = \case
   Language.PureScript.ValueRef _ ident -> fmap ExportValue (value ident)
   Language.PureScript.ValueOpRef _ op ->
     pure (ExportValueOperator $ valueOperator op)
+
+static :: (Foldable f) => f (NonEmpty (Export Annotation.Sorted)) -> Doc b
+static = foldMap $ \exports' ->
+  let exports = Variations.parenthesize Export.docFromExport exports'
+  in line <> indent 2 (Variations.multiLine exports)
 
 data Type a
   = Type !(Name.Proper a) !(Constructors a)
