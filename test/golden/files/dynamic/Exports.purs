@@ -1,1 +1,1 @@
-module Exports (module Bar, kind Bar, type (||), bar, baz, foo) where
+module Exports (module Bar, kind Bar, type (||), Bar(Baz, Foo), bar, foo) where

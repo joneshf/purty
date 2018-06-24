@@ -54,10 +54,30 @@ instance (Display a) => Display (KindName a) where
   display = \case
     KindName name -> "KindName: " <> display name
 
+data Constructors a
+  = ConstructorsAnnotation !a !(Constructors a)
+  | ConstructorsNone
+  | ConstructorsSome (NonEmpty (ProperName a))
+  | ConstructorsAll
+  deriving (Eq, Functor, Ord)
+
+instance (Display a) => Display (Constructors a) where
+  display = \case
+    ConstructorsAnnotation ann constructors ->
+      "Constructors annotation: "
+        <> display ann
+        <> ", constructors: "
+        <> display constructors
+    ConstructorsNone -> "No constructors"
+    ConstructorsSome names ->
+      "Some constructors: [" <> intercalateMap1 ", " display names <> "]"
+    ConstructorsAll -> "All constructors"
+
 data Export a
   = ExportAnnotation !a !(Export a)
   | ExportKind !(KindName a)
   | ExportModule !(ModuleName a)
+  | ExportType !(Type a)
   | ExportTypeOperator !(TypeOperator a)
   | ExportValue !Ident
   deriving (Functor)
@@ -71,6 +91,7 @@ instance (Display a) => Display (Export a) where
         <> display export
     ExportKind name -> "Export kind: " <> display name
     ExportModule name -> "Export module: " <> display name
+    ExportType ty -> "Export type: " <> display ty
     ExportTypeOperator op -> "Export type operator: " <> display op
     ExportValue ident -> "Export value: " <> display ident
 
@@ -81,6 +102,19 @@ newtype Ident
 instance Display Ident where
   display = \case
     Ident x -> "Ident: " <> display x
+
+data Type a
+  = Type !(ProperName a) !(Constructors a)
+  deriving (Eq, Functor, Ord)
+
+instance (Display a) => Display (Type a) where
+  display = \case
+    Type name constructors ->
+      "Type name: "
+        <> display name
+        <> ", constructors: ("
+        <> display constructors
+        <> ")"
 
 data TypeOperator a
   = TypeOperator !a !Text
@@ -171,24 +205,37 @@ instance Display Sorted where
   display = \case
     Sorted -> "Sorted"
 
+compareProperName :: ProperName a -> ProperName b -> Ordering
+compareProperName x' y' = case (x', y') of
+  (ProperName _ x, ProperName _ y) -> compare x y
+
 compareExport :: Export a -> Export b -> Ordering
 compareExport x' y' = case (x', y') of
   (ExportAnnotation _annX x, _)    -> compareExport x y'
   (_, ExportAnnotation _annY y)    -> compareExport x' y
   (ExportKind x, ExportKind y)  -> compare (void x) (void y)
   (ExportKind _, ExportModule _) -> GT
+  (ExportKind _, ExportType _)  -> LT
   (ExportKind _, ExportTypeOperator _)  -> LT
   (ExportKind _, ExportValue _)  -> LT
   (ExportModule _, ExportKind _)  -> LT
   (ExportModule x, ExportModule y) -> compare (void x) (void y)
+  (ExportModule _, ExportType _)  -> LT
   (ExportModule _, ExportTypeOperator _)  -> LT
   (ExportModule _, ExportValue _)  -> LT
+  (ExportType _, ExportKind _)  -> GT
+  (ExportType _, ExportModule _) -> GT
+  (ExportType x, ExportType y) -> compare (void x) (void y)
+  (ExportType _, ExportTypeOperator _) -> LT
+  (ExportType _, ExportValue _)  -> LT
   (ExportTypeOperator _, ExportKind _)  -> GT
   (ExportTypeOperator _, ExportModule _) -> GT
   (ExportTypeOperator x, ExportTypeOperator y) -> compare (void x) (void y)
+  (ExportTypeOperator _, ExportType _) -> LT
   (ExportTypeOperator _, ExportValue _)  -> LT
   (ExportValue _, ExportKind _)  -> GT
   (ExportValue _, ExportModule _)  -> GT
+  (ExportValue _, ExportType _)  -> GT
   (ExportValue _, ExportTypeOperator _)  -> GT
   (ExportValue x, ExportValue y)   -> compare x y
 
@@ -199,6 +246,8 @@ fromExport ::
 fromExport = \case
   Language.PureScript.KindRef _ name -> pure (ExportKind $ fromKindName name)
   Language.PureScript.ModuleRef _ name -> fmap ExportModule (fromModuleName name)
+  Language.PureScript.TypeRef _ name constructors ->
+    pure (ExportType $ fromType name constructors)
   Language.PureScript.TypeOpRef _ op -> pure (ExportTypeOperator $ fromOpName op)
   Language.PureScript.ValueRef _ ident -> fmap ExportValue (fromIdent ident)
   ref -> throwing _NotImplemented (displayShow ref)
@@ -258,7 +307,39 @@ fromPureScript = \case
     exports <- traverse fromExports exports'
     pure (Module Unannotated name exports)
 
+fromType ::
+  Language.PureScript.ProperName 'Language.PureScript.TypeName ->
+  Maybe [Language.PureScript.ProperName 'Language.PureScript.ConstructorName] ->
+  Type Unannotated
+fromType name = Type (fromProperName name) . \case
+  Nothing -> ConstructorsAll
+  Just cs ->
+    maybe ConstructorsNone ConstructorsSome (nonEmpty $ fmap fromProperName cs)
+
+sortConstructors :: Constructors a -> Constructors Sorted
+sortConstructors = \case
+  ConstructorsAnnotation _ann constructors ->
+    ConstructorsAnnotation Sorted (sortConstructors constructors)
+  ConstructorsNone -> ConstructorsNone
+  ConstructorsSome constructors ->
+    ConstructorsSome (fmap (Sorted <$) (sortBy compareProperName constructors))
+  ConstructorsAll -> ConstructorsAll
+
 sortExports :: Module a -> Module Sorted
 sortExports = \case
-  Module ann name exports ->
-    Sorted <$ Module ann name (fmap (sortBy compareExport) exports)
+  Module _ann name exports ->
+    Module Sorted (Sorted <$ name) (fmap sortExports' exports)
+
+sortExports' :: NonEmpty (Export a) -> NonEmpty (Export Sorted)
+sortExports' = sortBy compareExport . fmap go
+  where
+  go :: Export a -> Export Sorted
+  go = \case
+    ExportAnnotation _ann export -> ExportAnnotation Sorted (go export)
+    ExportKind x -> ExportKind (Sorted <$ x)
+    ExportModule x -> ExportModule (Sorted <$ x)
+    ExportType (Type name constructors) ->
+      ExportType (Type (Sorted <$ name) (sortConstructors constructors))
+    ExportTypeOperator x -> ExportTypeOperator (Sorted <$ x)
+    ExportValue x -> ExportValue x
+    ExportValueOperator x -> ExportValueOperator (Sorted <$ x)

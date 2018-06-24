@@ -8,6 +8,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , align
     , comma
+    , dot
     , flatAlt
     , group
     , indent
@@ -26,11 +27,22 @@ data Variations a
     , singleLine :: !a
     }
 
+fromConstructors :: AST.Constructors AST.Sorted -> Doc a
+fromConstructors = \case
+  AST.ConstructorsAnnotation _ann constructors -> fromConstructors constructors
+  AST.ConstructorsNone -> mempty
+  AST.ConstructorsSome constructors -> group (flatAlt multiLine singleLine)
+    where
+    Variations { multiLine, singleLine } =
+      parenthesize fromProperName constructors
+  AST.ConstructorsAll -> parens (dot <> dot)
+
 fromExport :: AST.Export AST.Sorted -> Doc a
 fromExport = \case
   AST.ExportAnnotation _ann export -> fromExport export
   AST.ExportKind name -> "kind" <+> fromKindName name
   AST.ExportModule name -> "module" <+> fromModuleName name
+  AST.ExportType ty -> fromType ty
   AST.ExportTypeOperator op -> "type" <+> fromTypeOperator op
   AST.ExportValue ident -> fromIdent ident
 
@@ -63,6 +75,11 @@ fromModuleName = \case
 fromProperName :: AST.ProperName a -> Doc b
 fromProperName = \case
   AST.ProperName _ann name -> pretty name
+
+fromType :: AST.Type AST.Sorted -> Doc b
+fromType = \case
+  AST.Type name constructors ->
+    fromProperName name <> fromConstructors constructors
 
 fromTypeOperator :: AST.TypeOperator a -> Doc b
 fromTypeOperator = \case
