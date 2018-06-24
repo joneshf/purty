@@ -19,6 +19,10 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
 
 import qualified "this" AST
 
+fromClassName :: AST.ClassName a -> Doc b
+fromClassName = \case
+  AST.ClassName name -> fromProperName name
+
 fromConstructors :: AST.Constructors AST.Sorted -> Doc a
 fromConstructors = \case
   AST.ConstructorsAnnotation _ann constructors -> fromConstructors constructors
@@ -30,6 +34,7 @@ fromConstructors = \case
 fromExport :: AST.Export AST.Sorted -> Doc a
 fromExport = \case
   AST.ExportAnnotation _ann export -> fromExport export
+  AST.ExportClass name -> "class" <+> fromClassName name
   AST.ExportKind name -> "kind" <+> fromKindName name
   AST.ExportModule name -> "module" <+> fromModuleName name
   AST.ExportType ty -> fromType ty

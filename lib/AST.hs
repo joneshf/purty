@@ -46,6 +46,14 @@ instance (Display a) => Display (ProperName a) where
         <> ", name: "
         <> display name
 
+newtype ClassName a
+  = ClassName (ProperName a)
+  deriving (Eq, Functor, Ord)
+
+instance (Display a) => Display (ClassName a) where
+  display = \case
+    ClassName name -> "ClassName: " <> display name
+
 newtype KindName a
   = KindName (ProperName a)
   deriving (Eq, Functor, Ord)
@@ -75,6 +83,7 @@ instance (Display a) => Display (Constructors a) where
 
 data Export a
   = ExportAnnotation !a !(Export a)
+  | ExportClass !(ClassName a)
   | ExportKind !(KindName a)
   | ExportModule !(ModuleName a)
   | ExportType !(Type a)
@@ -90,6 +99,7 @@ instance (Display a) => Display (Export a) where
         <> display ann
         <> ", export: "
         <> display export
+    ExportClass name -> "Export class: " <> display name
     ExportKind name -> "Export kind: " <> display name
     ExportModule name -> "Export module: " <> display name
     ExportType ty -> "Export type: " <> display ty
@@ -228,42 +238,60 @@ compareExport :: Export a -> Export b -> Ordering
 compareExport x' y' = case (x', y') of
   (ExportAnnotation _annX x, _)                  -> compareExport x y'
   (_, ExportAnnotation _annY y)                  -> compareExport x' y
+  (ExportClass x, ExportClass y)                 -> compare (void x) (void y)
+  (ExportClass _, ExportKind _)                  -> LT
+  (ExportClass _, ExportModule _)                -> GT
+  (ExportClass _, ExportType _)                  -> LT
+  (ExportClass _, ExportTypeOperator _)          -> LT
+  (ExportClass _, ExportValue _)                 -> LT
+  (ExportClass _, ExportValueOperator _)         -> LT
+  (ExportKind _, ExportClass _)                  -> GT
   (ExportKind x, ExportKind y)                   -> compare (void x) (void y)
   (ExportKind _, ExportModule _)                 -> GT
   (ExportKind _, ExportType _)                   -> LT
   (ExportKind _, ExportTypeOperator _)           -> LT
   (ExportKind _, ExportValue _)                  -> LT
   (ExportKind _, ExportValueOperator _)          -> LT
+  (ExportModule _, ExportClass _)                -> LT
   (ExportModule _, ExportKind _)                 -> LT
   (ExportModule x, ExportModule y)               -> compare (void x) (void y)
   (ExportModule _, ExportType _)                 -> LT
   (ExportModule _, ExportTypeOperator _)         -> LT
   (ExportModule _, ExportValue _)                -> LT
   (ExportModule _, ExportValueOperator _)        -> LT
+  (ExportType _, ExportClass _)                  -> GT
   (ExportType _, ExportKind _)                   -> GT
   (ExportType _, ExportModule _)                 -> GT
   (ExportType x, ExportType y)                   -> compare (void x) (void y)
   (ExportType _, ExportTypeOperator _)           -> LT
   (ExportType _, ExportValue _)                  -> LT
   (ExportType _, ExportValueOperator _)          -> LT
+  (ExportTypeOperator _, ExportClass _)          -> GT
   (ExportTypeOperator _, ExportKind _)           -> GT
   (ExportTypeOperator _, ExportModule _)         -> GT
   (ExportTypeOperator x, ExportTypeOperator y)   -> compare (void x) (void y)
   (ExportTypeOperator _, ExportType _)           -> LT
   (ExportTypeOperator _, ExportValue _)          -> LT
   (ExportTypeOperator _, ExportValueOperator _)  -> LT
+  (ExportValue _, ExportClass _)                 -> GT
   (ExportValue _, ExportKind _)                  -> GT
   (ExportValue _, ExportModule _)                -> GT
   (ExportValue _, ExportType _)                  -> GT
   (ExportValue _, ExportTypeOperator _)          -> GT
   (ExportValue x, ExportValue y)                 -> compare x y
   (ExportValue _, ExportValueOperator _)         -> GT
+  (ExportValueOperator _, ExportClass _)         -> GT
   (ExportValueOperator _, ExportKind _)          -> GT
   (ExportValueOperator _, ExportModule _)        -> GT
   (ExportValueOperator _, ExportTypeOperator _)  -> GT
   (ExportValueOperator _, ExportType _)          -> GT
   (ExportValueOperator _, ExportValue _)         -> LT
   (ExportValueOperator x, ExportValueOperator y) -> compare (void x) (void y)
+
+fromClassName ::
+  Language.PureScript.ProperName 'Language.PureScript.ClassName ->
+  ClassName Unannotated
+fromClassName = ClassName . fromProperName
 
 fromExport ::
   (IsInvalidExport e, IsMissingName e, IsNotImplemented e, MonadError e f) =>
@@ -274,6 +302,8 @@ fromExport = \case
   Language.PureScript.ModuleRef _ name -> fmap ExportModule (fromModuleName name)
   Language.PureScript.TypeRef _ name constructors ->
     pure (ExportType $ fromType name constructors)
+  Language.PureScript.TypeClassRef _ name ->
+    pure (ExportClass (fromClassName name))
   Language.PureScript.TypeOpRef _ op ->
     pure (ExportTypeOperator $ fromTypeOpName op)
   Language.PureScript.ValueRef _ ident -> fmap ExportValue (fromIdent ident)
@@ -371,6 +401,7 @@ sortExports' = sortBy compareExport . fmap go
   go :: Export a -> Export Sorted
   go = \case
     ExportAnnotation _ann export -> ExportAnnotation Sorted (go export)
+    ExportClass x -> ExportClass (Sorted <$ x)
     ExportKind x -> ExportKind (Sorted <$ x)
     ExportModule x -> ExportModule (Sorted <$ x)
     ExportType (Type name constructors) ->
