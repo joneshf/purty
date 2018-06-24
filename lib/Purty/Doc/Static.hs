@@ -35,6 +35,7 @@ fromExport = \case
   AST.ExportType ty -> fromType ty
   AST.ExportTypeOperator op -> "type" <+> fromTypeOperator op
   AST.ExportValue ident -> fromIdent ident
+  AST.ExportValueOperator op -> fromValueOperator op
 
 fromIdent :: AST.Ident -> Doc a
 fromIdent = \case
@@ -71,6 +72,10 @@ fromType = \case
 fromTypeOperator :: AST.TypeOperator a -> Doc b
 fromTypeOperator = \case
   AST.TypeOperator _ann op -> parens (pretty op)
+
+fromValueOperator :: AST.ValueOperator a -> Doc b
+fromValueOperator = \case
+  AST.ValueOperator _ann op -> parens (pretty op)
 
 parenthesize :: (a -> Doc b) -> NonEmpty a -> Doc b
 parenthesize f xs =

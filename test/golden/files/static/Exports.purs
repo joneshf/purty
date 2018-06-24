@@ -10,6 +10,8 @@ module Exports
       , Qux
       )
   , Foo
+  , (&&)
+  , (||)
   , bar
   , baz
   , foo
