@@ -10,6 +10,8 @@ import "semigroupoids" Data.Semigroup.Foldable (intercalateMap1)
 
 import qualified "purescript" Language.PureScript
 
+import qualified "this" Annotation
+
 data Module a
   = Module !a !(ModuleName a) !(Maybe (NonEmpty (Export a)))
   deriving (Functor)
@@ -154,13 +156,6 @@ instance (Display a) => Display (ValueOperator a) where
         <> display op
         <> ")"
 
-data Unannotated
-  = Unannotated
-
-instance Display Unannotated where
-  display = \case
-    Unannotated -> "Unannotated"
-
 data Error
   = EmptyExplicitExports
   | InstanceExported !Language.PureScript.Ident
@@ -252,14 +247,6 @@ instance IsNotImplemented NotImplemented where
   _NotImplemented = prism NotImplemented $ \case
     NotImplemented x -> Right x
 
-data Sorted
-  = Sorted
-  deriving (Show)
-
-instance Display Sorted where
-  display = \case
-    Sorted -> "Sorted"
-
 compareProperName :: ProperName a -> ProperName b -> Ordering
 compareProperName x' y' = case (x', y') of
   (ProperName _ x, ProperName _ y) -> compare x y
@@ -320,7 +307,7 @@ compareExport x' y' = case (x', y') of
 
 fromClassName ::
   Language.PureScript.ProperName 'Language.PureScript.ClassName ->
-  ClassName Unannotated
+  ClassName Annotation.Unannotated
 fromClassName = ClassName . fromProperName
 
 fromExport ::
@@ -331,7 +318,7 @@ fromExport ::
   , MonadError e f
   ) =>
   Language.PureScript.DeclarationRef ->
-  f (Export Unannotated)
+  f (Export Annotation.Unannotated)
 fromExport = \case
   Language.PureScript.KindRef _ name -> pure (ExportKind $ fromKindName name)
   Language.PureScript.ModuleRef _ name -> fmap ExportModule (fromModuleName name)
@@ -357,7 +344,7 @@ fromExports ::
   , MonadError e f
   ) =>
   [Language.PureScript.DeclarationRef] ->
-  f (NonEmpty (Export Unannotated))
+  f (NonEmpty (Export Annotation.Unannotated))
 fromExports =
   maybe (throwing_ _EmptyExplicitExports) (traverse fromExport) . nonEmpty
 
@@ -371,13 +358,13 @@ fromIdent = \case
 
 fromKindName ::
   Language.PureScript.ProperName 'Language.PureScript.KindName ->
-  KindName Unannotated
+  KindName Annotation.Unannotated
 fromKindName = KindName . fromProperName
 
 fromModuleName ::
   (IsMissingName e, MonadError e f) =>
   Language.PureScript.ModuleName ->
-  f (ModuleName Unannotated)
+  f (ModuleName Annotation.Unannotated)
 fromModuleName = \case
   Language.PureScript.ModuleName names' ->
     maybe (throwing_ _MissingName) pure $ do
@@ -386,64 +373,67 @@ fromModuleName = \case
 
 fromTypeOpName ::
   Language.PureScript.OpName 'Language.PureScript.TypeOpName ->
-  TypeOperator Unannotated
+  TypeOperator Annotation.Unannotated
 fromTypeOpName = \case
-  Language.PureScript.OpName name -> TypeOperator Unannotated name
+  Language.PureScript.OpName name -> TypeOperator Annotation.Unannotated name
 
 fromValueOpName ::
   Language.PureScript.OpName 'Language.PureScript.ValueOpName ->
-  ValueOperator Unannotated
+  ValueOperator Annotation.Unannotated
 fromValueOpName = \case
-  Language.PureScript.OpName name -> ValueOperator Unannotated name
+  Language.PureScript.OpName name -> ValueOperator Annotation.Unannotated name
 
-fromProperName :: Language.PureScript.ProperName a -> ProperName Unannotated
+fromProperName ::
+  Language.PureScript.ProperName a ->
+  ProperName Annotation.Unannotated
 fromProperName = \case
-  Language.PureScript.ProperName name -> ProperName Unannotated name
+  Language.PureScript.ProperName name -> ProperName Annotation.Unannotated name
 
 fromPureScript ::
   (IsError e, MonadError e f) =>
   Language.PureScript.Module ->
-  f (Module Unannotated)
+  f (Module Annotation.Unannotated)
 fromPureScript = \case
   Language.PureScript.Module _ _ name' _ exports' -> do
     name <- fromModuleName name'
     exports <- traverse fromExports exports'
-    pure (Module Unannotated name exports)
+    pure (Module Annotation.Unannotated name exports)
 
 fromType ::
   Language.PureScript.ProperName 'Language.PureScript.TypeName ->
   Maybe [Language.PureScript.ProperName 'Language.PureScript.ConstructorName] ->
-  Type Unannotated
+  Type Annotation.Unannotated
 fromType name = Type (fromProperName name) . \case
   Nothing -> ConstructorsAll
   Just cs ->
     maybe ConstructorsNone ConstructorsSome (nonEmpty $ fmap fromProperName cs)
 
-sortConstructors :: Constructors a -> Constructors Sorted
+sortConstructors :: Constructors a -> Constructors Annotation.Sorted
 sortConstructors = \case
   ConstructorsAnnotation _ann constructors ->
-    ConstructorsAnnotation Sorted (sortConstructors constructors)
+    ConstructorsAnnotation Annotation.Sorted (sortConstructors constructors)
   ConstructorsNone -> ConstructorsNone
   ConstructorsSome constructors ->
-    ConstructorsSome (fmap (Sorted <$) (sortBy compareProperName constructors))
+    ConstructorsSome (fmap (Annotation.Sorted <$) (sortBy compareProperName constructors))
   ConstructorsAll -> ConstructorsAll
 
-sortExports :: Module a -> Module Sorted
+sortExports :: Module a -> Module Annotation.Sorted
 sortExports = \case
   Module _ann name exports ->
-    Module Sorted (Sorted <$ name) (fmap sortExports' exports)
+    Module Annotation.Sorted (Annotation.Sorted <$ name) (fmap sortExports' exports)
 
-sortExports' :: NonEmpty (Export a) -> NonEmpty (Export Sorted)
+sortExports' :: NonEmpty (Export a) -> NonEmpty (Export Annotation.Sorted)
 sortExports' = sortBy compareExport . fmap go
   where
-  go :: Export a -> Export Sorted
+  go :: Export a -> Export Annotation.Sorted
   go = \case
-    ExportAnnotation _ann export -> ExportAnnotation Sorted (go export)
-    ExportClass x -> ExportClass (Sorted <$ x)
-    ExportKind x -> ExportKind (Sorted <$ x)
-    ExportModule x -> ExportModule (Sorted <$ x)
+    ExportAnnotation _ann export ->
+      ExportAnnotation Annotation.Sorted (go export)
+    ExportClass x -> ExportClass (Annotation.Sorted <$ x)
+    ExportKind x -> ExportKind (Annotation.Sorted <$ x)
+    ExportModule x -> ExportModule (Annotation.Sorted <$ x)
     ExportType (Type name constructors) ->
-      ExportType (Type (Sorted <$ name) (sortConstructors constructors))
-    ExportTypeOperator x -> ExportTypeOperator (Sorted <$ x)
+      ExportType (Type (Annotation.Sorted <$ name) (sortConstructors constructors))
+    ExportTypeOperator x -> ExportTypeOperator (Annotation.Sorted <$ x)
     ExportValue x -> ExportValue x
-    ExportValueOperator x -> ExportValueOperator (Sorted <$ x)
+    ExportValueOperator x -> ExportValueOperator (Annotation.Sorted <$ x)

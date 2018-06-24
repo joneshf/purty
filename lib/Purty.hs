@@ -33,6 +33,7 @@ import "this" Error (IsParseError(_ParseError))
 
 import qualified "path" Path
 
+import qualified "this" Annotation
 import qualified "this" AST
 import qualified "this" Purty.Doc.Dynamic
 import qualified "this" Purty.Doc.Static
@@ -45,7 +46,7 @@ fromAbsFile ::
   , IsParseError error
   ) =>
   Path Abs File ->
-  App env error (SimpleDocStream AST.Sorted)
+  App env error (SimpleDocStream Annotation.Sorted)
 fromAbsFile filePath = do
   formatting <- view formattingL
   layoutOptions <- view layoutOptionsL

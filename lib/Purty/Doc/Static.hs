@@ -17,13 +17,14 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , (<+>)
     )
 
+import qualified "this" Annotation
 import qualified "this" AST
 
 fromClassName :: AST.ClassName a -> Doc b
 fromClassName = \case
   AST.ClassName name -> fromProperName name
 
-fromConstructors :: AST.Constructors AST.Sorted -> Doc a
+fromConstructors :: AST.Constructors Annotation.Sorted -> Doc a
 fromConstructors = \case
   AST.ConstructorsAnnotation _ann constructors -> fromConstructors constructors
   AST.ConstructorsNone -> mempty
@@ -31,7 +32,7 @@ fromConstructors = \case
     line <> indent 4 (parenthesize fromProperName constructors)
   AST.ConstructorsAll -> parens (dot <> dot)
 
-fromExport :: AST.Export AST.Sorted -> Doc a
+fromExport :: AST.Export Annotation.Sorted -> Doc a
 fromExport = \case
   AST.ExportAnnotation _ann export -> fromExport export
   AST.ExportClass name -> "class" <+> fromClassName name
@@ -50,7 +51,7 @@ fromKindName :: AST.KindName a -> Doc b
 fromKindName = \case
   AST.KindName name -> fromProperName name
 
-fromModule :: AST.Module AST.Sorted -> Doc a
+fromModule :: AST.Module Annotation.Sorted -> Doc a
 fromModule = \case
   AST.Module _ann name (Just exports) ->
     "module" <+> fromModuleName name
@@ -69,7 +70,7 @@ fromProperName :: AST.ProperName a -> Doc b
 fromProperName = \case
   AST.ProperName _ann name -> pretty name
 
-fromType :: AST.Type AST.Sorted -> Doc b
+fromType :: AST.Type Annotation.Sorted -> Doc b
 fromType = \case
   AST.Type name constructors ->
     fromProperName name <> fromConstructors constructors
