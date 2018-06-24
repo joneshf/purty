@@ -58,6 +58,7 @@ data Export a
   = ExportAnnotation !a !(Export a)
   | ExportKind !(KindName a)
   | ExportModule !(ModuleName a)
+  | ExportTypeOperator !(TypeOperator a)
   | ExportValue !Ident
   deriving (Functor)
 
@@ -70,6 +71,7 @@ instance (Display a) => Display (Export a) where
         <> display export
     ExportKind name -> "Export kind: " <> display name
     ExportModule name -> "Export module: " <> display name
+    ExportTypeOperator op -> "Export type operator: " <> display op
     ExportValue ident -> "Export value: " <> display ident
 
 newtype Ident
@@ -79,6 +81,19 @@ newtype Ident
 instance Display Ident where
   display = \case
     Ident x -> "Ident: " <> display x
+
+data TypeOperator a
+  = TypeOperator !a !Text
+  deriving (Eq, Functor, Ord)
+
+instance (Display a) => Display (TypeOperator a) where
+  display = \case
+    TypeOperator ann op ->
+      "Type Operator annotation: "
+        <> display ann
+        <> ", op: ("
+        <> display op
+        <> ")"
 
 data Unannotated
   = Unannotated
@@ -162,12 +177,19 @@ compareExport x' y' = case (x', y') of
   (_, ExportAnnotation _annY y)    -> compareExport x' y
   (ExportKind x, ExportKind y)  -> compare (void x) (void y)
   (ExportKind _, ExportModule _) -> GT
+  (ExportKind _, ExportTypeOperator _)  -> LT
   (ExportKind _, ExportValue _)  -> LT
   (ExportModule _, ExportKind _)  -> LT
   (ExportModule x, ExportModule y) -> compare (void x) (void y)
+  (ExportModule _, ExportTypeOperator _)  -> LT
   (ExportModule _, ExportValue _)  -> LT
+  (ExportTypeOperator _, ExportKind _)  -> GT
+  (ExportTypeOperator _, ExportModule _) -> GT
+  (ExportTypeOperator x, ExportTypeOperator y) -> compare (void x) (void y)
+  (ExportTypeOperator _, ExportValue _)  -> LT
   (ExportValue _, ExportKind _)  -> GT
   (ExportValue _, ExportModule _)  -> GT
+  (ExportValue _, ExportTypeOperator _)  -> GT
   (ExportValue x, ExportValue y)   -> compare x y
 
 fromExport ::
@@ -177,6 +199,7 @@ fromExport ::
 fromExport = \case
   Language.PureScript.KindRef _ name -> pure (ExportKind $ fromKindName name)
   Language.PureScript.ModuleRef _ name -> fmap ExportModule (fromModuleName name)
+  Language.PureScript.TypeOpRef _ op -> pure (ExportTypeOperator $ fromOpName op)
   Language.PureScript.ValueRef _ ident -> fmap ExportValue (fromIdent ident)
   ref -> throwing _NotImplemented (displayShow ref)
 
@@ -205,16 +228,6 @@ fromKindName ::
   KindName Unannotated
 fromKindName = KindName . fromProperName
 
-fromPureScript ::
-  (IsError e, IsNotImplemented e, MonadError e f) =>
-  Language.PureScript.Module ->
-  f (Module Unannotated)
-fromPureScript = \case
-  Language.PureScript.Module _ _ name' _ exports' -> do
-    name <- fromModuleName name'
-    exports <- traverse fromExports exports'
-    pure (Module Unannotated name exports)
-
 fromModuleName ::
   (IsMissingName e, MonadError e f) =>
   Language.PureScript.ModuleName ->
@@ -225,9 +238,25 @@ fromModuleName = \case
       names <- nonEmpty (fmap fromProperName names')
       pure (ModuleName names)
 
+fromOpName ::
+  Language.PureScript.OpName 'Language.PureScript.TypeOpName ->
+  TypeOperator Unannotated
+fromOpName = \case
+  Language.PureScript.OpName name -> TypeOperator Unannotated name
+
 fromProperName :: Language.PureScript.ProperName a -> ProperName Unannotated
 fromProperName = \case
   Language.PureScript.ProperName name -> ProperName Unannotated name
+
+fromPureScript ::
+  (IsError e, IsNotImplemented e, MonadError e f) =>
+  Language.PureScript.Module ->
+  f (Module Unannotated)
+fromPureScript = \case
+  Language.PureScript.Module _ _ name' _ exports' -> do
+    name <- fromModuleName name'
+    exports <- traverse fromExports exports'
+    pure (Module Unannotated name exports)
 
 sortExports :: Module a -> Module Sorted
 sortExports = \case

@@ -3,6 +3,8 @@ module Exports
   , module Foo
   , kind Bar
   , kind Foo
+  , type (&&)
+  , type (||)
   , bar
   , baz
   , foo

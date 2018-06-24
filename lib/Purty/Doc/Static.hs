@@ -10,9 +10,8 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , comma
     , indent
     , line
-    , lparen
+    , parens
     , pretty
-    , rparen
     , space
     , (<+>)
     )
@@ -24,6 +23,7 @@ fromExport = \case
   AST.ExportAnnotation _ann export -> fromExport export
   AST.ExportKind name -> "kind" <+> fromKindName name
   AST.ExportModule name -> "module" <+> fromModuleName name
+  AST.ExportTypeOperator op -> "type" <+> fromTypeOperator op
   AST.ExportValue ident -> fromIdent ident
 
 fromIdent :: AST.Ident -> Doc a
@@ -53,7 +53,10 @@ fromProperName :: AST.ProperName a -> Doc b
 fromProperName = \case
   AST.ProperName _ann name -> pretty name
 
+fromTypeOperator :: AST.TypeOperator a -> Doc b
+fromTypeOperator = \case
+  AST.TypeOperator _ann op -> parens (pretty op)
+
 parenthesize :: (a -> Doc b) -> NonEmpty a -> Doc b
-parenthesize f xs = align (lparen <+> ys <> line <> rparen)
-  where
-  ys = intercalateMap1 (line <> comma <> space) f xs
+parenthesize f xs =
+  align (parens (space <> intercalateMap1 (line <> comma <> space) f xs <> line))
