@@ -7,9 +7,11 @@ import "base" System.Exit   (exitFailure)
 import "parsec" Text.Parsec (ParseError)
 
 import qualified "this" AST
+import qualified "this" Name
 
 data Error
   = AST !AST.Error
+  | Name !Name.Error
   | NotImplemented !AST.NotImplemented
   | Parse !ParseError
 
@@ -21,9 +23,6 @@ instance AST.IsInstanceExported Error where
 
 instance AST.IsInvalidExport Error where
   _InvalidExport = AST._Error.AST._InvalidExport
-
-instance AST.IsMissingName Error where
-  _MissingName = AST._Error.AST._MissingName
 
 instance AST.IsReExportExported Error where
   _ReExportExported = AST._Error.AST._ReExportExported
@@ -39,6 +38,14 @@ instance AST.IsNotImplemented Error where
     notImplemented = prism NotImplemented $ \case
       NotImplemented x -> Right x
       x -> Left x
+
+instance Name.IsError Error where
+  _Error = prism Name $ \case
+    Name x -> Right x
+    x -> Left x
+
+instance Name.IsMissing Error where
+  _Missing = Name._Error . Name._Missing
 
 class
   ( AST.IsError error
@@ -66,6 +73,10 @@ errors :: (HasLogFunc env, MonadIO f, MonadReader env f) => Error -> f a
 errors = \case
   AST err -> do
     logError "Problem converting to our AST"
+    logError (display err)
+    liftIO exitFailure
+  Name err -> do
+    logError "Problem converting a name"
     logError (display err)
     liftIO exitFailure
   NotImplemented err -> do

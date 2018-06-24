@@ -11,9 +11,10 @@ import "semigroupoids" Data.Semigroup.Foldable (intercalateMap1)
 import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
+import qualified "this" Name
 
 data Module a
-  = Module !a !(ModuleName a) !(Maybe (NonEmpty (Export a)))
+  = Module !a !(Name.Module a) !(Maybe (NonEmpty (Export a)))
   deriving (Functor)
 
 instance (Display a) => Display (Module a) where
@@ -27,47 +28,10 @@ instance (Display a) => Display (Module a) where
         <> foldMap (\x -> ", exports: " <> intercalateMap1 ", " display x) exports
         <> "}"
 
-newtype ModuleName a
-  = ModuleName (NonEmpty (ProperName a))
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (ModuleName a) where
-  display = \case
-    ModuleName names ->
-      "ModuleName: [" <> intercalateMap1 ", " display names <> "]"
-
-data ProperName a
-  = ProperName !a !Text
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (ProperName a) where
-  display = \case
-    ProperName ann name ->
-      "ProperName annotation: "
-        <> display ann
-        <> ", name: "
-        <> display name
-
-newtype ClassName a
-  = ClassName (ProperName a)
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (ClassName a) where
-  display = \case
-    ClassName name -> "ClassName: " <> display name
-
-newtype KindName a
-  = KindName (ProperName a)
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (KindName a) where
-  display = \case
-    KindName name -> "KindName: " <> display name
-
 data Constructors a
   = ConstructorsAnnotation !a !(Constructors a)
   | ConstructorsNone
-  | ConstructorsSome (NonEmpty (ProperName a))
+  | ConstructorsSome (NonEmpty (Name.Proper a))
   | ConstructorsAll
   deriving (Eq, Functor, Ord)
 
@@ -85,9 +49,9 @@ instance (Display a) => Display (Constructors a) where
 
 data Export a
   = ExportAnnotation !a !(Export a)
-  | ExportClass !(ClassName a)
-  | ExportKind !(KindName a)
-  | ExportModule !(ModuleName a)
+  | ExportClass !(Name.Class a)
+  | ExportKind !(Name.Kind a)
+  | ExportModule !(Name.Module a)
   | ExportType !(Type a)
   | ExportTypeOperator !(TypeOperator a)
   | ExportValue !Ident
@@ -118,7 +82,7 @@ instance Display Ident where
     Ident x -> "Ident: " <> display x
 
 data Type a
-  = Type !(ProperName a) !(Constructors a)
+  = Type !(Name.Proper a) !(Constructors a)
   deriving (Eq, Functor, Ord)
 
 instance (Display a) => Display (Type a) where
@@ -160,7 +124,6 @@ data Error
   = EmptyExplicitExports
   | InstanceExported !Language.PureScript.Ident
   | InvalidExport !Language.PureScript.Ident
-  | MissingName
   | ReExportExported !Language.PureScript.ModuleName !Language.PureScript.DeclarationRef
 
 instance Display Error where
@@ -172,7 +135,6 @@ instance Display Error where
         <> ". This is probably a problem in PureScript."
     InvalidExport ident ->
       "Module exports an invalid identifier: " <> displayShow ident
-    MissingName -> "Module missing a name"
     ReExportExported name ref ->
       "Module exports a re-export explicitly: module name: "
         <> displayShow name
@@ -184,7 +146,6 @@ class
   ( IsEmptyExplicitExports error
   , IsInstanceExported error
   , IsInvalidExport error
-  , IsMissingName error
   , IsReExportExported error
   ) =>
   IsError error where
@@ -217,14 +178,6 @@ instance IsInvalidExport Error where
     InvalidExport ident -> Right ident
     x -> Left x
 
-class IsMissingName error where
-  _MissingName :: Prism' error ()
-
-instance IsMissingName Error where
-  _MissingName = prism (const MissingName) $ \case
-    MissingName -> Right ()
-    x -> Left x
-
 class IsReExportExported error where
   _ReExportExported :: Prism' error (Language.PureScript.ModuleName, Language.PureScript.DeclarationRef)
 
@@ -246,10 +199,6 @@ class IsNotImplemented error where
 instance IsNotImplemented NotImplemented where
   _NotImplemented = prism NotImplemented $ \case
     NotImplemented x -> Right x
-
-compareProperName :: ProperName a -> ProperName b -> Ordering
-compareProperName x' y' = case (x', y') of
-  (ProperName _ x, ProperName _ y) -> compare x y
 
 compareExport :: Export a -> Export b -> Ordering
 compareExport x' y' = case (x', y') of
@@ -305,29 +254,24 @@ compareExport x' y' = case (x', y') of
   (ExportValueOperator _, ExportValue _)         -> LT
   (ExportValueOperator x, ExportValueOperator y) -> compare (void x) (void y)
 
-fromClassName ::
-  Language.PureScript.ProperName 'Language.PureScript.ClassName ->
-  ClassName Annotation.Unannotated
-fromClassName = ClassName . fromProperName
-
 fromExport ::
   ( IsInstanceExported e
   , IsInvalidExport e
-  , IsMissingName e
+  , Name.IsMissing e
   , IsReExportExported e
   , MonadError e f
   ) =>
   Language.PureScript.DeclarationRef ->
   f (Export Annotation.Unannotated)
 fromExport = \case
-  Language.PureScript.KindRef _ name -> pure (ExportKind $ fromKindName name)
-  Language.PureScript.ModuleRef _ name -> fmap ExportModule (fromModuleName name)
+  Language.PureScript.KindRef _ name -> pure (ExportKind $ Name.kind name)
+  Language.PureScript.ModuleRef _ name -> fmap ExportModule (Name.module' name)
   Language.PureScript.ReExportRef _ name ref ->
     throwing _ReExportExported (name, ref)
   Language.PureScript.TypeRef _ name constructors ->
     pure (ExportType $ fromType name constructors)
   Language.PureScript.TypeClassRef _ name ->
-    pure (ExportClass (fromClassName name))
+    pure (ExportClass (Name.class' name))
   Language.PureScript.TypeInstanceRef _ name -> throwing _InstanceExported name
   Language.PureScript.TypeOpRef _ op ->
     pure (ExportTypeOperator $ fromTypeOpName op)
@@ -339,7 +283,7 @@ fromExports ::
   ( IsEmptyExplicitExports e
   , IsInstanceExported e
   , IsInvalidExport e
-  , IsMissingName e
+  , Name.IsMissing e
   , IsReExportExported e
   , MonadError e f
   ) =>
@@ -356,21 +300,6 @@ fromIdent = \case
   Language.PureScript.Ident ident -> pure (Ident ident)
   ident -> throwing _InvalidExport ident
 
-fromKindName ::
-  Language.PureScript.ProperName 'Language.PureScript.KindName ->
-  KindName Annotation.Unannotated
-fromKindName = KindName . fromProperName
-
-fromModuleName ::
-  (IsMissingName e, MonadError e f) =>
-  Language.PureScript.ModuleName ->
-  f (ModuleName Annotation.Unannotated)
-fromModuleName = \case
-  Language.PureScript.ModuleName names' ->
-    maybe (throwing_ _MissingName) pure $ do
-      names <- nonEmpty (fmap fromProperName names')
-      pure (ModuleName names)
-
 fromTypeOpName ::
   Language.PureScript.OpName 'Language.PureScript.TypeOpName ->
   TypeOperator Annotation.Unannotated
@@ -383,19 +312,13 @@ fromValueOpName ::
 fromValueOpName = \case
   Language.PureScript.OpName name -> ValueOperator Annotation.Unannotated name
 
-fromProperName ::
-  Language.PureScript.ProperName a ->
-  ProperName Annotation.Unannotated
-fromProperName = \case
-  Language.PureScript.ProperName name -> ProperName Annotation.Unannotated name
-
 fromPureScript ::
-  (IsError e, MonadError e f) =>
+  (IsError e, Name.IsMissing e, MonadError e f) =>
   Language.PureScript.Module ->
   f (Module Annotation.Unannotated)
 fromPureScript = \case
   Language.PureScript.Module _ _ name' _ exports' -> do
-    name <- fromModuleName name'
+    name <- Name.module' name'
     exports <- traverse fromExports exports'
     pure (Module Annotation.Unannotated name exports)
 
@@ -403,10 +326,10 @@ fromType ::
   Language.PureScript.ProperName 'Language.PureScript.TypeName ->
   Maybe [Language.PureScript.ProperName 'Language.PureScript.ConstructorName] ->
   Type Annotation.Unannotated
-fromType name = Type (fromProperName name) . \case
+fromType name = Type (Name.proper name) . \case
   Nothing -> ConstructorsAll
   Just cs ->
-    maybe ConstructorsNone ConstructorsSome (nonEmpty $ fmap fromProperName cs)
+    maybe ConstructorsNone ConstructorsSome (nonEmpty $ fmap Name.proper cs)
 
 sortConstructors :: Constructors a -> Constructors Annotation.Sorted
 sortConstructors = \case
@@ -414,7 +337,7 @@ sortConstructors = \case
     ConstructorsAnnotation Annotation.Sorted (sortConstructors constructors)
   ConstructorsNone -> ConstructorsNone
   ConstructorsSome constructors ->
-    ConstructorsSome (fmap (Annotation.Sorted <$) (sortBy compareProperName constructors))
+    ConstructorsSome (fmap (Annotation.Sorted <$) (sortBy Name.compareProper constructors))
   ConstructorsAll -> ConstructorsAll
 
 sortExports :: Module a -> Module Annotation.Sorted
