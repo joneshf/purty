@@ -16,11 +16,17 @@ data Error
 instance AST.IsEmptyExplicitExports Error where
   _EmptyExplicitExports = AST._Error.AST._EmptyExplicitExports
 
+instance AST.IsInstanceExported Error where
+  _InstanceExported = AST._Error.AST._InstanceExported
+
 instance AST.IsInvalidExport Error where
   _InvalidExport = AST._Error.AST._InvalidExport
 
 instance AST.IsMissingName Error where
   _MissingName = AST._Error.AST._MissingName
+
+instance AST.IsReExportExported Error where
+  _ReExportExported = AST._Error.AST._ReExportExported
 
 instance AST.IsError Error where
   _Error = prism AST $ \case

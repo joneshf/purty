@@ -163,20 +163,34 @@ instance Display Unannotated where
 
 data Error
   = EmptyExplicitExports
+  | InstanceExported !Language.PureScript.Ident
   | InvalidExport !Language.PureScript.Ident
   | MissingName
+  | ReExportExported !Language.PureScript.ModuleName !Language.PureScript.DeclarationRef
 
 instance Display Error where
   display = \case
     EmptyExplicitExports -> "Module has an empty export list"
+    InstanceExported ident ->
+      "Module exports a type class instance: "
+        <> displayShow ident
+        <> ". This is probably a problem in PureScript."
     InvalidExport ident ->
       "Module exports an invalid identifier: " <> displayShow ident
     MissingName -> "Module missing a name"
+    ReExportExported name ref ->
+      "Module exports a re-export explicitly: module name: "
+        <> displayShow name
+        <> ", declaration ref: "
+        <> displayShow ref
+        <> ". This is probably a problem in PureScript."
 
 class
   ( IsEmptyExplicitExports error
+  , IsInstanceExported error
   , IsInvalidExport error
   , IsMissingName error
+  , IsReExportExported error
   ) =>
   IsError error where
     _Error :: Prism' error Error
@@ -190,6 +204,14 @@ class IsEmptyExplicitExports error where
 instance IsEmptyExplicitExports Error where
   _EmptyExplicitExports = prism (const EmptyExplicitExports) $ \case
     EmptyExplicitExports -> Right ()
+    x -> Left x
+
+class IsInstanceExported error where
+  _InstanceExported :: Prism' error Language.PureScript.Ident
+
+instance IsInstanceExported Error where
+  _InstanceExported = prism InstanceExported $ \case
+    InstanceExported ident -> Right ident
     x -> Left x
 
 class IsInvalidExport error where
@@ -206,6 +228,14 @@ class IsMissingName error where
 instance IsMissingName Error where
   _MissingName = prism (const MissingName) $ \case
     MissingName -> Right ()
+    x -> Left x
+
+class IsReExportExported error where
+  _ReExportExported :: Prism' error (Language.PureScript.ModuleName, Language.PureScript.DeclarationRef)
+
+instance IsReExportExported Error where
+  _ReExportExported = prism (uncurry ReExportExported) $ \case
+    ReExportExported name ref -> Right (name, ref)
     x -> Left x
 
 newtype NotImplemented
@@ -294,28 +324,36 @@ fromClassName ::
 fromClassName = ClassName . fromProperName
 
 fromExport ::
-  (IsInvalidExport e, IsMissingName e, IsNotImplemented e, MonadError e f) =>
+  ( IsInstanceExported e
+  , IsInvalidExport e
+  , IsMissingName e
+  , IsReExportExported e
+  , MonadError e f
+  ) =>
   Language.PureScript.DeclarationRef ->
   f (Export Unannotated)
 fromExport = \case
   Language.PureScript.KindRef _ name -> pure (ExportKind $ fromKindName name)
   Language.PureScript.ModuleRef _ name -> fmap ExportModule (fromModuleName name)
+  Language.PureScript.ReExportRef _ name ref ->
+    throwing _ReExportExported (name, ref)
   Language.PureScript.TypeRef _ name constructors ->
     pure (ExportType $ fromType name constructors)
   Language.PureScript.TypeClassRef _ name ->
     pure (ExportClass (fromClassName name))
+  Language.PureScript.TypeInstanceRef _ name -> throwing _InstanceExported name
   Language.PureScript.TypeOpRef _ op ->
     pure (ExportTypeOperator $ fromTypeOpName op)
   Language.PureScript.ValueRef _ ident -> fmap ExportValue (fromIdent ident)
   Language.PureScript.ValueOpRef _ op ->
     pure (ExportValueOperator $ fromValueOpName op)
-  ref -> throwing _NotImplemented (displayShow ref)
 
 fromExports ::
   ( IsEmptyExplicitExports e
+  , IsInstanceExported e
   , IsInvalidExport e
   , IsMissingName e
-  , IsNotImplemented e
+  , IsReExportExported e
   , MonadError e f
   ) =>
   [Language.PureScript.DeclarationRef] ->
@@ -363,7 +401,7 @@ fromProperName = \case
   Language.PureScript.ProperName name -> ProperName Unannotated name
 
 fromPureScript ::
-  (IsError e, IsNotImplemented e, MonadError e f) =>
+  (IsError e, MonadError e f) =>
   Language.PureScript.Module ->
   f (Module Unannotated)
 fromPureScript = \case

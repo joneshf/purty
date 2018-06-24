@@ -42,7 +42,6 @@ fromAbsFile ::
   , HasLayoutOptions env
   , HasLogFunc env
   , AST.IsError error
-  , AST.IsNotImplemented error
   , IsParseError error
   ) =>
   Path Abs File ->
@@ -75,7 +74,6 @@ fromAbsFile filePath = do
 fromPurtyFilePath ::
   ( HasEnv env
   , AST.IsError error
-  , AST.IsNotImplemented error
   , IsParseError error
   ) =>
   PurtyFilePath ->
