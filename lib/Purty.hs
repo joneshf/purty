@@ -60,7 +60,7 @@ fromAbsFile filePath = do
   ast <- Module.fromPureScript m
   logDebug "Converted AST:"
   logDebug (display ast)
-  let sorted = Module.sortExports ast
+  let sorted = Module.sortImports (Module.sortExports ast)
       doc = case formatting of
         Dynamic -> Module.dynamic sorted
         Static  -> Module.static sorted
