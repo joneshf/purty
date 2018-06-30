@@ -230,87 +230,46 @@ instance Display Sorted where
 displayList :: Display a => [a] -> Utf8Builder
 displayList xs = "[" <> fold (intersperse ", " (display <$> xs)) <> "]"
 
-dynamic :: Sorted -> Doc b
-dynamic = \case
-  NoExports -> mempty
-  Sorted export' ms' cs' ks' tOs' ts' vOs' vs' ->
-    case insertExport export' of
-      (ms, cs, ks, tOs, ts, vOs, vs) ->
-        group (flatAlt multi single)
-          where
-          exports =
-            fmap (docFromExport . ExportModule) ms
-              <> fmap (docFromExport . ExportClass) cs
-              <> fmap (docFromExport . ExportKind) ks
-              <> fmap (docFromExport . ExportTypeOperator) tOs
-              <> fmap (docFromExport . ExportType) ts
-              <> fmap (docFromExport . ExportValueOperator) vOs
-              <> fmap (docFromExport . ExportValue) vs
-          multi = line <> indent 2 (align (parens (space <> multiDoc <> line)))
-          multiDoc =
-            foldMap
-              Variations.multiLine
-              (intersperse (pure (line <> comma <> space)) exports)
-          single = space <> parens singleDoc
-          singleDoc =
-            foldMap
-              Variations.singleLine
-              (intersperse (pure (comma <> space)) exports)
-    where
-    insertExport = \case
-      ExportAnnotation _ann x -> insertExport x
-      ExportModule x ->
-        (x : ms', cs', ks', tOs', ts', vOs', vs')
-      ExportClass x ->
-        (ms', x : cs', ks', tOs', ts', vOs', vs')
-      ExportKind x ->
-        (ms', cs', x : ks', tOs', ts', vOs', vs')
-      ExportTypeOperator x ->
-        (ms', cs', ks', x : tOs', ts', vOs', vs')
-      ExportType x ->
-        (ms', cs', ks', tOs', x : ts', vOs', vs')
-      ExportValueOperator x ->
-        (ms', cs', ks', tOs', ts', x : vOs', vs')
-      ExportValue x ->
-        (ms', cs', ks', tOs', ts', vOs', x : vs')
-
-static :: Sorted -> Doc b
-static = \case
-  NoExports -> mempty
-  Sorted export' ms' cs' ks' tOs' ts' vOs' vs' ->
-    case insertExport export' of
-      (ms, cs, ks, tOs, ts, vOs, vs) ->
-        line <> indent 2 (align (parens (space <> doc <> line)))
-          where
-          doc =
-            foldMap
-              Variations.multiLine
-              (intersperse (pure (line <> comma <> space)) exports)
-          exports =
-            fmap (docFromExport . ExportModule) ms
-              <> fmap (docFromExport . ExportClass) cs
-              <> fmap (docFromExport . ExportKind) ks
-              <> fmap (docFromExport . ExportTypeOperator) tOs
-              <> fmap (docFromExport . ExportType) ts
-              <> fmap (docFromExport . ExportValueOperator) vOs
-              <> fmap (docFromExport . ExportValue) vs
-    where
-    insertExport = \case
-      ExportAnnotation _ann x -> insertExport x
-      ExportModule x ->
-        (x : ms', cs', ks', tOs', ts', vOs', vs')
-      ExportClass x ->
-        (ms', x : cs', ks', tOs', ts', vOs', vs')
-      ExportKind x ->
-        (ms', cs', x : ks', tOs', ts', vOs', vs')
-      ExportTypeOperator x ->
-        (ms', cs', ks', x : tOs', ts', vOs', vs')
-      ExportType x ->
-        (ms', cs', ks', tOs', x : ts', vOs', vs')
-      ExportValueOperator x ->
-        (ms', cs', ks', tOs', ts', x : vOs', vs')
-      ExportValue x ->
-        (ms', cs', ks', tOs', ts', vOs', x : vs')
+dynamic, static :: Sorted -> Doc b
+(dynamic, static) = (dynamic', static')
+  where
+  dynamic' x = case x of
+    NoExports -> mempty
+    Sorted export' ms cs ks tOs ts vOs vs ->
+      group (flatAlt (static' x) (space <> parens doc))
+        where
+        doc =
+          foldMap
+            Variations.singleLine
+            (intersperse (pure (comma <> space)) exports)
+        exports = exportsDoc (insertExport ms cs ks tOs ts vOs vs export')
+  static' = \case
+    NoExports -> mempty
+    Sorted export' ms cs ks tOs ts vOs vs ->
+      line <> indent 2 (align (parens (space <> doc <> line)))
+        where
+        doc =
+          foldMap
+            Variations.multiLine
+            (intersperse (pure (line <> comma <> space)) exports)
+        exports = exportsDoc (insertExport ms cs ks tOs ts vOs vs export')
+  exportsDoc (ms, cs, ks, tOs, ts, vOs, vs) =
+    fmap (docFromExport . ExportModule) ms
+      <> fmap (docFromExport . ExportClass) cs
+      <> fmap (docFromExport . ExportKind) ks
+      <> fmap (docFromExport . ExportTypeOperator) tOs
+      <> fmap (docFromExport . ExportType) ts
+      <> fmap (docFromExport . ExportValueOperator) vOs
+      <> fmap (docFromExport . ExportValue) vs
+  insertExport ms cs ks tOs ts vOs vs = \case
+    ExportAnnotation _ann x -> insertExport ms cs ks tOs ts vOs vs x
+    ExportModule x -> (x : ms, cs, ks, tOs, ts, vOs, vs)
+    ExportClass x -> (ms, x : cs, ks, tOs, ts, vOs, vs)
+    ExportKind x -> (ms, cs, x : ks, tOs, ts, vOs, vs)
+    ExportTypeOperator x -> (ms, cs, ks, x : tOs, ts, vOs, vs)
+    ExportType x -> (ms, cs, ks, tOs, x : ts, vOs, vs)
+    ExportValueOperator x -> (ms, cs, ks, tOs, ts, x : vOs, vs)
+    ExportValue x -> (ms, cs, ks, tOs, ts, vOs, x : vs)
 
 data Type a
   = Type !(Name.Proper a) !(Constructors a)
