@@ -5,10 +5,17 @@ import "rio" RIO
 import "lens" Control.Lens                       (Prism', prism)
 import "lens" Control.Monad.Error.Lens           (throwing, throwing_)
 import "mtl" Control.Monad.Except                (MonadError)
-import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty, sortBy)
+import "base" Data.List                          (intersperse)
+import "base" Data.List.NonEmpty
+    ( NonEmpty((:|))
+    , nonEmpty
+    , sortBy
+    )
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
+    , align
+    , comma
     , dot
     , flatAlt
     , group
@@ -152,14 +159,6 @@ docFromExport = \case
   ExportValue value' -> pure (Export.docFromValue value')
   ExportValueOperator op -> pure (Export.docFromValueOperator op)
 
-dynamic :: (Foldable f) => f (NonEmpty (Export Annotation.Sorted)) -> Doc a
-dynamic = foldMap $ \exports' ->
-  let multi = line <> indent 2 multiLine
-      single = space <> singleLine
-      Variations { multiLine, singleLine } =
-        Variations.parenthesize Export.docFromExport exports'
-  in group (flatAlt multi single)
-
 export ::
   ( IsInstanceExported e
   , IsInvalidExport e
@@ -185,10 +184,133 @@ export = \case
   Language.PureScript.ValueOpRef _ op ->
     pure (ExportValueOperator $ valueOperator op)
 
-static :: (Foldable f) => f (NonEmpty (Export Annotation.Sorted)) -> Doc b
-static = foldMap $ \exports' ->
-  let exports = Variations.parenthesize Export.docFromExport exports'
-  in line <> indent 2 (Variations.multiLine exports)
+newtype Exports a
+  = Exports (Maybe (NonEmpty (Export a)))
+
+instance (Display a) => Display (Exports a) where
+  display = \case
+    Exports Nothing -> "No Exports"
+    Exports (Just exports) ->
+      "Exports: [" <> intercalateMap1 ", " display exports <> "]"
+
+data Sorted
+  = NoExports
+  | Sorted
+      !(Export Annotation.Sorted)
+      ![Name.Module Annotation.Sorted]
+      ![Name.Class Annotation.Sorted]
+      ![Name.Kind Annotation.Sorted]
+      ![TypeOperator Annotation.Sorted]
+      ![Type Annotation.Sorted]
+      ![ValueOperator Annotation.Sorted]
+      ![Value Annotation.Sorted]
+
+instance Display Sorted where
+  display = \case
+    NoExports -> "No Exports"
+    Sorted export' modules classes kinds typeOperators types values valueOperators ->
+      "Sorted "
+        <> "export: "
+        <> display export'
+        <> ", modules: "
+        <> displayList modules
+        <> ", classes: "
+        <> displayList classes
+        <> ", kinds: "
+        <> displayList kinds
+        <> ", typeOperators: "
+        <> displayList typeOperators
+        <> ", types: "
+        <> displayList types
+        <> ", values: "
+        <> displayList values
+        <> ", valueOperators: "
+        <> displayList valueOperators
+
+displayList :: Display a => [a] -> Utf8Builder
+displayList xs = "[" <> fold (intersperse ", " (display <$> xs)) <> "]"
+
+dynamic :: Sorted -> Doc b
+dynamic = \case
+  NoExports -> mempty
+  Sorted export' ms' cs' ks' tOs' ts' vOs' vs' ->
+    case insertExport export' of
+      (ms, cs, ks, tOs, ts, vOs, vs) ->
+        group (flatAlt multi single)
+          where
+          exports =
+            fmap (docFromExport . ExportModule) ms
+              <> fmap (docFromExport . ExportClass) cs
+              <> fmap (docFromExport . ExportKind) ks
+              <> fmap (docFromExport . ExportTypeOperator) tOs
+              <> fmap (docFromExport . ExportType) ts
+              <> fmap (docFromExport . ExportValueOperator) vOs
+              <> fmap (docFromExport . ExportValue) vs
+          multi = line <> indent 2 (align (parens (space <> multiDoc <> line)))
+          multiDoc =
+            foldMap
+              Variations.multiLine
+              (intersperse (pure (line <> comma <> space)) exports)
+          single = space <> parens singleDoc
+          singleDoc =
+            foldMap
+              Variations.singleLine
+              (intersperse (pure (comma <> space)) exports)
+    where
+    insertExport = \case
+      ExportAnnotation _ann x -> insertExport x
+      ExportModule x ->
+        (x : ms', cs', ks', tOs', ts', vOs', vs')
+      ExportClass x ->
+        (ms', x : cs', ks', tOs', ts', vOs', vs')
+      ExportKind x ->
+        (ms', cs', x : ks', tOs', ts', vOs', vs')
+      ExportTypeOperator x ->
+        (ms', cs', ks', x : tOs', ts', vOs', vs')
+      ExportType x ->
+        (ms', cs', ks', tOs', x : ts', vOs', vs')
+      ExportValueOperator x ->
+        (ms', cs', ks', tOs', ts', x : vOs', vs')
+      ExportValue x ->
+        (ms', cs', ks', tOs', ts', vOs', x : vs')
+
+static :: Sorted -> Doc b
+static = \case
+  NoExports -> mempty
+  Sorted export' ms' cs' ks' tOs' ts' vOs' vs' ->
+    case insertExport export' of
+      (ms, cs, ks, tOs, ts, vOs, vs) ->
+        line <> indent 2 (align (parens (space <> doc <> line)))
+          where
+          doc =
+            foldMap
+              Variations.multiLine
+              (intersperse (pure (line <> comma <> space)) exports)
+          exports =
+            fmap (docFromExport . ExportModule) ms
+              <> fmap (docFromExport . ExportClass) cs
+              <> fmap (docFromExport . ExportKind) ks
+              <> fmap (docFromExport . ExportTypeOperator) tOs
+              <> fmap (docFromExport . ExportType) ts
+              <> fmap (docFromExport . ExportValueOperator) vOs
+              <> fmap (docFromExport . ExportValue) vs
+    where
+    insertExport = \case
+      ExportAnnotation _ann x -> insertExport x
+      ExportModule x ->
+        (x : ms', cs', ks', tOs', ts', vOs', vs')
+      ExportClass x ->
+        (ms', x : cs', ks', tOs', ts', vOs', vs')
+      ExportKind x ->
+        (ms', cs', x : ks', tOs', ts', vOs', vs')
+      ExportTypeOperator x ->
+        (ms', cs', ks', x : tOs', ts', vOs', vs')
+      ExportType x ->
+        (ms', cs', ks', tOs', x : ts', vOs', vs')
+      ExportValueOperator x ->
+        (ms', cs', ks', tOs', ts', x : vOs', vs')
+      ExportValue x ->
+        (ms', cs', ks', tOs', ts', vOs', x : vs')
 
 data Type a
   = Type !(Name.Proper a) !(Constructors a)
@@ -309,20 +431,35 @@ sortConstructors = \case
     ConstructorsSome (fmap (Annotation.Sorted <$) (sortBy Name.compareProper constructors))
   ConstructorsAll -> ConstructorsAll
 
-sort :: NonEmpty (Export a) -> NonEmpty (Export Annotation.Sorted)
-sort = sortBy compareExport . fmap go
-  where
-  go :: Export a -> Export Annotation.Sorted
-  go = \case
-    ExportAnnotation _ann x -> ExportAnnotation Annotation.Sorted (go x)
-    ExportClass x -> ExportClass (Annotation.Sorted <$ x)
-    ExportKind x -> ExportKind (Annotation.Sorted <$ x)
-    ExportModule x -> ExportModule (Annotation.Sorted <$ x)
-    ExportType (Type name constructors) ->
-      ExportType (Type (Annotation.Sorted <$ name) (sortConstructors constructors))
-    ExportTypeOperator x -> ExportTypeOperator (Annotation.Sorted <$ x)
-    ExportValue x -> ExportValue (Annotation.Sorted <$ x)
-    ExportValueOperator x -> ExportValueOperator (Annotation.Sorted <$ x)
+sort :: Exports a -> Sorted
+sort = \case
+  Exports Nothing -> NoExports
+  Exports (Just exports) ->
+    Sorted headExport ms cs ks tOs ts vOs vs
+    where
+    go :: Export a -> Export Annotation.Sorted
+    go = \case
+      ExportAnnotation _ann x -> ExportAnnotation Annotation.Sorted (go x)
+      ExportClass x -> ExportClass (Annotation.Sorted <$ x)
+      ExportKind x -> ExportKind (Annotation.Sorted <$ x)
+      ExportModule x -> ExportModule (Annotation.Sorted <$ x)
+      ExportType (Type name constructors) ->
+        ExportType (Type (Annotation.Sorted <$ name) (sortConstructors constructors))
+      ExportTypeOperator x -> ExportTypeOperator (Annotation.Sorted <$ x)
+      ExportValue x -> ExportValue (Annotation.Sorted <$ x)
+      ExportValueOperator x -> ExportValueOperator (Annotation.Sorted <$ x)
+    headExport :| tailExports = sortBy compareExport (fmap go exports)
+    (ms, cs, ks, tOs, ts, vOs, vs) =
+      foldl' partition ([], [], [], [], [], [], []) (reverse tailExports)
+    partition acc@(ms', cs', ks', tOs', ts', vOs', vs') = \case
+      ExportAnnotation _ann x -> partition acc x
+      ExportModule x -> (x : ms', cs', ks', tOs', ts', vOs', vs')
+      ExportClass x -> (ms', x : cs', ks', tOs', ts', vOs', vs')
+      ExportKind x -> (ms', cs', x : ks', tOs', ts', vOs', vs')
+      ExportTypeOperator x -> (ms', cs', ks', x : tOs', ts', vOs', vs')
+      ExportType x -> (ms', cs', ks', tOs', x : ts', vOs', vs')
+      ExportValueOperator x -> (ms', cs', ks', tOs', ts', x : vOs', vs')
+      ExportValue x -> (ms', cs', ks', tOs', ts', vOs', x : vs')
 
 -- Errors
 
