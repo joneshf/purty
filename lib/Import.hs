@@ -204,7 +204,19 @@ fromPureScript = \case
     name <- Name.module' name'
     let open = Open Annotation.Unannotated name
     pure (Just $ ImportOpen open)
-  _ -> pure Nothing
+  Language.PureScript.BindingGroupDeclaration {} -> pure Nothing
+  Language.PureScript.BoundValueDeclaration {} -> pure Nothing
+  Language.PureScript.DataBindingGroupDeclaration {} -> pure Nothing
+  Language.PureScript.DataDeclaration {} -> pure Nothing
+  Language.PureScript.ExternDataDeclaration {} -> pure Nothing
+  Language.PureScript.ExternDeclaration {} -> pure Nothing
+  Language.PureScript.ExternKindDeclaration {} -> pure Nothing
+  Language.PureScript.FixityDeclaration {} -> pure Nothing
+  Language.PureScript.TypeClassDeclaration {} -> pure Nothing
+  Language.PureScript.TypeDeclaration {} -> pure Nothing
+  Language.PureScript.TypeInstanceDeclaration {} -> pure Nothing
+  Language.PureScript.TypeSynonymDeclaration {} -> pure Nothing
+  Language.PureScript.ValueDeclaration {} -> pure Nothing
 
 sort :: Imports a -> Sorted
 sort = \case
