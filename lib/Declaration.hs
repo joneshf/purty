@@ -53,7 +53,7 @@ docFromAlternate = \case
   Alternate ann x y -> annotate doc
     where
     annotate = case ann of
-      None -> id
+      None   -> id
       Braces -> braces
       Parens -> parens
     doc =
