@@ -194,7 +194,7 @@ fromPureScript = \case
     imports <- traverse Export.export imports'
     alias <- Alias <$> traverse Name.module' alias'
     let hiding = Hiding Annotation.Unannotated name imports alias
-    pure (Just $ ImportHiding $ hiding)
+    pure (Just $ ImportHiding hiding)
   Language.PureScript.ImportDeclaration _ name' Language.PureScript.Implicit (Just alias') -> do
     name <- Name.module' name'
     alias <- Alias . Just <$> Name.module' alias'

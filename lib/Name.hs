@@ -65,10 +65,8 @@ module' ::
   Language.PureScript.ModuleName ->
   f (Module Annotation.Unannotated)
 module' = \case
-  Language.PureScript.ModuleName names' ->
-    maybe (throwing_ _Missing) pure $ do
-      names <- nonEmpty (fmap Name.proper names')
-      pure (Module names)
+  Language.PureScript.ModuleName names ->
+    maybe (throwing_ _Missing) pure (fmap Module $ nonEmpty $ fmap proper names)
 
 data Proper a
   = Proper !a !Text

@@ -74,8 +74,8 @@ static = \case
 
 -- Errors
 
-data Error
-  = NotImplemented !Utf8Builder
+newtype Error
+  = NotImplemented Utf8Builder
 
 instance Display Error where
   display = \case
