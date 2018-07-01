@@ -6,15 +6,55 @@ import "lens" Control.Lens  (Prism', prism)
 import "base" System.Exit   (exitFailure)
 import "parsec" Text.Parsec (ParseError)
 
+import qualified "this" Declaration
 import qualified "this" Export
 import qualified "this" Module
 import qualified "this" Name
 
 data Error
-  = Export !Export.Error
+  = Declaration !Declaration.Error
+  | Export !Export.Error
   | Name !Name.Error
   | Module !Module.Error
   | Parse !ParseError
+
+instance Declaration.IsInferredConstraintData Error where
+  _InferredConstraintData =
+    Declaration._Error . Declaration._InferredConstraintData
+
+instance Declaration.IsInferredForallWithSkolem Error where
+  _InferredForallWithSkolem =
+    Declaration._Error . Declaration._InferredForallWithSkolem
+
+instance Declaration.IsInferredKind Error where
+  _InferredKind = Declaration._Error . Declaration._InferredKind
+
+instance Declaration.IsInferredSkolem Error where
+  _InferredSkolem = Declaration._Error . Declaration._InferredSkolem
+
+instance Declaration.IsInferredType Error where
+  _InferredType = Declaration._Error . Declaration._InferredType
+
+instance Declaration.IsInfixTypeNotTypeOp Error where
+  _InfixTypeNotTypeOp = Declaration._Error . Declaration._InfixTypeNotTypeOp
+
+instance Declaration.IsPrettyPrintForAll Error where
+  _PrettyPrintForAll = Declaration._Error . Declaration._PrettyPrintForAll
+
+instance Declaration.IsPrettyPrintFunction Error where
+  _PrettyPrintFunction = Declaration._Error . Declaration._PrettyPrintFunction
+
+instance Declaration.IsPrettyPrintObject Error where
+  _PrettyPrintObject = Declaration._Error . Declaration._PrettyPrintObject
+
+instance Declaration.IsWrongNewtypeConstructors Error where
+  _WrongNewtypeConstructors =
+    Declaration._Error . Declaration._WrongNewtypeConstructors
+
+instance Declaration.IsError Error where
+  _Error = prism Declaration $ \case
+    Declaration x -> Right x
+    x -> Left x
 
 instance Export.IsEmptyExplicitExports Error where
   _EmptyExplicitExports = Export._Error.Export._EmptyExplicitExports
@@ -73,6 +113,10 @@ instance IsParseError Error where
 
 errors :: (HasLogFunc env, MonadIO f, MonadReader env f) => Error -> f a
 errors = \case
+  Declaration err -> do
+    logError "Problem converting the declarations"
+    logError (display err)
+    liftIO exitFailure
   Export err -> do
     logError "Problem converting the exports"
     logError (display err)

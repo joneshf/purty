@@ -34,6 +34,7 @@ import "this" Error (IsParseError(_ParseError))
 import qualified "path" Path
 
 import qualified "this" Annotation
+import qualified "this" Declaration
 import qualified "this" Export
 import qualified "this" Module
 import qualified "this" Name
@@ -42,6 +43,7 @@ fromAbsFile ::
   ( HasFormatting env
   , HasLayoutOptions env
   , HasLogFunc env
+  , Declaration.IsError error
   , Export.IsError error
   , Name.IsError error
   , IsParseError error
@@ -61,12 +63,15 @@ fromAbsFile filePath = do
   logDebug "Converted AST:"
   logDebug (display ast)
   let sorted = Module.sortImports (Module.sortExports ast)
+      normalized = Module.normalize sorted
       doc = case formatting of
-        Dynamic -> Module.dynamic sorted
-        Static  -> Module.static sorted
+        Dynamic -> Module.dynamic normalized
+        Static  -> Module.static normalized
       stream = layoutSmart layoutOptions doc
   logDebug "Sorted AST:"
   logDebug (display sorted)
+  logDebug "Normalized AST:"
+  logDebug (display normalized)
   logDebug "Doc:"
   logDebug (displayShow doc)
   logDebug "Stream:"
@@ -75,6 +80,7 @@ fromAbsFile filePath = do
 
 fromPurtyFilePath ::
   ( HasEnv env
+  , Declaration.IsError error
   , Export.IsError error
   , Name.IsError error
   , IsParseError error

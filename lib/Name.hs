@@ -7,11 +7,28 @@ import "lens" Control.Monad.Error.Lens           (throwing_)
 import "mtl" Control.Monad.Except                (MonadError)
 import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
-import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, pretty)
+import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, dot, pretty)
 
 import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
+
+newtype Constructor a
+  = Constructor (Proper a)
+  deriving (Functor)
+
+instance (Display a) => Display (Constructor a) where
+  display = \case
+    Constructor name -> "Constructor: " <> display name
+
+constructor ::
+  Language.PureScript.ProperName 'Language.PureScript.ConstructorName ->
+  Constructor Annotation.Unannotated
+constructor = Constructor . proper
+
+docFromConstructor :: Constructor a -> Doc b
+docFromConstructor = \case
+  Constructor name -> docFromProper name
 
 newtype Class a
   = Class (Proper a)
@@ -68,6 +85,39 @@ module' = \case
   Language.PureScript.ModuleName names ->
     maybe (throwing_ _Missing) pure (fmap Module $ nonEmpty $ fmap proper names)
 
+data Qualified f a
+  = Qualified !(Maybe (Module a)) !(f a)
+  deriving (Functor)
+
+instance (Display a, Display (f a)) => Display (Qualified f a) where
+  display = \case
+    Qualified Nothing x ->
+      "UnQualified: "
+        <> "qualified: "
+        <> display x
+    Qualified (Just x) y ->
+      "Qualified: "
+        <> "module: "
+        <> display x
+        <> ", qualified: "
+        <> display y
+
+docFromQualified :: (f a -> Doc b) -> Qualified f a -> Doc b
+docFromQualified f = \case
+  Qualified Nothing x -> f x
+  Qualified (Just x) y -> docFromModule x <> dot <> f y
+
+qualified ::
+  (IsMissing e, MonadError e f) =>
+  (a -> f (g Annotation.Unannotated)) ->
+  Language.PureScript.Qualified a ->
+  f (Qualified g Annotation.Unannotated)
+qualified f = \case
+  Language.PureScript.Qualified m x -> do
+    module'' <- traverse module' m
+    y <- f x
+    pure (Qualified module'' y)
+
 data Proper a
   = Proper !a !Text
   deriving (Eq, Functor, Ord)
@@ -91,6 +141,46 @@ proper = \case
 docFromProper :: Proper a -> Doc b
 docFromProper = \case
   Proper _ann name -> pretty name
+
+newtype TypeConstructor a
+  = TypeConstructor (Proper a)
+  deriving (Functor)
+
+instance (Display a) => Display (TypeConstructor a) where
+  display = \case
+    TypeConstructor name -> "TypeConstructor: " <> display name
+
+docFromTypeConstructor :: TypeConstructor a -> Doc b
+docFromTypeConstructor = \case
+  TypeConstructor name -> docFromProper name
+
+typeConstructor ::
+  Language.PureScript.ProperName 'Language.PureScript.TypeName ->
+  TypeConstructor Annotation.Unannotated
+typeConstructor = TypeConstructor . proper
+
+data TypeOperator a
+  = TypeOperator !a !Text
+  deriving (Functor)
+
+instance (Display a) => Display (TypeOperator a) where
+  display = \case
+    TypeOperator ann op ->
+      "Type Operator: "
+        <> "annotation: "
+        <> display ann
+        <> ", operator: "
+        <> display op
+
+docFromTypeOperator :: TypeOperator a -> Doc b
+docFromTypeOperator = \case
+  TypeOperator _ann op -> pretty op
+
+typeOperator ::
+  Language.PureScript.OpName 'Language.PureScript.TypeOpName ->
+  TypeOperator Annotation.Unannotated
+typeOperator = \case
+  Language.PureScript.OpName x -> TypeOperator Annotation.Unannotated x
 
 -- Errors
 
