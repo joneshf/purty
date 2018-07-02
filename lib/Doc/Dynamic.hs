@@ -140,7 +140,7 @@ fromBinaryOp = \case
 
 fromBinder :: Binder -> Doc a
 fromBinder = \case
-  BinaryNoParensBinder left op right ->
+  BinaryNoParensBinder op left right ->
     fromBinder left <+> fromBinder op <+> fromBinder right
   ConstructorBinder _ name [] -> pretty (showQualified runProperName name)
   ConstructorBinder _ name binders ->
