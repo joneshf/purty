@@ -381,11 +381,15 @@ fromExpr = \case
       <> line
       <> indent 2 (vsep $ fmap fromDoElement elements)
   Hole hole -> "?" <> pretty hole
-  IfThenElse b t f ->
-    align $ vsep
-      [ "if" <+> fromExpr b <+> "then" <> line <> indent 2 (fromExpr t)
-      , "else" <> line <> indent 2 (fromExpr f)
-      ]
+  IfThenElse b t f -> flatAlt singleLine multiLine
+    where
+    singleLine =
+      "if" <+> fromExpr b <+> "then" <+> fromExpr t <+> "else" <+> fromExpr f
+    multiLine =
+      "if"
+        <+> fromExpr b
+        <> line
+        <> indent 2 (align $ vsep ["then" <+> fromExpr t, "else" <+> fromExpr f])
   Let FromLet declarations expr ->
     align $ vsep
       [ "let" <+> align (fromDeclarations declarations)
