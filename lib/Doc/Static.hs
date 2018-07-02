@@ -130,7 +130,7 @@ fromBinaryOp :: Expr -> Doc a
 fromBinaryOp = \case
   Op _ op -> pretty (showQualified runOpName op)
   PositionedValue _ comments expr -> fromComments comments <> fromBinaryOp expr
-  expr -> fromExpr expr
+  expr -> "`" <> fromExpr expr <> "`"
 
 fromBinder :: Binder -> Doc a
 fromBinder = \case
