@@ -56,7 +56,7 @@ import "purescript" Language.PureScript
     , ValueDeclarationData(ValueDeclarationData, valdeclBinders, valdeclExpression, valdeclIdent, valdeclName, valdeclSourceAnn)
     , compDecRef
     , prettyPrintKind
-    , prettyPrintString
+    , prettyPrintObjectKey
     , runModuleName
     , runProperName
     , showAssoc
@@ -65,7 +65,6 @@ import "purescript" Language.PureScript
     )
 import "purescript" Language.PureScript.PSString (PSString)
 import "rio" RIO.List                            (sort, sortBy, sortOn)
-import "rio" RIO.Text                            (dropAround)
 
 convertForAlls :: [Text] -> Language.PureScript.Type -> Language.PureScript.Type
 convertForAlls vars = \case
@@ -142,7 +141,7 @@ fromBool :: Bool -> Doc a
 fromBool b = if b then "true" else "false"
 
 fromPSString :: PSString -> Doc a
-fromPSString = pretty . dropAround (== '"') . prettyPrintString
+fromPSString = pretty . prettyPrintObjectKey
 
 partitionImports ::
   [Declaration] ->
