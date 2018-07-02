@@ -62,6 +62,7 @@ import "purescript" Language.PureScript
     , everywhereOnTypes
     , everywhereOnTypesTopDown
     , isImportDecl
+    , prettyPrintLabel
     , prettyPrintString
     , runAssocList
     , runIdent
@@ -71,7 +72,6 @@ import "purescript" Language.PureScript
     , showOp
     , showQualified
     )
-import "purescript" Language.PureScript.Label    (runLabel)
 import "purescript" Language.PureScript.Names    (Qualified(Qualified))
 import "purescript" Language.PureScript.PSString (PSString, mkString)
 import "rio" RIO.List                            (repeat, zipWith)
@@ -119,7 +119,7 @@ convertRow rest = \case
   REmpty -> reverse rest
   x -> reverse (space <> "|" <+> fromType x : rest)
   where
-    printRowPair l t = fromPSString (runLabel l) <+> "::" <+> fromType t
+    printRowPair l t = pretty (prettyPrintLabel l) <+> "::" <+> fromType t
 
 enclosedWith :: Doc a -> Doc a -> [Doc a] -> Doc a
 enclosedWith open close = \case
