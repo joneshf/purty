@@ -10,7 +10,7 @@ import "semigroupoids" Data.Semigroup.Foldable (intercalateMap1)
 
 import qualified "purescript" Language.PureScript
 
-data Module
+newtype Module
   = Module ModuleName
 
 instance Display Module where
@@ -65,9 +65,10 @@ fromModuleName ::
   f ModuleName
 fromModuleName = \case
   Language.PureScript.ModuleName names' ->
-    maybe (throwing_ _MissingName) pure $ do
-      names <- nonEmpty (fmap fromProperName names')
-      pure (ModuleName names)
+    maybe
+      (throwing_ _MissingName)
+      pure
+      (fmap ModuleName $ nonEmpty $ fmap fromProperName names')
 
 fromProperName :: Language.PureScript.ProperName a -> ProperName
 fromProperName = \case

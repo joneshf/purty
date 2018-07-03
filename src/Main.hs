@@ -1,6 +1,6 @@
 module Main where
 
-import "rio" RIO hiding (withSystemTempFile)
+import "rio" RIO
 
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (putDoc)
 import "dhall" Dhall                                         (embed, inject)
