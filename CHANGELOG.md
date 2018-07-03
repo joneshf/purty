@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.0.0
+
+Lots more bug fixes.
+
+Thanks to everyone who reported them. Keep 'em coming!
+
+### Additions
+
+### Changes
+
+* Fix [Quoted key names unquoted incorrectly](https://gitlab.com/joneshf/purty/issues/55)
+* Fix [List pattern matching in case statements breaks](https://gitlab.com/joneshf/purty/issues/56)
+* Fix [Syntax error with `if` expression in `do`](https://gitlab.com/joneshf/purty/issues/58)
+* Fix [Infix expressions can lose their back-ticks](https://gitlab.com/joneshf/purty/issues/60)
+
+### Deletions
+
 ## 1.0.1
 
 Minor bug fix.
