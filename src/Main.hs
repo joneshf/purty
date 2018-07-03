@@ -2,65 +2,32 @@ module Main where
 
 import "rio" RIO hiding (withSystemTempFile)
 
-import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (putDoc, renderIO)
+import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (putDoc)
 import "dhall" Dhall                                         (embed, inject)
 import "dhall" Dhall.Pretty                                  (prettyExpr)
 import "optparse-applicative" Options.Applicative            (execParser)
-import "path-io" Path.IO
-    ( copyFile
-    , copyPermissions
-    , withSystemTempFile
-    )
-import "base" System.Exit                                    (exitFailure)
 
-import "purty" Purty
-    ( Args(Args, Defaults, argsFilePath)
-    , Config(Config, output, verbosity)
-    , Env(Env)
-    , Output(InPlace, StdOut)
+import "purty" Args  (Args(Args, Defaults, filePath), argsInfo, parseConfig)
+import "purty" Env
+    ( Config(Config, verbosity)
+    , Env(Env, config, logFunc, prettyPrintConfig)
     , Verbosity(Verbose)
-    , absolutize
-    , argsInfo
     , defaultConfig
     , defaultPrettyPrintConfig
-    , envConfig
-    , envLogFunc
-    , envPrettyPrintConfig
-    , parseConfig
-    , purty
     )
+import "purty" Error (errors)
+
+import qualified "purty" App
+import qualified "purty" Purty
 
 main :: IO ()
 main = do
   cliArgs <- execParser argsInfo
-  envConfig@Config{ verbosity, output } <- parseConfig cliArgs
-  let envPrettyPrintConfig = defaultPrettyPrintConfig
+  config@Config{ verbosity } <- parseConfig cliArgs
+  let prettyPrintConfig = defaultPrettyPrintConfig
   logOptions <- logOptionsHandle stderr (verbosity == Verbose)
-  withLogFunc logOptions $ \envLogFunc -> do
-    let env = Env { envConfig, envLogFunc, envPrettyPrintConfig }
-    runRIO env $ case cliArgs of
-      Args { argsFilePath } -> do
-        logDebug ("Env: " <> display env)
-        logDebug ("Converting " <> display argsFilePath <> " to an absolute path")
-        absPath <- absolutize argsFilePath
-        logDebug ("Converted file to absolute: " <> displayShow absPath)
-        logDebug "Running main `purty` program"
-        stream' <- purty absPath
-        case stream' of
-          Left err -> do
-            logError "Problem parsing module"
-            logError (displayShow err)
-            liftIO exitFailure
-          Right stream -> do
-            logDebug "Successfully created stream for rendering"
-            logDebug (displayShow $ void stream)
-            case output of
-              InPlace -> liftIO $ withSystemTempFile "purty.purs" $ \fp h -> do
-                renderIO h stream
-                hClose h
-                copyPermissions absPath fp
-                copyFile fp absPath
-              StdOut -> do
-                logDebug "Printing to stdout"
-                liftIO $ renderIO stdout stream
+  withLogFunc logOptions $ \logFunc -> do
+    let env = Env { config, logFunc, prettyPrintConfig }
+    App.run env $ case cliArgs of
+      Args { filePath } -> Purty.fromPurtyFilePath filePath `App.handle` errors
       Defaults -> liftIO (putDoc $ prettyExpr $ embed inject defaultConfig)
