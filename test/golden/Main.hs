@@ -3,7 +3,6 @@ module Main where
 
 import "rio" RIO
 
-import "base" Control.Applicative                            (empty)
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 import "path" Path
     ( File
@@ -23,7 +22,11 @@ import "tasty-golden" Test.Tasty.Golden
     ( goldenVsStringDiff
     )
 
-import "purty" Purty (Formatting(Dynamic, Static), defaultEnv, purty)
+import "purty" Env   (Formatting(Dynamic, Static), defaultEnv)
+import "purty" Error (errors)
+
+import qualified "purty" App
+import qualified "purty" Purty
 
 main :: IO ()
 main = defaultMain goldenTests
@@ -37,8 +40,8 @@ golden formatting testName goldenFile =
     absFile <- makeAbsolute goldenFile
     (_, logOptions) <- logOptionsMemory
     withLogFunc logOptions $ \logFunc -> do
-      result <- runRIO (defaultEnv formatting logFunc) (purty absFile)
-      stream <- either (const empty) pure result
+      let env = defaultEnv formatting logFunc
+      stream <- App.run env (Purty.fromAbsFile absFile `App.handle` errors)
       pure (fromStrictBytes $ encodeUtf8 $ renderStrict stream)
 
 goldenTests :: TestTree

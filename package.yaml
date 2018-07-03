@@ -69,6 +69,8 @@ library:
     - base == 4.10.1.0
     - containers == 0.5.10.2
     - dhall == 1.14.0
+    - lens == 4.16.1
+    - mtl == 2.2.2
     - optparse-applicative == 0.14.2.0
     - optparse-text == 0.1.1.0
     - parsec == 3.1.13.0
@@ -77,7 +79,9 @@ library:
     - prettyprinter == 1.2.0.1
     - purescript == 0.12.0
     - rio == 0.1.2.0
+    - semigroupoids == 5.2.2
     - text == 1.2.3.0
+    - transformers == 0.5.2.0
   source-dirs: lib
 license: BSD3
 maintainer: jones3.hardy@gmail.com
