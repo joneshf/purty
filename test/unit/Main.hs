@@ -18,7 +18,7 @@ import "tasty-hunit" Test.Tasty.HUnit
     , testCase
     )
 
-import "purty" Purty (defaultPrettyPrintConfig, layoutOptions)
+import "purty" Env (defaultPrettyPrintConfig, layoutOptions)
 
 import qualified "purty" Doc.Dynamic
 import qualified "purty" Doc.Static
