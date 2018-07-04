@@ -3,7 +3,7 @@ module Purty where
 import "rio" RIO hiding (ask)
 
 import "freer-simple" Control.Monad.Freer                    (Eff, Members)
-import "freer-simple" Control.Monad.Freer.Error              (Error, throwError)
+import "freer-simple" Control.Monad.Freer.Error              (Error)
 import "freer-simple" Control.Monad.Freer.Reader             (Reader, ask)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( LayoutOptions
@@ -13,9 +13,6 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (putDoc)
 import "dhall" Dhall                                         (embed, inject)
 import "dhall" Dhall.Pretty                                  (prettyExpr)
-import "purescript" Language.PureScript
-    ( parseModuleFromFile
-    )
 import "path" Path                                           (Abs, File, Path)
 import "parsec" Text.Parsec                                  (ParseError)
 
@@ -27,12 +24,12 @@ import "this" Env
     , defaultConfig
     )
 
-import qualified "path" Path
 
 import qualified "this" Doc.Dynamic
 import qualified "this" Doc.Static
 import qualified "this" File
 import qualified "this" Log
+import qualified "this" Module
 import qualified "this" Output
 
 fromAbsFile ::
@@ -52,10 +49,7 @@ fromAbsFile filePath = do
   Log.debug ("Formatting: " <> display formatting)
   layoutOptions <- ask
   Log.debug ("LayoutOptions: " <> displayShow layoutOptions)
-  contents <- File.read filePath
-  Log.debug "Read file contents:"
-  Log.debug (display contents)
-  (_, m) <- either throwError pure (parseModuleFromFile id (Path.fromAbsFile filePath, contents))
+  m <- Module.parse filePath
   Log.debug "Parsed module:"
   Log.debug (displayShow m)
   case formatting of
