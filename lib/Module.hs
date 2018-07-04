@@ -3,7 +3,7 @@ module Module (parse) where
 import "rio" RIO
 
 import "freer-simple" Control.Monad.Freer       (Eff, Members)
-import "freer-simple" Control.Monad.Freer.Error (throwError, Error)
+import "freer-simple" Control.Monad.Freer.Error (Error, throwError)
 import "path" Path                              (Abs, File, Path, fromAbsFile)
 import "parsec" Text.Parsec                     (ParseError)
 
