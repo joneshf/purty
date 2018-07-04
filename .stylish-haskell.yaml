@@ -256,5 +256,6 @@ language_extensions:
   - StandaloneDeriving
   - TupleSections
   - TypeFamilies
+  - TypeOperators
   - TypeSynonymInstances
   - ViewPatterns

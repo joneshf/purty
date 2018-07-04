@@ -2,9 +2,9 @@ module Module where
 
 import "rio" RIO
 
-import "lens" Control.Lens                       (Prism', prism)
-import "mtl" Control.Monad.Except                (MonadError)
+import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "base" Data.List.NonEmpty                 (nonEmpty)
+import "freer-simple" Data.OpenUnion             ((:++:))
 import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, line, (<+>))
 import "witherable" Data.Witherable              (wither)
 
@@ -62,13 +62,17 @@ dynamic = \case
       <> line
 
 fromPureScript ::
-  ( Declaration.IsError e
-  , Export.IsError e
-  , Name.IsMissing e
-  , MonadError e f
+  ( Members
+    ( Declaration.Errors
+    :++: Export.Errors
+    :++: Name.Errors
+    )
+    e
   ) =>
   Language.PureScript.Module ->
-  f (Module
+  Eff
+    e
+    (Module
       (Export.Exports Annotation.Unannotated)
       (Import.Imports Annotation.Unannotated)
       (Declaration.Declarations Annotation.Unannotated)
@@ -115,22 +119,9 @@ static = \case
 
 -- Errors
 
-newtype Error
+newtype NotImplemented
   = NotImplemented Utf8Builder
 
-instance Display Error where
+instance Display NotImplemented where
   display = \case
     NotImplemented x -> "We have not yet implemented: " <> x
-
-class (IsNotImplemented error) => IsError error where
-    _Error :: Prism' error Error
-
-instance IsError Error where
-  _Error = prism id Right
-
-class IsNotImplemented error where
-  _NotImplemented :: Prism' error Utf8Builder
-
-instance IsNotImplemented Error where
-  _NotImplemented = prism NotImplemented $ \case
-    NotImplemented x -> Right x

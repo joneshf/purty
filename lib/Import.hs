@@ -2,7 +2,8 @@ module Import where
 
 import "rio" RIO
 
-import "mtl" Control.Monad.Except                (MonadError)
+import "freer-simple" Control.Monad.Freer        (Eff, Member)
+import "freer-simple" Control.Monad.Freer.Error  (Error)
 import "base" Data.List                          (intersperse, sortOn)
 import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
@@ -174,14 +175,13 @@ instance (Display a) => Display (Import a) where
     ImportQualified qualified -> "Import Qualified: " <> display qualified
 
 fromPureScript ::
-  ( Name.IsMissing e
-  , Export.IsInstanceExported e
-  , Export.IsInvalidExport e
-  , Export.IsReExportExported e
-  , MonadError e f
+  ( Member (Error Name.Missing) e
+  , Member (Error Export.InstanceExported) e
+  , Member (Error Export.InvalidExport) e
+  , Member (Error Export.ReExportExported) e
   ) =>
   Language.PureScript.Declaration ->
-  f (Maybe (Import Annotation.Unannotated))
+  Eff e (Maybe (Import Annotation.Unannotated))
 fromPureScript = \case
   Language.PureScript.ImportDeclaration _ name' (Language.PureScript.Explicit imports') alias' -> do
     name <- Name.module' name'

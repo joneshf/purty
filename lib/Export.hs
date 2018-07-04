@@ -2,9 +2,8 @@ module Export where
 
 import "rio" RIO
 
-import "lens" Control.Lens                       (Prism', prism)
-import "lens" Control.Monad.Error.Lens           (throwing, throwing_)
-import "mtl" Control.Monad.Except                (MonadError)
+import "freer-simple" Control.Monad.Freer        (Eff, Members)
+import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.List                          (intersperse)
 import "base" Data.List.NonEmpty
     ( NonEmpty((:|))
@@ -160,24 +159,26 @@ docFromExport = \case
   ExportValueOperator op -> pure (Export.docFromValueOperator op)
 
 export ::
-  ( IsInstanceExported e
-  , IsInvalidExport e
-  , Name.IsMissing e
-  , IsReExportExported e
-  , MonadError e f
+  ( Members
+    '[ Error InstanceExported
+     , Error InvalidExport
+     , Error Name.Missing
+     , Error ReExportExported
+     ]
+    e
   ) =>
   Language.PureScript.DeclarationRef ->
-  f (Export Annotation.Unannotated)
+  Eff e (Export Annotation.Unannotated)
 export = \case
   Language.PureScript.KindRef _ name -> pure (ExportKind $ Name.kind name)
   Language.PureScript.ModuleRef _ name -> fmap ExportModule (Name.module' name)
   Language.PureScript.ReExportRef _ name ref ->
-    throwing _ReExportExported (name, ref)
+    throwError (ReExportExported name ref)
   Language.PureScript.TypeRef _ name constructors ->
     pure (ExportType $ type' name constructors)
   Language.PureScript.TypeClassRef _ name ->
     pure (ExportClass (Name.class' name))
-  Language.PureScript.TypeInstanceRef _ name -> throwing _InstanceExported name
+  Language.PureScript.TypeInstanceRef _ name -> throwError (InstanceExported name)
   Language.PureScript.TypeOpRef _ op ->
     pure (ExportTypeOperator $ typeOperator op)
   Language.PureScript.ValueRef _ ident -> fmap ExportValue (value ident)
@@ -338,12 +339,12 @@ docFromValue = \case
   Value _ann name -> pretty name
 
 value ::
-  (IsInvalidExport e, MonadError e f) =>
+  (Members '[Error InvalidExport] e) =>
   Language.PureScript.Ident ->
-  f (Value Annotation.Unannotated)
+  Eff e (Value Annotation.Unannotated)
 value = \case
   Language.PureScript.Ident ident -> pure (Value Annotation.Unannotated ident)
-  ident -> throwing _InvalidExport ident
+  ident -> throwError (InvalidExport ident)
 
 data ValueOperator a
   = ValueOperator !a !Text
@@ -369,17 +370,19 @@ valueOperator = \case
   Language.PureScript.OpName name -> ValueOperator Annotation.Unannotated name
 
 fromPureScript ::
-  ( IsEmptyExplicitExports e
-  , IsInstanceExported e
-  , IsInvalidExport e
-  , Name.IsMissing e
-  , IsReExportExported e
-  , MonadError e f
+  ( Members
+    '[ Error EmptyExplicitExports
+     , Error InstanceExported
+     , Error InvalidExport
+     , Error Name.Missing
+     , Error ReExportExported
+     ]
+    e
   ) =>
   [Language.PureScript.DeclarationRef] ->
-  f (NonEmpty (Export Annotation.Unannotated))
+  Eff e (NonEmpty (Export Annotation.Unannotated))
 fromPureScript =
-  maybe (throwing_ _EmptyExplicitExports) (traverse export) . nonEmpty
+  maybe (throwError EmptyExplicitExports) (traverse export) . nonEmpty
 
 sortConstructors :: Constructors a -> Constructors Annotation.Sorted
 sortConstructors = \case
@@ -422,68 +425,46 @@ sort = \case
 
 -- Errors
 
-data Error
-  = EmptyExplicitExports
-  | InstanceExported !Language.PureScript.Ident
-  | InvalidExport !Language.PureScript.Ident
-  | ReExportExported !Language.PureScript.ModuleName !Language.PureScript.DeclarationRef
+type Errors
+  = '[ Error EmptyExplicitExports
+     , Error InstanceExported
+     , Error InvalidExport
+     , Error ReExportExported
+     ]
 
-instance Display Error where
+data EmptyExplicitExports
+  = EmptyExplicitExports
+
+newtype InstanceExported
+  = InstanceExported Language.PureScript.Ident
+
+newtype InvalidExport
+  = InvalidExport Language.PureScript.Ident
+
+data ReExportExported
+  = ReExportExported !Language.PureScript.ModuleName !Language.PureScript.DeclarationRef
+
+instance Display EmptyExplicitExports where
   display = \case
     EmptyExplicitExports -> "Module has an empty export list"
+
+instance Display InstanceExported where
+  display = \case
     InstanceExported ident ->
       "Module exports a type class instance: "
         <> displayShow ident
         <> ". This is probably a problem in PureScript."
+
+instance Display InvalidExport where
+  display = \case
     InvalidExport ident ->
       "Module exports an invalid identifier: " <> displayShow ident
+
+instance Display ReExportExported where
+  display = \case
     ReExportExported name ref ->
       "Module exports a re-export explicitly: module name: "
         <> displayShow name
         <> ", declaration ref: "
         <> displayShow ref
         <> ". This is probably a problem in PureScript."
-
-class
-  ( IsEmptyExplicitExports error
-  , IsInstanceExported error
-  , IsInvalidExport error
-  , IsReExportExported error
-  ) =>
-  IsError error where
-    _Error :: Prism' error Error
-
-instance IsError Error where
-  _Error = prism id Right
-
-class IsEmptyExplicitExports error where
-  _EmptyExplicitExports :: Prism' error ()
-
-instance IsEmptyExplicitExports Error where
-  _EmptyExplicitExports = prism (const EmptyExplicitExports) $ \case
-    EmptyExplicitExports -> Right ()
-    x -> Left x
-
-class IsInstanceExported error where
-  _InstanceExported :: Prism' error Language.PureScript.Ident
-
-instance IsInstanceExported Error where
-  _InstanceExported = prism InstanceExported $ \case
-    InstanceExported ident -> Right ident
-    x -> Left x
-
-class IsInvalidExport error where
-  _InvalidExport :: Prism' error Language.PureScript.Ident
-
-instance IsInvalidExport Error where
-  _InvalidExport = prism InvalidExport $ \case
-    InvalidExport ident -> Right ident
-    x -> Left x
-
-class IsReExportExported error where
-  _ReExportExported :: Prism' error (Language.PureScript.ModuleName, Language.PureScript.DeclarationRef)
-
-instance IsReExportExported Error where
-  _ReExportExported = prism (uncurry ReExportExported) $ \case
-    ReExportExported name ref -> Right (name, ref)
-    x -> Left x

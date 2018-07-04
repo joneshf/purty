@@ -62,6 +62,7 @@ import "purescript" Language.PureScript
     , everywhereOnTypes
     , everywhereOnTypesTopDown
     , isImportDecl
+    , prettyPrintLabel
     , prettyPrintString
     , runAssocList
     , runIdent
@@ -71,7 +72,6 @@ import "purescript" Language.PureScript
     , showOp
     , showQualified
     )
-import "purescript" Language.PureScript.Label    (runLabel)
 import "purescript" Language.PureScript.Names    (Qualified(Qualified))
 import "purescript" Language.PureScript.PSString (PSString, mkString)
 import "rio" RIO.List                            (repeat, zipWith)
@@ -119,7 +119,7 @@ convertRow rest = \case
   REmpty -> reverse rest
   x -> reverse (space <> "|" <+> fromType x : rest)
   where
-    printRowPair l t = fromPSString (runLabel l) <+> "::" <+> fromType t
+    printRowPair l t = pretty (prettyPrintLabel l) <+> "::" <+> fromType t
 
 enclosedWith :: Doc a -> Doc a -> [Doc a] -> Doc a
 enclosedWith open close = \case
@@ -130,11 +130,11 @@ fromBinaryOp :: Expr -> Doc a
 fromBinaryOp = \case
   Op _ op -> pretty (showQualified runOpName op)
   PositionedValue _ comments expr -> fromComments comments <> fromBinaryOp expr
-  expr -> fromExpr expr
+  expr -> "`" <> fromExpr expr <> "`"
 
 fromBinder :: Binder -> Doc a
 fromBinder = \case
-  BinaryNoParensBinder left op right ->
+  BinaryNoParensBinder op left right ->
     fromBinder left <+> fromBinder op <+> fromBinder right
   ConstructorBinder _ name [] -> pretty (showQualified runProperName name)
   ConstructorBinder _ name binders ->
@@ -366,10 +366,10 @@ fromExpr = \case
       <> indent 2 (vsep $ fmap fromDoElement elements)
   Hole hole -> "?" <> pretty hole
   IfThenElse b t f ->
-    align $ vsep
-      [ "if" <+> fromExpr b <+> "then" <> line <> indent 2 (fromExpr t)
-      , "else" <> line <> indent 2 (fromExpr f)
-      ]
+    "if"
+      <+> fromExpr b
+      <> line
+      <> indent 2 (align $ vsep ["then" <+> fromExpr t, "else" <+> fromExpr f])
   Let FromLet declarations expr ->
     align $ vsep
       [ "let" <+> align (fromDeclarations declarations)

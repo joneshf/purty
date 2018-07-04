@@ -2,9 +2,8 @@ module Name where
 
 import "rio" RIO
 
-import "lens" Control.Lens                       (Prism', prism)
-import "lens" Control.Monad.Error.Lens           (throwing_)
-import "mtl" Control.Monad.Except                (MonadError)
+import "freer-simple" Control.Monad.Freer        (Eff, Members)
+import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, dot, pretty)
@@ -78,12 +77,12 @@ docFromModule = \case
   Module names -> intercalateMap1 "." docFromProper names
 
 module' ::
-  (IsMissing e, MonadError e f) =>
+  (Members '[Error Missing] e) =>
   Language.PureScript.ModuleName ->
-  f (Module Annotation.Unannotated)
+  Eff e (Module Annotation.Unannotated)
 module' = \case
   Language.PureScript.ModuleName names ->
-    maybe (throwing_ _Missing) pure (fmap Module $ nonEmpty $ fmap proper names)
+    maybe (throwError Missing) pure (fmap Module $ nonEmpty $ fmap proper names)
 
 data Qualified f a
   = Qualified !(Maybe (Module a)) !(f a)
@@ -108,10 +107,10 @@ docFromQualified f = \case
   Qualified (Just x) y -> docFromModule x <> dot <> f y
 
 qualified ::
-  (IsMissing e, MonadError e f) =>
-  (a -> f (g Annotation.Unannotated)) ->
+  (Members '[Error Missing] e) =>
+  (a -> Eff e (g Annotation.Unannotated)) ->
   Language.PureScript.Qualified a ->
-  f (Qualified g Annotation.Unannotated)
+  Eff e (Qualified g Annotation.Unannotated)
 qualified f = \case
   Language.PureScript.Qualified m x -> do
     module'' <- traverse module' m
@@ -184,22 +183,13 @@ typeOperator = \case
 
 -- Errors
 
-data Error
+type Errors
+  = '[ Error Missing
+     ]
+
+data Missing
   = Missing
 
-instance Display Error where
+instance Display Missing where
   display = \case
     Missing -> "Module missing a name"
-
-class (IsMissing error) => IsError error where
-    _Error :: Prism' error Error
-
-instance IsError Error where
-  _Error = prism id Right
-
-class IsMissing error where
-  _Missing :: Prism' error ()
-
-instance IsMissing Error where
-  _Missing = prism (const Missing) $ \case
-    Missing -> Right ()

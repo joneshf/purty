@@ -1,11 +1,25 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Main where
 
-import "rio" RIO
+import "rio" RIO hiding (encodeUtf8)
 
-import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
+import "freer-simple" Control.Monad.Freer
+    ( Eff
+    , interpretM
+    , runM
+    )
+import "freer-simple" Control.Monad.Freer.Error
+    ( Error
+    , handleError
+    )
+import "freer-simple" Control.Monad.Freer.Reader             (Reader, runReader)
+import "freer-simple" Data.OpenUnion                         ((:++:))
+import "text" Data.Text.Lazy.Encoding                        (encodeUtf8)
+import "prettyprinter" Data.Text.Prettyprint.Doc             (LayoutOptions)
+import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderLazy)
 import "path" Path
-    ( File
+    ( Abs
+    , File
     , Path
     , Rel
     , relfile
@@ -21,11 +35,16 @@ import "tasty" Test.Tasty
 import "tasty-golden" Test.Tasty.Golden
     ( goldenVsStringDiff
     )
+import "parsec" Text.Parsec                                  (ParseError)
 
-import "purty" Env   (Formatting(Dynamic, Static), defaultEnv)
-import "purty" Error (errors)
+import "purty" Env (Formatting(Dynamic, Static), defaultLayoutOptions)
 
-import qualified "purty" App
+import qualified "purty" Declaration
+import qualified "purty" Error
+import qualified "purty" Exit
+import qualified "purty" Export
+import qualified "purty" Log
+import qualified "purty" Name
 import qualified "purty" Purty
 
 main :: IO ()
@@ -39,10 +58,34 @@ golden formatting testName goldenFile =
   goldenVsStringDiff testName diff (toFilePath goldenFile) $ do
     absFile <- makeAbsolute goldenFile
     (_, logOptions) <- logOptionsMemory
-    withLogFunc logOptions $ \logFunc -> do
-      let env = defaultEnv formatting logFunc
-      stream <- App.run env (Purty.fromAbsFile absFile `App.handle` errors)
-      pure (fromStrictBytes $ encodeUtf8 $ renderStrict stream)
+    withLogFunc logOptions $ \logFunc ->
+      runM
+        $ runReader defaultLayoutOptions
+        $ runReader formatting
+        $ interpretM (Log.io logFunc)
+        $ interpretM Exit.io
+        $ flip handleError Error.parseError
+        $ Error.name
+        $ Error.export
+        $ Error.declaration
+        $ test absFile
+
+test ::
+  Path Abs File ->
+  Eff
+    ( Declaration.Errors
+    :++: Export.Errors
+    :++: Name.Errors
+    :++: '[ Error ParseError
+          , Exit.Exit
+          , Log.Log
+          , Reader Formatting
+          , Reader LayoutOptions
+          , IO
+          ]
+    )
+    LByteString
+test absFile = encodeUtf8 . renderLazy <$> Purty.fromAbsFile absFile
 
 goldenTests :: TestTree
 goldenTests =
@@ -60,9 +103,11 @@ dynamic =
     , golden Dynamic "booleans" [relfile|test/golden/files/dynamic/Booleans.purs|]
     , golden Dynamic "char" [relfile|test/golden/files/dynamic/Char.purs|]
     , golden Dynamic "data with parameters" [relfile|test/golden/files/dynamic/DataWithParameters.purs|]
+    , golden Dynamic "do and if then else" [relfile|test/golden/files/dynamic/DoAndIfThenElse.purs|]
     , golden Dynamic "empty data" [relfile|test/golden/files/dynamic/EmptyData.purs|]
     , golden Dynamic "exports" [relfile|test/golden/files/dynamic/Exports.purs|]
     , golden Dynamic "imports" [relfile|test/golden/files/dynamic/Imports.purs|]
+    , golden Dynamic "infix expression" [relfile|test/golden/files/dynamic/InfixExpression.purs|]
     , golden Dynamic "typeclass instance" [relfile|test/golden/files/dynamic/Instance.purs|]
     , golden Dynamic "instance chain" [relfile|test/golden/files/dynamic/InstanceChain.purs|]
     , golden Dynamic "let" [relfile|test/golden/files/dynamic/Let.purs|]
@@ -70,8 +115,10 @@ dynamic =
     , golden Dynamic "multi-parameter type class instance head" [relfile|test/golden/files/dynamic/MPTCHead.purs|]
     , golden Dynamic "open record types" [relfile|test/golden/files/dynamic/Merge.purs|]
     , golden Dynamic "module header" [relfile|test/golden/files/dynamic/ModuleHeader.purs|]
-    , golden Dynamic "operators" [relfile|test/golden/files/dynamic/Operators.purs|]
     , golden Dynamic "newtype record" [relfile|test/golden/files/dynamic/NewtypeRecord.purs|]
+    , golden Dynamic "operator pattern" [relfile|test/golden/files/dynamic/OperatorPattern.purs|]
+    , golden Dynamic "operators" [relfile|test/golden/files/dynamic/Operators.purs|]
+    , golden Dynamic "quoted label" [relfile|test/golden/files/dynamic/QuotedLabel.purs|]
     , golden Dynamic "record puns" [relfile|test/golden/files/dynamic/RecordPuns.purs|]
     , golden Dynamic "sproxy" [relfile|test/golden/files/dynamic/SProxy.purs|]
     , golden Dynamic "typeclass" [relfile|test/golden/files/dynamic/TypeClass.purs|]
@@ -88,10 +135,12 @@ static =
     , golden Static "booleans" [relfile|test/golden/files/static/Booleans.purs|]
     , golden Static "char" [relfile|test/golden/files/static/Char.purs|]
     , golden Static "data with parameters" [relfile|test/golden/files/static/DataWithParameters.purs|]
+    , golden Static "do and if then else" [relfile|test/golden/files/static/DoAndIfThenElse.purs|]
     , golden Static "empty data" [relfile|test/golden/files/static/EmptyData.purs|]
     , golden Static "exports" [relfile|test/golden/files/static/Exports.purs|]
     , golden Static "imports" [relfile|test/golden/files/static/Imports.purs|]
     , golden Static "typeclass instance" [relfile|test/golden/files/static/Instance.purs|]
+    , golden Static "infix expression" [relfile|test/golden/files/static/InfixExpression.purs|]
     , golden Static "instance chain" [relfile|test/golden/files/static/InstanceChain.purs|]
     , golden Static "let" [relfile|test/golden/files/static/Let.purs|]
     , golden Static "long type signature" [relfile|test/golden/files/static/LongTypeSignature.purs|]
@@ -99,7 +148,9 @@ static =
     , golden Static "open record types" [relfile|test/golden/files/static/Merge.purs|]
     , golden Static "module header" [relfile|test/golden/files/static/ModuleHeader.purs|]
     , golden Static "newtype record" [relfile|test/golden/files/static/NewtypeRecord.purs|]
+    , golden Static "operator pattern" [relfile|test/golden/files/static/OperatorPattern.purs|]
     , golden Static "operators" [relfile|test/golden/files/static/Operators.purs|]
+    , golden Static "quoted label" [relfile|test/golden/files/static/QuotedLabel.purs|]
     , golden Static "record puns" [relfile|test/golden/files/static/RecordPuns.purs|]
     , golden Static "sproxy" [relfile|test/golden/files/static/SProxy.purs|]
     , golden Static "typeclass" [relfile|test/golden/files/static/TypeClass.purs|]

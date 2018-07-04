@@ -2,9 +2,8 @@ module Declaration where
 
 import "rio" RIO hiding (Data)
 
-import "lens" Control.Lens                       (Prism', prism)
-import "lens" Control.Monad.Error.Lens           (throwing, throwing_)
-import "mtl" Control.Monad.Except                (MonadError)
+import "freer-simple" Control.Monad.Freer        (Eff, Members)
+import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.Bitraversable                 (bitraverse)
 import "base" Data.List                          (intersperse)
 import "base" Data.List.NonEmpty                 (NonEmpty((:|)), nonEmpty)
@@ -61,22 +60,24 @@ docFromAlternate = \case
         <> foldMap (\types -> space <> intercalateMap1 space docFromType types) y
 
 alternate ::
-  ( IsInferredConstraintData e
-  , IsInferredForallWithSkolem e
-  , IsInferredKind e
-  , IsInferredSkolem e
-  , IsInferredType e
-  , IsInfixTypeNotTypeOp e
-  , IsPrettyPrintForAll e
-  , IsPrettyPrintFunction e
-  , IsPrettyPrintObject e
-  , Name.IsMissing e
-  , MonadError e f
+  ( Members
+    '[ Error InferredConstraintData
+     , Error InferredForallWithSkolem
+     , Error InferredKind
+     , Error InferredSkolem
+     , Error InferredType
+     , Error InfixTypeNotTypeOp
+     , Error PrettyPrintForAll
+     , Error PrettyPrintFunction
+     , Error PrettyPrintObject
+     , Error Name.Missing
+     ]
+    e
   ) =>
   ( Language.PureScript.ProperName 'Language.PureScript.ConstructorName
   , [Language.PureScript.Type]
   ) ->
-  f (Alternate Annotation.Unannotated)
+  Eff e (Alternate Annotation.Unannotated)
 alternate = \case
   (x', y') -> do
     let x = Name.constructor x'
@@ -101,23 +102,25 @@ instance (Display a) => Display (Constraint a) where
         <> foldMap (\y -> ", types: [" <> intercalateMap1 ", " display y <> "]") y'
 
 constraint ::
-  ( IsInferredConstraintData e
-  , IsInferredForallWithSkolem e
-  , IsInferredKind e
-  , IsInferredSkolem e
-  , IsInferredType e
-  , IsInfixTypeNotTypeOp e
-  , IsPrettyPrintForAll e
-  , IsPrettyPrintFunction e
-  , IsPrettyPrintObject e
-  , Name.IsMissing e
-  , MonadError e f
+  ( Members
+    '[ Error InferredConstraintData
+     , Error InferredForallWithSkolem
+     , Error InferredKind
+     , Error InferredSkolem
+     , Error InferredType
+     , Error InfixTypeNotTypeOp
+     , Error PrettyPrintForAll
+     , Error PrettyPrintFunction
+     , Error PrettyPrintObject
+     , Error Name.Missing
+     ]
+    e
   ) =>
   Language.PureScript.Constraint ->
-  f (Constraint Annotation.Unannotated)
+  Eff e (Constraint Annotation.Unannotated)
 constraint = \case
   Language.PureScript.Constraint x y (Just z) ->
-    throwing _InferredConstraintData (x, y, z)
+    throwError (InferredConstraintData x y z)
   Language.PureScript.Constraint x' y' Nothing -> do
     x <- Name.qualified (pure . Name.class') x'
     y <- nonEmpty <$> traverse type' y'
@@ -174,21 +177,23 @@ normalizeDeclaration = \case
   DeclarationNewtype x -> DeclarationNewtype (normalizeNewtype x)
 
 fromPureScript ::
-  ( IsInferredConstraintData e
-  , IsInferredForallWithSkolem e
-  , IsInferredKind e
-  , IsInferredSkolem e
-  , IsInferredType e
-  , IsInfixTypeNotTypeOp e
-  , IsPrettyPrintForAll e
-  , IsPrettyPrintFunction e
-  , IsPrettyPrintObject e
-  , IsWrongNewtypeConstructors e
-  , Name.IsMissing e
-  , MonadError e f
+  ( Members
+    '[ Error InferredConstraintData
+     , Error InferredForallWithSkolem
+     , Error InferredKind
+     , Error InferredSkolem
+     , Error InferredType
+     , Error InfixTypeNotTypeOp
+     , Error PrettyPrintForAll
+     , Error PrettyPrintFunction
+     , Error PrettyPrintObject
+     , Error WrongNewtypeConstructors
+     , Error Name.Missing
+     ]
+    e
   ) =>
   Language.PureScript.Declaration ->
-  f (Maybe (Declaration Annotation.Unannotated))
+  Eff e (Maybe (Declaration Annotation.Unannotated))
 fromPureScript = \case
   Language.PureScript.BoundValueDeclaration {} -> pure Nothing
   Language.PureScript.DataDeclaration _ Language.PureScript.Data name' variables' constructors -> do
@@ -206,7 +211,7 @@ fromPureScript = \case
           Newtype name (TypeVariables $ nonEmpty variables) constructor ty
     pure (Just $ DeclarationNewtype newtype')
   Language.PureScript.DataDeclaration _ Language.PureScript.Newtype name _ constructors ->
-    throwing _WrongNewtypeConstructors (name, constructors)
+    throwError (WrongNewtypeConstructors name constructors)
   Language.PureScript.ExternDataDeclaration {} -> pure Nothing
   Language.PureScript.ExternDeclaration {} -> pure Nothing
   Language.PureScript.ExternKindDeclaration {} -> pure Nothing
@@ -285,12 +290,12 @@ docFromKind = \case
   KindRow x -> "#" <+> docFromKind x
 
 kind ::
-  (IsInferredKind e, Name.IsMissing e, MonadError e f) =>
+  (Members '[Error InferredKind, Error Name.Missing] e) =>
   Language.PureScript.Kind ->
-  f (Kind Annotation.Unannotated)
+  Eff e (Kind Annotation.Unannotated)
 kind = \case
   Language.PureScript.FunKind x y -> KindFunction <$> kind x <*> kind y
-  Language.PureScript.KUnknown _ -> throwing_ _InferredKind
+  Language.PureScript.KUnknown _ -> throwError InferredKind
   Language.PureScript.NamedKind x ->
     fmap KindName (Name.qualified (pure . Name.kind) x)
   Language.PureScript.Row x -> fmap KindRow (kind x)
@@ -606,22 +611,24 @@ normalizeType = \case
   TypeWildcard x -> TypeWildcard x
 
 type' ::
-  ( IsInferredConstraintData e
-  , IsInferredForallWithSkolem e
-  , IsInferredKind e
-  , IsInferredSkolem e
-  , IsInferredType e
-  , IsInfixTypeNotTypeOp e
-  , IsPrettyPrintForAll e
-  , IsPrettyPrintFunction e
-  , IsPrettyPrintObject e
-  , Name.IsMissing e
-  , MonadError e f
+  ( Members
+    '[ Error InferredConstraintData
+     , Error InferredForallWithSkolem
+     , Error InferredKind
+     , Error InferredSkolem
+     , Error InferredType
+     , Error InfixTypeNotTypeOp
+     , Error PrettyPrintForAll
+     , Error PrettyPrintFunction
+     , Error PrettyPrintObject
+     , Error Name.Missing
+     ]
+    e
   ) =>
   Language.PureScript.Type ->
-  f (Type Annotation.Unannotated)
+  Eff e (Type Annotation.Unannotated)
 type' = \case
-  Language.PureScript.TUnknown _ -> throwing_ _InferredType
+  Language.PureScript.TUnknown _ -> throwError InferredType
   Language.PureScript.TypeVar x -> pure (TypeTypeVariable $ TypeVariable x)
   Language.PureScript.TypeLevelString x -> pure (TypeSymbol $ Symbol x)
   Language.PureScript.TypeWildcard _ -> pure (TypeWildcard Wildcard)
@@ -633,25 +640,25 @@ type' = \case
   Language.PureScript.ForAll x y Nothing ->
     fmap (TypeForall $ Forall x) (type' y)
   Language.PureScript.ForAll x y (Just z) ->
-    throwing _InferredForallWithSkolem (x, y, z)
+    throwError (InferredForallWithSkolem x y z)
   Language.PureScript.ConstrainedType x y ->
     TypeConstrained <$> constraint x <*> type' y
-  Language.PureScript.Skolem w x y z -> throwing _InferredSkolem (w, x, y, z)
+  Language.PureScript.Skolem w x y z -> throwError (InferredSkolem w x y z)
   Language.PureScript.REmpty -> pure (TypeRow RowEmpty)
   Language.PureScript.RCons x y z ->
     fmap TypeRow (RowCons (label x) <$> type' y <*> type' z)
   Language.PureScript.KindedType x y -> TypeKinded <$> type' x <*> kind y
   Language.PureScript.PrettyPrintFunction x y ->
-    throwing _PrettyPrintFunction (x, y)
-  Language.PureScript.PrettyPrintObject x -> throwing _PrettyPrintObject x
-  Language.PureScript.PrettyPrintForAll x y -> throwing _PrettyPrintForAll (x, y)
+    throwError (PrettyPrintFunction x y)
+  Language.PureScript.PrettyPrintObject x -> throwError (PrettyPrintObject x)
+  Language.PureScript.PrettyPrintForAll x y -> throwError (PrettyPrintForAll x y)
   Language.PureScript.BinaryNoParensType (Language.PureScript.TypeOp x') y' z' -> do
     x <- Name.qualified (pure . Name.typeOperator) x'
     y <- type' y'
     z <- type' z'
     pure (TypeInfixOperator y x z)
   Language.PureScript.BinaryNoParensType x y z ->
-    throwing _InfixTypeNotTypeOp (x, y, z)
+    throwError (InfixTypeNotTypeOp x y z)
   Language.PureScript.ParensInType x -> fmap TypeParens (type' x)
 
 newtype TypeVariable
@@ -725,39 +732,70 @@ displayList xs = "[" <> fold (intersperse ", " (display <$> xs)) <> "]"
 
 -- Errors
 
-data Error
+type Errors
+  = '[ Error InferredConstraintData
+     , Error InferredForallWithSkolem
+     , Error InferredKind
+     , Error InferredSkolem
+     , Error InferredType
+     , Error InfixTypeNotTypeOp
+     , Error PrettyPrintForAll
+     , Error PrettyPrintFunction
+     , Error PrettyPrintObject
+     , Error WrongNewtypeConstructors
+     ]
+
+data InferredConstraintData
   = InferredConstraintData
       !( Language.PureScript.Qualified
            (Language.PureScript.ProperName 'Language.PureScript.ClassName)
        )
       ![Language.PureScript.Type]
       !Language.PureScript.ConstraintData
-  | InferredForallWithSkolem
+
+data InferredForallWithSkolem
+  = InferredForallWithSkolem
       !Text
       !Language.PureScript.Type
       !Language.PureScript.SkolemScope
-  | InferredKind
-  | InferredSkolem
+
+data InferredKind
+  = InferredKind
+
+data InferredSkolem
+  = InferredSkolem
       !Text
       !Int
       !Language.PureScript.SkolemScope
       !(Maybe Language.PureScript.SourceSpan)
-  | InferredType
-  | InfixTypeNotTypeOp
+
+data InferredType
+  = InferredType
+
+data InfixTypeNotTypeOp
+  = InfixTypeNotTypeOp
       !Language.PureScript.Type
       !Language.PureScript.Type
       !Language.PureScript.Type
-  | PrettyPrintForAll ![Text] !Language.PureScript.Type
-  | PrettyPrintFunction !Language.PureScript.Type !Language.PureScript.Type
-  | PrettyPrintObject !Language.PureScript.Type
-  | WrongNewtypeConstructors
+
+data PrettyPrintForAll
+  = PrettyPrintForAll ![Text] !Language.PureScript.Type
+
+data PrettyPrintFunction
+  = PrettyPrintFunction !Language.PureScript.Type !Language.PureScript.Type
+
+newtype PrettyPrintObject
+  = PrettyPrintObject Language.PureScript.Type
+
+data WrongNewtypeConstructors
+  = WrongNewtypeConstructors
       !(Language.PureScript.ProperName 'Language.PureScript.TypeName)
       ![ ( Language.PureScript.ProperName 'Language.PureScript.ConstructorName
          , [Language.PureScript.Type]
          )
        ]
 
-instance Display Error where
+instance Display InferredConstraintData where
   display = \case
     InferredConstraintData x y z ->
       "The compiler inferred metadata `"
@@ -769,6 +807,9 @@ instance Display Error where
         <> "` There should be no constraint metadata at this point."
         <> " We are either using the wrong function from the PureScript library,"
         <> " or there's a problem in the PureScript library."
+
+instance Display InferredForallWithSkolem where
+  display = \case
     InferredForallWithSkolem x y z ->
       "The compiler inferred a skolem `"
         <> displayShow z
@@ -779,11 +820,17 @@ instance Display Error where
         <> "`. There should be no skolems at this point."
         <> " We are either using the wrong function from the PureScript library,"
         <> " or there's a problem in the PureScript library."
+
+instance Display InferredKind where
+  display = \case
     InferredKind ->
       "The compiler inferred a kind."
         <> " But, only kinds in the source file should exist at this point."
         <> " We are either using the wrong function from the PureScript library,"
         <> " or there's a problem in the PureScript library."
+
+instance Display InferredSkolem where
+  display = \case
     InferredSkolem w x y z' ->
       "The compiler inferred a skolem `"
         <> display x
@@ -795,11 +842,17 @@ instance Display Error where
         <> "`. There should be no skolems at this point."
         <> " We are either using the wrong function from the PureScript library,"
         <> " or there's a problem in the PureScript library."
+
+instance Display InferredType where
+  display = \case
     InferredType ->
       "The compiler inferred a type."
         <> " But, only types in the source file should exist at this point."
         <> " We are either using the wrong function from the PureScript library,"
         <> " or there's a problem in the PureScript library."
+
+instance Display InfixTypeNotTypeOp where
+  display = \case
     InfixTypeNotTypeOp x y z ->
       "We do not handle the case where the infix type is `"
         <> displayShow x
@@ -810,6 +863,9 @@ instance Display Error where
         <> "`. If the infix type contains a `TypeOp` somewhere inside of it,"
         <> " we should handle that case appropriately."
         <> " Otherwise, this seems like a problem in the PureScript library."
+
+instance Display PrettyPrintForAll where
+  display = \case
     PrettyPrintForAll x' y ->
       "We tried to modify foralls using a function from the PureScript library."
         <> " We ended up with `forall"
@@ -817,6 +873,9 @@ instance Display Error where
         <> "."
         <> displayShow y
         <> "`. We should handle modifying foralls ourselves."
+
+instance Display PrettyPrintFunction where
+  display = \case
     PrettyPrintFunction x y ->
       "We tried to modify function types using a function"
         <> " from the PureScript library."
@@ -825,12 +884,18 @@ instance Display Error where
         <> " -> "
         <> displayShow y
         <> "`. We should handle modifying function types ourselves."
+
+instance Display PrettyPrintObject where
+  display = \case
     PrettyPrintObject x ->
       "We tried to modify a record type using a function"
         <> " from the PureScript library."
         <> " We ended up with `"
         <> displayShow x
         <> "`. We should handle modifying record types ourselves."
+
+instance Display WrongNewtypeConstructors where
+  display = \case
     WrongNewtypeConstructors x [] ->
       "The newtype `"
         <> displayShow x
@@ -851,137 +916,3 @@ instance Display Error where
         <> displayList (fmap displayShow y)
         <> "`"
         <> " Ensure there is only one constructor and one type."
-
-class IsInferredConstraintData error where
-  _InferredConstraintData ::
-    Prism'
-      error
-      ( Language.PureScript.Qualified
-          (Language.PureScript.ProperName 'Language.PureScript.ClassName)
-      , [Language.PureScript.Type]
-      , Language.PureScript.ConstraintData
-      )
-
-class IsInferredForallWithSkolem error where
-  _InferredForallWithSkolem ::
-    Prism'
-      error
-      (Text, Language.PureScript.Type, Language.PureScript.SkolemScope)
-
-class IsInferredKind error where
-  _InferredKind :: Prism' error ()
-
-class IsInferredSkolem error where
-  _InferredSkolem ::
-    Prism'
-      error
-      ( Text
-      , Int
-      , Language.PureScript.SkolemScope
-      , Maybe Language.PureScript.SourceSpan
-      )
-
-class IsInferredType error where
-  _InferredType :: Prism' error ()
-
-class IsInfixTypeNotTypeOp error where
-  _InfixTypeNotTypeOp ::
-    Prism'
-      error
-      ( Language.PureScript.Type
-      , Language.PureScript.Type
-      , Language.PureScript.Type
-      )
-
-class IsPrettyPrintForAll error where
-  _PrettyPrintForAll :: Prism' error ([Text], Language.PureScript.Type)
-
-class IsPrettyPrintFunction error where
-  _PrettyPrintFunction ::
-    Prism' error (Language.PureScript.Type, Language.PureScript.Type)
-
-class IsPrettyPrintObject error where
-  _PrettyPrintObject :: Prism' error Language.PureScript.Type
-
-class IsWrongNewtypeConstructors error where
-  _WrongNewtypeConstructors ::
-    Prism'
-      error
-      ( Language.PureScript.ProperName 'Language.PureScript.TypeName
-      , [ ( Language.PureScript.ProperName 'Language.PureScript.ConstructorName
-          , [Language.PureScript.Type]
-          )
-        ]
-      )
-
-class
-  ( IsInferredConstraintData error
-  , IsInferredForallWithSkolem error
-  , IsInferredKind error
-  , IsInferredSkolem error
-  , IsInferredType error
-  , IsInfixTypeNotTypeOp error
-  , IsPrettyPrintForAll error
-  , IsPrettyPrintFunction error
-  , IsPrettyPrintObject error
-  , IsWrongNewtypeConstructors error
-  ) =>
-  IsError error where
-    _Error :: Prism' error Error
-
-instance IsInferredConstraintData Error where
-  _InferredConstraintData =
-    prism (\(x, y, z) -> InferredConstraintData x y z) $ \case
-      InferredConstraintData x y z -> Right (x, y, z)
-      x -> Left x
-
-instance IsInferredForallWithSkolem Error where
-  _InferredForallWithSkolem =
-    prism (\(x, y, z) -> InferredForallWithSkolem x y z) $ \case
-      InferredForallWithSkolem x y z -> Right (x, y, z)
-      x -> Left x
-
-instance IsInferredKind Error where
-  _InferredKind = prism (const InferredKind) $ \case
-    InferredKind -> Right ()
-    x -> Left x
-
-instance IsInferredSkolem Error where
-  _InferredSkolem =
-    prism (\(w, x, y, z) -> InferredSkolem w x y z) $ \case
-      InferredSkolem w x y z -> Right (w, x, y, z)
-      x -> Left x
-
-instance IsInferredType Error where
-  _InferredType = prism (const InferredType) $ \case
-    InferredType -> Right ()
-    x -> Left x
-
-instance IsInfixTypeNotTypeOp Error where
-  _InfixTypeNotTypeOp =
-    prism (\(x, y, z) -> InfixTypeNotTypeOp x y z) $ \case
-      InfixTypeNotTypeOp x y z -> Right (x, y, z)
-      x -> Left x
-
-instance IsPrettyPrintObject Error where
-  _PrettyPrintObject = prism PrettyPrintObject $ \case
-    PrettyPrintObject x -> Right x
-    x -> Left x
-
-instance IsPrettyPrintForAll Error where
-  _PrettyPrintForAll =
-    prism (uncurry PrettyPrintForAll) $ \case
-      PrettyPrintForAll x y -> Right (x, y)
-      x -> Left x
-
-instance IsPrettyPrintFunction Error where
-  _PrettyPrintFunction =
-    prism (uncurry PrettyPrintFunction) $ \case
-      PrettyPrintFunction x y -> Right (x, y)
-      x -> Left x
-
-instance IsWrongNewtypeConstructors Error where
-  _WrongNewtypeConstructors =
-    prism (uncurry WrongNewtypeConstructors) $ \case
-      WrongNewtypeConstructors x y -> Right (x, y)
-      x -> Left x
