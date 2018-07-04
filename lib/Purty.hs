@@ -1,12 +1,8 @@
 module Purty where
 
-import "rio" RIO hiding (ask, withSystemTempFile)
+import "rio" RIO hiding (ask)
 
-import "freer-simple" Control.Monad.Freer
-    ( Eff
-    , LastMember
-    , Members
-    )
+import "freer-simple" Control.Monad.Freer                    (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error              (Error, throwError)
 import "freer-simple" Control.Monad.Freer.Reader             (Reader, ask)
 import "prettyprinter" Data.Text.Prettyprint.Doc
@@ -14,18 +10,13 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , SimpleDocStream
     , layoutSmart
     )
-import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (putDoc, renderIO)
+import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (putDoc)
 import "dhall" Dhall                                         (embed, inject)
 import "dhall" Dhall.Pretty                                  (prettyExpr)
 import "purescript" Language.PureScript
     ( parseModuleFromFile
     )
 import "path" Path                                           (Abs, File, Path)
-import "path-io" Path.IO
-    ( copyFile
-    , copyPermissions
-    , withSystemTempFile
-    )
 import "parsec" Text.Parsec                                  (ParseError)
 
 import "this" Args (Args(Args, Defaults, filePath))
@@ -42,6 +33,7 @@ import qualified "this" Doc.Dynamic
 import qualified "this" Doc.Static
 import qualified "this" File
 import qualified "this" Log
+import qualified "this" Output
 
 fromAbsFile ::
   ( Members
@@ -71,11 +63,11 @@ fromAbsFile filePath = do
     Static  -> pure (layoutSmart layoutOptions $ Doc.Static.fromModule m)
 
 fromPurtyFilePath ::
-  ( LastMember IO e
-  , Members
+  ( Members
     '[ Error ParseError
      , File.File
      , Log.Log
+     , Output.Output
      , Reader Formatting
      , Reader LayoutOptions
      , Reader Output
@@ -95,14 +87,12 @@ fromPurtyFilePath filePath = do
   Log.debug "Successfully created stream for rendering"
   Log.debug (displayShow $ void stream)
   case output of
-    InPlace -> liftIO $ withSystemTempFile "purty.purs" $ \fp h -> do
-      renderIO h stream
-      hClose h
-      copyPermissions absPath fp
-      copyFile fp absPath
+    InPlace -> do
+      Log.debug "Replacing file"
+      Output.inPlace absPath stream
     StdOut -> do
       Log.debug "Printing to stdout"
-      liftIO $ renderIO stdout stream
+      Output.stdOut stream
 
 program ::
   Args ->
@@ -113,6 +103,7 @@ program ::
      , Error ParseError
      , File.File
      , Log.Log
+     , Output.Output
      , IO
      ]
     ()
