@@ -38,6 +38,7 @@ import "purty" Env (Formatting(Dynamic, Static), defaultLayoutOptions)
 
 import qualified "purty" Error
 import qualified "purty" Exit
+import qualified "purty" File
 import qualified "purty" Log
 import qualified "purty" Purty
 
@@ -57,6 +58,7 @@ golden formatting testName goldenFile =
         $ runReader defaultLayoutOptions
         $ runReader formatting
         $ interpretM (Log.io logFunc)
+        $ interpretM File.io
         $ interpretM Exit.io
         $ reinterpret (\(Error e) -> Error.parseError e)
         $ test absFile
@@ -65,6 +67,7 @@ test ::
   Path Abs File ->
   Eff
     '[ Error ParseError
+     , File.File
      , Log.Log
      , Reader Formatting
      , Reader LayoutOptions

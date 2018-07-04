@@ -33,7 +33,6 @@ import "this" Env
     ( Formatting(Dynamic, Static)
     , Output(InPlace, StdOut)
     , PurtyFilePath
-    , absolutize
     , defaultConfig
     )
 
@@ -41,12 +40,13 @@ import qualified "path" Path
 
 import qualified "this" Doc.Dynamic
 import qualified "this" Doc.Static
+import qualified "this" File
 import qualified "this" Log
 
 fromAbsFile ::
-  ( LastMember IO e
-  , Members
+  ( Members
     '[ Error ParseError
+     , File.File
      , Log.Log
      , Reader Formatting
      , Reader LayoutOptions
@@ -60,7 +60,7 @@ fromAbsFile filePath = do
   Log.debug ("Formatting: " <> display formatting)
   layoutOptions <- ask
   Log.debug ("LayoutOptions: " <> displayShow layoutOptions)
-  contents <- readFileUtf8 (Path.fromAbsFile filePath)
+  contents <- File.read filePath
   Log.debug "Read file contents:"
   Log.debug (display contents)
   (_, m) <- either throwError pure (parseModuleFromFile id (Path.fromAbsFile filePath, contents))
@@ -74,6 +74,7 @@ fromPurtyFilePath ::
   ( LastMember IO e
   , Members
     '[ Error ParseError
+     , File.File
      , Log.Log
      , Reader Formatting
      , Reader LayoutOptions
@@ -87,7 +88,7 @@ fromPurtyFilePath filePath = do
   output <- ask
   Log.debug ("Output: " <> display output)
   Log.debug ("Converting " <> display filePath <> " to an absolute path")
-  absPath <- absolutize filePath
+  absPath <- File.absolute filePath
   Log.debug ("Converted file to absolute: " <> displayShow absPath)
   Log.debug "Running main `purty` program"
   stream <- Purty.fromAbsFile absPath
@@ -110,6 +111,7 @@ program ::
      , Reader LayoutOptions
      , Reader Output
      , Error ParseError
+     , File.File
      , Log.Log
      , IO
      ]
