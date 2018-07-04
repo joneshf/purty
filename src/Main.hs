@@ -36,6 +36,7 @@ main = do
       $ interpretM File.io
       $ interpretM Exit.io
       $ flip handleError Error.parseError
+      $ Error.type'
       $ Error.name
       $ Error.kind
       $ Error.export

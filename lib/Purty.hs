@@ -35,6 +35,7 @@ import qualified "this" Log
 import qualified "this" Module
 import qualified "this" Name
 import qualified "this" Output
+import qualified "this" Type
 
 fromAbsFile ::
   ( Members
@@ -42,6 +43,7 @@ fromAbsFile ::
     :++: Export.Errors
     :++: Kind.Errors
     :++: Name.Errors
+    :++: Type.Errors
     :++: '[ Error ParseError
           , File.File
           , Log.Log
@@ -86,6 +88,7 @@ fromPurtyFilePath ::
     :++: Export.Errors
     :++: Kind.Errors
     :++: Name.Errors
+    :++: Type.Errors
     :++: '[ Error ParseError
           , File.File
           , Log.Log
@@ -124,6 +127,7 @@ program ::
     :++: Export.Errors
     :++: Kind.Errors
     :++: Name.Errors
+    :++: Type.Errors
     :++: '[ Error ParseError
           , Exit.Exit
           , File.File

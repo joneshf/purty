@@ -13,6 +13,7 @@ import qualified "this" Export
 import qualified "this" Kind
 import qualified "this" Log
 import qualified "this" Name
+import qualified "this" Type
 
 declaration ::
   (Members '[Exit.Exit, Log.Log] e) =>
@@ -20,14 +21,6 @@ declaration ::
   Eff e a
 declaration x =
   x `handleError` go
-    `handleError` go
-    `handleError` go
-    `handleError` go
-    `handleError` go
-    `handleError` go
-    `handleError` go
-    `handleError` go
-    `handleError` go
   where
   go err = do
     Log.error "Problem converting the declarations"
@@ -78,3 +71,22 @@ parseError err = do
   Log.error "Problem parsing module"
   Log.error (displayShow err)
   Exit.failure
+
+type' ::
+  (Members '[Exit.Exit, Log.Log] e) =>
+  Eff (Type.Errors :++: e) a ->
+  Eff e a
+type' x =
+  x `handleError` go
+    `handleError` go
+    `handleError` go
+    `handleError` go
+    `handleError` go
+    `handleError` go
+    `handleError` go
+    `handleError` go
+  where
+  go err = do
+    Log.error "Problem converting a type"
+    Log.error (display err)
+    Exit.failure

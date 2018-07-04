@@ -29,6 +29,7 @@ import qualified "this" Import
 import qualified "this" Kind
 import qualified "this" Log
 import qualified "this" Name
+import qualified "this" Type
 
 data Module exports imports declarations a
   = Module
@@ -81,6 +82,7 @@ fromPureScript ::
     :++: Export.Errors
     :++: Kind.Errors
     :++: Name.Errors
+    :++: Type.Errors
     )
     e
   ) =>

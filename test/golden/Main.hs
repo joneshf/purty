@@ -48,6 +48,7 @@ import qualified "purty" Kind
 import qualified "purty" Log
 import qualified "purty" Name
 import qualified "purty" Purty
+import qualified "purty" Type
 
 main :: IO ()
 main = defaultMain goldenTests
@@ -68,6 +69,7 @@ golden formatting testName goldenFile =
         $ interpretM File.io
         $ interpretM Exit.io
         $ flip handleError Error.parseError
+        $ Error.type'
         $ Error.name
         $ Error.kind
         $ Error.export
@@ -81,6 +83,7 @@ test ::
     :++: Export.Errors
     :++: Kind.Errors
     :++: Name.Errors
+    :++: Type.Errors
     :++: '[ Error ParseError
           , Exit.Exit
           , File.File
