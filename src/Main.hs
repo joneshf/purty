@@ -20,7 +20,9 @@ import "purty" Env
 
 import qualified "purty" Error
 import qualified "purty" Exit
+import qualified "purty" File
 import qualified "purty" Log
+import qualified "purty" Output
 import qualified "purty" Purty
 
 main :: IO ()
@@ -30,7 +32,9 @@ main = do
   logOptions <- logOptionsHandle stderr (verbosity == Verbose)
   withLogFunc logOptions $ \logFunc ->
     runM
+      $ interpretM Output.io
       $ interpretM (Log.io logFunc)
+      $ interpretM File.io
       $ interpretM Exit.io
       $ reinterpret (\(Error e) -> Error.parseError e)
       $ runReader output
