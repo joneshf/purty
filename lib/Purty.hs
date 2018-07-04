@@ -1,13 +1,22 @@
 module Purty where
 
-import "rio" RIO hiding (withSystemTempFile)
+import "rio" RIO hiding (ask, withSystemTempFile)
 
-import "lens" Control.Monad.Error.Lens                       (throwing)
+import "freer-simple" Control.Monad.Freer
+    ( Eff
+    , LastMember
+    , Members
+    )
+import "freer-simple" Control.Monad.Freer.Error              (Error, throwError)
+import "freer-simple" Control.Monad.Freer.Reader             (Reader, ask)
 import "prettyprinter" Data.Text.Prettyprint.Doc
-    ( SimpleDocStream
+    ( LayoutOptions
+    , SimpleDocStream
     , layoutSmart
     )
-import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderIO)
+import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (putDoc, renderIO)
+import "dhall" Dhall                                         (embed, inject)
+import "dhall" Dhall.Pretty                                  (prettyExpr)
 import "purescript" Language.PureScript
     ( parseModuleFromFile
     )
@@ -17,63 +26,73 @@ import "path-io" Path.IO
     , copyPermissions
     , withSystemTempFile
     )
+import "parsec" Text.Parsec                                  (ParseError)
 
-import "this" App   (App)
+import "this" Args (Args(Args, Defaults, filePath))
 import "this" Env
     ( Formatting(Dynamic, Static)
-    , HasEnv(envL)
-    , HasFormatting(formattingL)
-    , HasLayoutOptions(layoutOptionsL)
-    , HasOutput(outputL)
     , Output(InPlace, StdOut)
     , PurtyFilePath
     , absolutize
+    , defaultConfig
     )
-import "this" Error (IsParseError(_ParseError))
 
 import qualified "path" Path
 
 import qualified "this" Doc.Dynamic
 import qualified "this" Doc.Static
+import qualified "this" Log
 
 fromAbsFile ::
-  ( HasFormatting env
-  , HasLayoutOptions env
-  , HasLogFunc env
-  , IsParseError error
+  ( LastMember IO e
+  , Members
+    '[ Error ParseError
+     , Log.Log
+     , Reader Formatting
+     , Reader LayoutOptions
+     ]
+    e
   ) =>
   Path Abs File ->
-  App env error (SimpleDocStream a)
+  Eff e (SimpleDocStream a)
 fromAbsFile filePath = do
-  formatting <- view formattingL
-  layoutOptions <- view layoutOptionsL
+  formatting <- ask
+  Log.debug ("Formatting: " <> display formatting)
+  layoutOptions <- ask
+  Log.debug ("LayoutOptions: " <> displayShow layoutOptions)
   contents <- readFileUtf8 (Path.fromAbsFile filePath)
-  logDebug "Read file contents:"
-  logDebug (display contents)
-  (_, m) <- either (throwing _ParseError) pure (parseModuleFromFile id (Path.fromAbsFile filePath, contents))
-  logDebug "Parsed module:"
-  logDebug (displayShow m)
+  Log.debug "Read file contents:"
+  Log.debug (display contents)
+  (_, m) <- either throwError pure (parseModuleFromFile id (Path.fromAbsFile filePath, contents))
+  Log.debug "Parsed module:"
+  Log.debug (displayShow m)
   case formatting of
     Dynamic -> pure (layoutSmart layoutOptions $ Doc.Dynamic.fromModule m)
     Static  -> pure (layoutSmart layoutOptions $ Doc.Static.fromModule m)
 
 fromPurtyFilePath ::
-  ( HasEnv env
-  , IsParseError error
+  ( LastMember IO e
+  , Members
+    '[ Error ParseError
+     , Log.Log
+     , Reader Formatting
+     , Reader LayoutOptions
+     , Reader Output
+     ]
+    e
   ) =>
   PurtyFilePath ->
-  App env error ()
+  Eff e ()
 fromPurtyFilePath filePath = do
-  env <- view envL
-  output <- view outputL
-  logDebug ("Env: " <> display env)
-  logDebug ("Converting " <> display filePath <> " to an absolute path")
+  output <- ask
+  Log.debug ("Output: " <> display output)
+  Log.debug ("Converting " <> display filePath <> " to an absolute path")
   absPath <- absolutize filePath
-  logDebug ("Converted file to absolute: " <> displayShow absPath)
-  logDebug "Running main `purty` program"
+  Log.debug ("Converted file to absolute: " <> displayShow absPath)
+  Log.debug "Running main `purty` program"
   stream <- Purty.fromAbsFile absPath
-  logDebug "Successfully created stream for rendering"
-  logDebug (displayShow $ void stream)
+  Log.debug "Successfully created stream for rendering"
+  Log.debug (displayShow $ void stream)
   case output of
     InPlace -> liftIO $ withSystemTempFile "purty.purs" $ \fp h -> do
       renderIO h stream
@@ -81,5 +100,20 @@ fromPurtyFilePath filePath = do
       copyPermissions absPath fp
       copyFile fp absPath
     StdOut -> do
-      logDebug "Printing to stdout"
+      Log.debug "Printing to stdout"
       liftIO $ renderIO stdout stream
+
+program ::
+  Args ->
+  Eff
+    '[ Reader Formatting
+     , Reader LayoutOptions
+     , Reader Output
+     , Error ParseError
+     , Log.Log
+     , IO
+     ]
+    ()
+program = \case
+  Args { filePath } -> Purty.fromPurtyFilePath filePath
+  Defaults -> liftIO (putDoc $ prettyExpr $ embed inject defaultConfig)
