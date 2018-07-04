@@ -1,19 +1,32 @@
-module Module where
+module Module
+  ( dynamic
+  , fromPureScript
+  , normalize
+  , parse
+  , sortExports
+  , sortImports
+  , static
+  ) where
 
 import "rio" RIO
 
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
+import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.List.NonEmpty                 (nonEmpty)
 import "freer-simple" Data.OpenUnion             ((:++:))
 import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, line, (<+>))
 import "witherable" Data.Witherable              (wither)
+import "path" Path                               (Abs, File, Path, fromAbsFile)
+import "parsec" Text.Parsec                      (ParseError)
 
 import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
 import qualified "this" Declaration
 import qualified "this" Export
+import qualified "this" File
 import qualified "this" Import
+import qualified "this" Log
 import qualified "this" Name
 
 data Module exports imports declarations a
@@ -93,6 +106,28 @@ normalize ::
 normalize = \case
   Module ann name exports imports declarations ->
     Module ann name exports imports (Declaration.normalize declarations)
+
+parse ::
+  (Members '[Error ParseError, File.File, Log.Log] e) =>
+  Path Abs File ->
+  Eff e Language.PureScript.Module
+parse absFile = do
+  contents <- File.read absFile
+  Log.debug "Read file contents:"
+  Log.debug (display contents)
+  (_, m) <- parse' absFile contents
+  pure m
+
+parse' ::
+  (Members '[Error ParseError] e) =>
+  Path Abs File ->
+  Text ->
+  Eff e (FilePath, Language.PureScript.Module)
+parse' absFile contents =
+  either
+    throwError
+    pure
+    (Language.PureScript.parseModuleFromFile id (fromAbsFile absFile, contents))
 
 sortExports :: Module (Export.Exports a) b c d -> Module Export.Sorted b c d
 sortExports = \case

@@ -43,6 +43,7 @@ import qualified "purty" Declaration
 import qualified "purty" Error
 import qualified "purty" Exit
 import qualified "purty" Export
+import qualified "purty" File
 import qualified "purty" Log
 import qualified "purty" Name
 import qualified "purty" Purty
@@ -63,6 +64,7 @@ golden formatting testName goldenFile =
         $ runReader defaultLayoutOptions
         $ runReader formatting
         $ interpretM (Log.io logFunc)
+        $ interpretM File.io
         $ interpretM Exit.io
         $ flip handleError Error.parseError
         $ Error.name
@@ -78,6 +80,7 @@ test ::
     :++: Name.Errors
     :++: '[ Error ParseError
           , Exit.Exit
+          , File.File
           , Log.Log
           , Reader Formatting
           , Reader LayoutOptions

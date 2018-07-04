@@ -1,13 +1,9 @@
 module Purty where
 
-import "rio" RIO hiding (ask, withSystemTempFile)
+import "rio" RIO hiding (ask)
 
-import "freer-simple" Control.Monad.Freer
-    ( Eff
-    , LastMember
-    , Members
-    )
-import "freer-simple" Control.Monad.Freer.Error              (Error, throwError)
+import "freer-simple" Control.Monad.Freer                    (Eff, Members)
+import "freer-simple" Control.Monad.Freer.Error              (Error)
 import "freer-simple" Control.Monad.Freer.Reader             (Reader, ask)
 import "freer-simple" Data.OpenUnion                         ((:++:))
 import "prettyprinter" Data.Text.Prettyprint.Doc
@@ -15,18 +11,10 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , SimpleDocStream
     , layoutSmart
     )
-import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (putDoc, renderIO)
+import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (putDoc)
 import "dhall" Dhall                                         (embed, inject)
 import "dhall" Dhall.Pretty                                  (prettyExpr)
-import "purescript" Language.PureScript
-    ( parseModuleFromFile
-    )
 import "path" Path                                           (Abs, File, Path)
-import "path-io" Path.IO
-    ( copyFile
-    , copyPermissions
-    , withSystemTempFile
-    )
 import "parsec" Text.Parsec                                  (ParseError)
 
 import "this" Args (Args(Args, Defaults, filePath))
@@ -34,27 +22,26 @@ import "this" Env
     ( Formatting(Dynamic, Static)
     , Output(InPlace, StdOut)
     , PurtyFilePath
-    , absolutize
     , defaultConfig
     )
-
-import qualified "path" Path
 
 import qualified "this" Annotation
 import qualified "this" Declaration
 import qualified "this" Exit
 import qualified "this" Export
+import qualified "this" File
 import qualified "this" Log
 import qualified "this" Module
 import qualified "this" Name
+import qualified "this" Output
 
 fromAbsFile ::
-  ( LastMember IO e
-  , Members
+  ( Members
     ( Declaration.Errors
     :++: Export.Errors
     :++: Name.Errors
     :++: '[ Error ParseError
+          , File.File
           , Log.Log
           , Reader Formatting
           , Reader LayoutOptions
@@ -69,10 +56,7 @@ fromAbsFile filePath = do
   Log.debug ("Formatting: " <> display formatting)
   layoutOptions <- ask
   Log.debug ("LayoutOptions: " <> displayShow layoutOptions)
-  contents <- readFileUtf8 (Path.fromAbsFile filePath)
-  Log.debug "Read file contents:"
-  Log.debug (display contents)
-  (_, m) <- either throwError pure (parseModuleFromFile id (Path.fromAbsFile filePath, contents))
+  m <- Module.parse filePath
   Log.debug "Parsed module:"
   Log.debug (displayShow m)
   ast <- Module.fromPureScript m
@@ -95,13 +79,14 @@ fromAbsFile filePath = do
   pure stream
 
 fromPurtyFilePath ::
-  ( LastMember IO e
-  , Members
+  ( Members
     ( Declaration.Errors
     :++: Export.Errors
     :++: Name.Errors
     :++: '[ Error ParseError
+          , File.File
           , Log.Log
+          , Output.Output
           , Reader Formatting
           , Reader LayoutOptions
           , Reader Output
@@ -115,21 +100,19 @@ fromPurtyFilePath filePath = do
   output <- ask
   Log.debug ("Output: " <> display output)
   Log.debug ("Converting " <> display filePath <> " to an absolute path")
-  absPath <- absolutize filePath
+  absPath <- File.absolute filePath
   Log.debug ("Converted file to absolute: " <> displayShow absPath)
   Log.debug "Running main `purty` program"
   stream <- Purty.fromAbsFile absPath
   Log.debug "Successfully created stream for rendering"
   Log.debug (displayShow $ void stream)
   case output of
-    InPlace -> liftIO $ withSystemTempFile "purty.purs" $ \fp h -> do
-      renderIO h stream
-      hClose h
-      copyPermissions absPath fp
-      copyFile fp absPath
+    InPlace -> do
+      Log.debug "Replacing file"
+      Output.inPlace absPath stream
     StdOut -> do
       Log.debug "Printing to stdout"
-      liftIO $ renderIO stdout stream
+      Output.stdOut stream
 
 program ::
   Args ->
@@ -139,7 +122,9 @@ program ::
     :++: Name.Errors
     :++: '[ Error ParseError
           , Exit.Exit
+          , File.File
           , Log.Log
+          , Output.Output
           , Reader Formatting
           , Reader LayoutOptions
           , Reader Output

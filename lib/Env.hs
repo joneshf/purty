@@ -15,8 +15,6 @@ import "path" Path
     , fromAbsFile
     , fromRelFile
     )
-import "path-io" Path.IO                         (makeAbsolute, resolveFile')
-import "rio" RIO.Text                            (unpack)
 
 data Config
   = Config
@@ -96,12 +94,6 @@ instance Display PurtyFilePath where
     AbsFile path -> "Absolute file: " <> displayShow (fromAbsFile path)
     RelFile path -> "Relative file: " <> displayShow (fromRelFile path)
     Unparsed path -> "Unparsed: " <> displayShow path
-
-absolutize :: MonadIO m => PurtyFilePath -> m (Path Abs File)
-absolutize fp = case fp of
-  AbsFile absolute -> pure absolute
-  RelFile relative -> makeAbsolute relative
-  Unparsed path    -> resolveFile' (unpack path)
 
 -- |
 -- The minimum level of logs to display.

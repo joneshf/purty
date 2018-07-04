@@ -16,7 +16,9 @@ import "purty" Env
 
 import qualified "purty" Error
 import qualified "purty" Exit
+import qualified "purty" File
 import qualified "purty" Log
+import qualified "purty" Output
 import qualified "purty" Purty
 
 main :: IO ()
@@ -29,7 +31,9 @@ main = do
       $ runReader output
       $ runReader defaultLayoutOptions
       $ runReader formatting
+      $ interpretM Output.io
       $ interpretM (Log.io logFunc)
+      $ interpretM File.io
       $ interpretM Exit.io
       $ flip handleError Error.parseError
       $ Error.name
