@@ -37,6 +37,7 @@ main = do
       $ interpretM Exit.io
       $ flip handleError Error.parseError
       $ Error.name
+      $ Error.kind
       $ Error.export
       $ Error.declaration
       $ Purty.program cliArgs

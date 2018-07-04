@@ -10,6 +10,7 @@ import "parsec" Text.Parsec                     (ParseError)
 import qualified "this" Declaration
 import qualified "this" Exit
 import qualified "this" Export
+import qualified "this" Kind
 import qualified "this" Log
 import qualified "this" Name
 
@@ -27,10 +28,21 @@ declaration x =
     `handleError` go
     `handleError` go
     `handleError` go
-    `handleError` go
   where
   go err = do
     Log.error "Problem converting the declarations"
+    Log.error (display err)
+    Exit.failure
+
+kind ::
+  (Members '[Exit.Exit, Log.Log] e) =>
+  Eff (Kind.Errors :++: e) a ->
+  Eff e a
+kind x =
+  x `handleError` go
+  where
+  go err = do
+    Log.error "Problem converting a kind"
     Log.error (display err)
     Exit.failure
 

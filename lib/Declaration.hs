@@ -31,6 +31,7 @@ import qualified "purescript" Language.PureScript
 import qualified "purescript" Language.PureScript.Label
 
 import qualified "this" Annotation
+import qualified "this" Kind
 import qualified "this" Name
 
 data Alternate a
@@ -47,14 +48,14 @@ instance (Display a) => Display (Alternate a) where
         <> display y
         <> foldMap (\z -> ", types: [" <> intercalateMap1 ", " display z <> "]") z'
 
-docFromAlternate :: Alternate Normalized -> Doc a
+docFromAlternate :: Alternate Annotation.Normalized -> Doc a
 docFromAlternate = \case
   Alternate ann x y -> annotate doc
     where
     annotate = case ann of
-      None   -> id
-      Braces -> braces
-      Parens -> parens
+      Annotation.None   -> id
+      Annotation.Braces -> braces
+      Annotation.Parens -> parens
     doc =
       Name.docFromConstructor x
         <> foldMap (\types -> space <> intercalateMap1 space docFromType types) y
@@ -63,13 +64,13 @@ alternate ::
   ( Members
     '[ Error InferredConstraintData
      , Error InferredForallWithSkolem
-     , Error InferredKind
      , Error InferredSkolem
      , Error InferredType
      , Error InfixTypeNotTypeOp
      , Error PrettyPrintForAll
      , Error PrettyPrintFunction
      , Error PrettyPrintObject
+     , Error Kind.InferredKind
      , Error Name.Missing
      ]
     e
@@ -84,10 +85,13 @@ alternate = \case
     y <- nonEmpty <$> traverse type' y'
     pure (Alternate Annotation.Unannotated x y)
 
-normalizeAlternate :: Alternate a -> Alternate Normalized
+normalizeAlternate :: Alternate a -> Alternate Annotation.Normalized
 normalizeAlternate = \case
   Alternate _ann x y ->
-    Alternate None (None <$ x) ((fmap . fmap) normalizeType y)
+    Alternate
+      Annotation.None
+      (Annotation.None <$ x)
+      ((fmap . fmap) normalizeType y)
 
 data Constraint a
   = Constraint !(Name.Qualified Name.Class a) !(Maybe (NonEmpty (Type a)))
@@ -105,13 +109,13 @@ constraint ::
   ( Members
     '[ Error InferredConstraintData
      , Error InferredForallWithSkolem
-     , Error InferredKind
      , Error InferredSkolem
      , Error InferredType
      , Error InfixTypeNotTypeOp
      , Error PrettyPrintForAll
      , Error PrettyPrintFunction
      , Error PrettyPrintObject
+     , Error Kind.InferredKind
      , Error Name.Missing
      ]
     e
@@ -126,16 +130,17 @@ constraint = \case
     y <- nonEmpty <$> traverse type' y'
     pure (Constraint x y)
 
-docFromConstraint :: Constraint Normalized -> Doc b
+docFromConstraint :: Constraint Annotation.Normalized -> Doc b
 docFromConstraint = \case
   Constraint x Nothing -> Name.docFromQualified Name.docFromClass x
   Constraint x (Just y) ->
     Name.docFromQualified Name.docFromClass x
       <+> intercalateMap1 space docFromType y
 
-normalizeConstraint :: Constraint a -> Constraint Normalized
+normalizeConstraint :: Constraint a -> Constraint Annotation.Normalized
 normalizeConstraint = \case
-  Constraint x y -> Constraint (None <$ x) ((fmap . fmap) normalizeType y)
+  Constraint x y ->
+    Constraint (Annotation.None <$ x) ((fmap . fmap) normalizeType y)
 
 data Data a
   = Data !(Name.Proper a) !(TypeVariables a) !(Maybe (NonEmpty (Alternate a)))
@@ -153,11 +158,11 @@ instance (Display a) => Display (Data a) where
           (\z -> ", alternates: [" <> intercalateMap1 ", " display z <> "]")
           z'
 
-normalizeData :: Data a -> Data Normalized
+normalizeData :: Data a -> Data Annotation.Normalized
 normalizeData = \case
   Data name typeVariables alternates ->
     Data
-      (None <$ name)
+      (Annotation.None <$ name)
       (normalizeTypeVariables typeVariables)
       ((fmap . fmap) normalizeAlternate alternates)
 
@@ -171,7 +176,7 @@ instance (Display a) => Display (Declaration a) where
     DeclarationData x -> "Declaration Data: " <> display x
     DeclarationNewtype x -> "Declaration Newtype: " <> display x
 
-normalizeDeclaration :: Declaration a -> Declaration Normalized
+normalizeDeclaration :: Declaration a -> Declaration Annotation.Normalized
 normalizeDeclaration = \case
   DeclarationData x -> DeclarationData (normalizeData x)
   DeclarationNewtype x -> DeclarationNewtype (normalizeNewtype x)
@@ -180,7 +185,6 @@ fromPureScript ::
   ( Members
     '[ Error InferredConstraintData
      , Error InferredForallWithSkolem
-     , Error InferredKind
      , Error InferredSkolem
      , Error InferredType
      , Error InfixTypeNotTypeOp
@@ -188,6 +192,7 @@ fromPureScript ::
      , Error PrettyPrintFunction
      , Error PrettyPrintObject
      , Error WrongNewtypeConstructors
+     , Error Kind.InferredKind
      , Error Name.Missing
      ]
     e
@@ -198,13 +203,13 @@ fromPureScript = \case
   Language.PureScript.BoundValueDeclaration {} -> pure Nothing
   Language.PureScript.DataDeclaration _ Language.PureScript.Data name' variables' constructors -> do
     alternates <- nonEmpty <$> traverse alternate constructors
-    variables <- traverse (bitraverse (pure . TypeVariable) (traverse kind)) variables'
+    variables <- traverse (bitraverse (pure . TypeVariable) (traverse Kind.fromPureScript)) variables'
     let data' = Data name (TypeVariables $ nonEmpty variables) alternates
         name = Name.proper name'
     pure (Just $ DeclarationData data')
   Language.PureScript.DataDeclaration _ Language.PureScript.Newtype name' variables' [(constructor', [ty'])] -> do
     ty <- type' ty'
-    variables <- traverse (bitraverse (pure . TypeVariable) (traverse kind)) variables'
+    variables <- traverse (bitraverse (pure . TypeVariable) (traverse Kind.fromPureScript)) variables'
     let constructor = Name.constructor constructor'
         name = Name.proper name'
         newtype' =
@@ -236,7 +241,7 @@ instance (Display a) => Display (Declarations a) where
         <> intercalateMap1 ", " display declarations
         <> "]"
 
-normalize :: Declarations a -> Declarations Normalized
+normalize :: Declarations a -> Declarations Annotation.Normalized
 normalize = \case
   Declarations declarations' ->
     Declarations ((fmap . fmap) normalizeDeclaration declarations')
@@ -253,62 +258,6 @@ instance Display Forall where
 docFromForall :: Forall -> Doc a
 docFromForall = \case
   Forall x -> "forall" <+> pretty x <> dot
-
-data Kind a
-  = KindAnnotation !a !(Kind a)
-  | KindFunction !(Kind a) !(Kind a)
-  | KindName !(Name.Qualified Name.Kind a)
-  | KindRow !(Kind a)
-  deriving (Functor)
-
-instance (Display a) => Display (Kind a) where
-  display = \case
-    KindAnnotation ann x ->
-      "Kind annotation: "
-        <> display ann
-        <> ", kind: "
-        <> display x
-    KindFunction x y ->
-      "Kind Function: "
-        <> display x
-        <> " -> "
-        <> display y
-    KindName x ->
-      "Kind Name: "
-        <> display x
-    KindRow x ->
-      "Kind Row: "
-        <> display x
-
-docFromKind :: Kind Normalized -> Doc b
-docFromKind = \case
-  KindAnnotation None x -> docFromKind x
-  KindAnnotation Braces x -> braces (docFromKind x)
-  KindAnnotation Parens x -> parens (docFromKind x)
-  KindFunction x y -> docFromKind x <+> "->" <+> docFromKind y
-  KindName x -> Name.docFromQualified Name.docFromKind x
-  KindRow x -> "#" <+> docFromKind x
-
-kind ::
-  (Members '[Error InferredKind, Error Name.Missing] e) =>
-  Language.PureScript.Kind ->
-  Eff e (Kind Annotation.Unannotated)
-kind = \case
-  Language.PureScript.FunKind x y -> KindFunction <$> kind x <*> kind y
-  Language.PureScript.KUnknown _ -> throwError InferredKind
-  Language.PureScript.NamedKind x ->
-    fmap KindName (Name.qualified (pure . Name.kind) x)
-  Language.PureScript.Row x -> fmap KindRow (kind x)
-
-normalizeKind :: Kind a -> Kind Normalized
-normalizeKind = \case
-  KindAnnotation _ann x -> normalizeKind x
-  KindFunction x@KindFunction {} y ->
-    KindFunction (KindAnnotation Parens $ normalizeKind x) (normalizeKind y)
-  KindFunction x y -> KindFunction (normalizeKind x) (normalizeKind y)
-  KindName x -> KindName (None <$ x)
-  KindRow x@KindFunction {} -> KindRow (KindAnnotation Parens $ normalizeKind x)
-  KindRow x -> KindRow (normalizeKind x)
 
 -- |
 -- We're using the underlying PureScript representation here,
@@ -347,27 +296,16 @@ instance (Display a) => Display (Newtype a) where
         <> ", type:"
         <> display type''
 
-normalizeNewtype :: Newtype a -> Newtype Normalized
+normalizeNewtype :: Newtype a -> Newtype Annotation.Normalized
 normalizeNewtype = \case
   Newtype name variables constructor type'' ->
     Newtype
-      (None <$ name)
+      (Annotation.None <$ name)
       (normalizeTypeVariables variables)
-      (None <$ constructor)
+      (Annotation.None <$ constructor)
       (normalizeType type'')
 
-data Normalized
-  = None
-  | Braces
-  | Parens
-
-instance Display Normalized where
-  display = \case
-    None -> "No annotation"
-    Braces -> "Braces"
-    Parens -> "Parens"
-
-dynamic, static :: Declarations Normalized -> Doc a
+dynamic, static :: Declarations Annotation.Normalized -> Doc a
 (dynamic, static) = (dynamic', static')
   where
   dynamic' = \case
@@ -448,15 +386,15 @@ instance (Display a) => Display (Row a) where
     RowEmpty ->
       "Row Empty"
 
-docFromRow :: Row Normalized -> Doc a
+docFromRow :: Row Annotation.Normalized -> Doc a
 docFromRow = \case
-  RowAnnotation None x -> docFromRow x
-  RowAnnotation Braces x -> braces (docFromRow x)
-  RowAnnotation Parens x -> parens (docFromRow x)
+  RowAnnotation Annotation.None x -> docFromRow x
+  RowAnnotation Annotation.Braces x -> braces (docFromRow x)
+  RowAnnotation Annotation.Parens x -> parens (docFromRow x)
   RowEmpty -> lparen <> rparen
   RowCons x y z -> docFromLabel x <+> docFromType y <+> pipe <+> docFromType z
 
-normalizeRow :: Row a -> Row Normalized
+normalizeRow :: Row a -> Row Annotation.Normalized
 normalizeRow = \case
   RowAnnotation _ann x -> normalizeRow x
   RowCons x y z -> RowCons x (normalizeType y) (normalizeType z)
@@ -484,7 +422,7 @@ data Type a
   | TypeConstrained !(Constraint a) !(Type a)
   | TypeForall !Forall !(Type a)
   | TypeInfixOperator !(Type a) !(Name.Qualified Name.TypeOperator a) !(Type a)
-  | TypeKinded !(Type a) !(Kind a)
+  | TypeKinded !(Type a) !(Kind.Kind a)
   | TypeRow !(Row a)
   | TypeParens !(Type a)
   | TypeSymbol !Symbol
@@ -563,7 +501,7 @@ instance (Display a) => Display (Type a) where
         <> "wildcard: "
         <> display x
 
-normalizeTypeApplication :: Type a -> Type b -> Type Normalized
+normalizeTypeApplication :: Type a -> Type b -> Type Annotation.Normalized
 normalizeTypeApplication x y = case (x, y) of
   ( TypeTypeConstructor
       ( Name.Qualified
@@ -571,28 +509,28 @@ normalizeTypeApplication x y = case (x, y) of
           (Name.TypeConstructor (Name.Proper _ "Record"))
       )
     , TypeRow {}
-    ) -> TypeAnnotation Braces (normalizeType y)
+    ) -> TypeAnnotation Annotation.Braces (normalizeType y)
   (_, _) -> TypeApplication (normalizeType x) (normalizeType y)
 
-docFromType :: Type Normalized -> Doc b
+docFromType :: Type Annotation.Normalized -> Doc b
 docFromType = \case
-  TypeAnnotation None x -> docFromType x
-  TypeAnnotation Braces x -> braces (docFromType x)
-  TypeAnnotation Parens x -> parens (docFromType x)
+  TypeAnnotation Annotation.None x -> docFromType x
+  TypeAnnotation Annotation.Braces x -> braces (docFromType x)
+  TypeAnnotation Annotation.Parens x -> parens (docFromType x)
   TypeApplication x y -> docFromType x <+> docFromType y
   TypeConstrained x y -> docFromConstraint x <+> "=>" <+> docFromType y
   TypeForall x y -> docFromForall x <+> docFromType y
   TypeInfixOperator x y z -> docFromType x <+> Name.docFromQualified Name.docFromTypeOperator y <+> docFromType z
-  TypeKinded x y -> docFromType x <+> colon <> colon <+> docFromKind y
+  TypeKinded x y -> docFromType x <+> colon <> colon <+> Kind.doc y
   TypeRow x -> docFromRow x
-  TypeParens x -> docFromType (TypeAnnotation Parens x)
+  TypeParens x -> docFromType (TypeAnnotation Annotation.Parens x)
   TypeSymbol x -> docFromSymbol x
   TypeTypeConstructor x -> Name.docFromQualified Name.docFromTypeConstructor x
   TypeTypeOperator x -> parens (Name.docFromQualified Name.docFromTypeOperator x)
   TypeTypeVariable x -> docFromTypeVariable x
   TypeWildcard x -> docFromWildcard x
 
-normalizeType :: Type a -> Type Normalized
+normalizeType :: Type a -> Type Annotation.Normalized
 normalizeType = \case
   TypeAnnotation _ann x -> normalizeType x
   TypeApplication x y -> normalizeTypeApplication x y
@@ -600,13 +538,13 @@ normalizeType = \case
     TypeConstrained (normalizeConstraint x) (normalizeType y)
   TypeForall x y -> TypeForall x (normalizeType y)
   TypeInfixOperator x y z ->
-    TypeInfixOperator (normalizeType x) (None <$ y) (normalizeType z)
-  TypeKinded x y -> TypeKinded (normalizeType x) (normalizeKind y)
+    TypeInfixOperator (normalizeType x) (Annotation.None <$ y) (normalizeType z)
+  TypeKinded x y -> TypeKinded (normalizeType x) (Kind.normalize y)
   TypeRow x -> TypeRow (normalizeRow x)
-  TypeParens x -> TypeAnnotation Parens (normalizeType x)
+  TypeParens x -> TypeAnnotation Annotation.Parens (normalizeType x)
   TypeSymbol x -> TypeSymbol x
-  TypeTypeConstructor x -> TypeTypeConstructor (None <$ x)
-  TypeTypeOperator x -> TypeTypeOperator (None <$ x)
+  TypeTypeConstructor x -> TypeTypeConstructor (Annotation.None <$ x)
+  TypeTypeOperator x -> TypeTypeOperator (Annotation.None <$ x)
   TypeTypeVariable x -> TypeTypeVariable x
   TypeWildcard x -> TypeWildcard x
 
@@ -614,13 +552,13 @@ type' ::
   ( Members
     '[ Error InferredConstraintData
      , Error InferredForallWithSkolem
-     , Error InferredKind
      , Error InferredSkolem
      , Error InferredType
      , Error InfixTypeNotTypeOp
      , Error PrettyPrintForAll
      , Error PrettyPrintFunction
      , Error PrettyPrintObject
+     , Error Kind.InferredKind
      , Error Name.Missing
      ]
     e
@@ -647,7 +585,8 @@ type' = \case
   Language.PureScript.REmpty -> pure (TypeRow RowEmpty)
   Language.PureScript.RCons x y z ->
     fmap TypeRow (RowCons (label x) <$> type' y <*> type' z)
-  Language.PureScript.KindedType x y -> TypeKinded <$> type' x <*> kind y
+  Language.PureScript.KindedType x y ->
+    TypeKinded <$> type' x <*> Kind.fromPureScript y
   Language.PureScript.PrettyPrintFunction x y ->
     throwError (PrettyPrintFunction x y)
   Language.PureScript.PrettyPrintObject x -> throwError (PrettyPrintObject x)
@@ -673,7 +612,7 @@ docFromTypeVariable = \case
   TypeVariable x -> pretty x
 
 newtype TypeVariables a
-  = TypeVariables (Maybe (NonEmpty (TypeVariable, Maybe (Kind a))))
+  = TypeVariables (Maybe (NonEmpty (TypeVariable, Maybe (Kind.Kind a))))
   deriving (Functor)
 
 instance (Display a) => Display (TypeVariables a) where
@@ -695,7 +634,7 @@ instance (Display a) => Display (TypeVariables a) where
               <> ", Kind: "
               <> display x
 
-docFromTypeVariables :: TypeVariables Normalized -> Doc b
+docFromTypeVariables :: TypeVariables Annotation.Normalized -> Doc b
 docFromTypeVariables = \case
   TypeVariables Nothing -> mempty
   TypeVariables (Just variables) -> space <> intercalateMap1 space go variables
@@ -708,12 +647,12 @@ docFromTypeVariables = \case
           docFromTypeVariable typeVariable
             <+> colon
             <> colon
-            <+> docFromKind kind'
+            <+> Kind.doc kind'
 
-normalizeTypeVariables :: TypeVariables a -> TypeVariables Normalized
+normalizeTypeVariables :: TypeVariables a -> TypeVariables Annotation.Normalized
 normalizeTypeVariables = \case
   TypeVariables variables ->
-    TypeVariables ((fmap . fmap . fmap . fmap) normalizeKind variables)
+    TypeVariables ((fmap . fmap . fmap . fmap) Kind.normalize variables)
 
 data Wildcard
   = Wildcard
@@ -735,7 +674,6 @@ displayList xs = "[" <> fold (intersperse ", " (display <$> xs)) <> "]"
 type Errors
   = '[ Error InferredConstraintData
      , Error InferredForallWithSkolem
-     , Error InferredKind
      , Error InferredSkolem
      , Error InferredType
      , Error InfixTypeNotTypeOp
@@ -758,9 +696,6 @@ data InferredForallWithSkolem
       !Text
       !Language.PureScript.Type
       !Language.PureScript.SkolemScope
-
-data InferredKind
-  = InferredKind
 
 data InferredSkolem
   = InferredSkolem
@@ -818,14 +753,6 @@ instance Display InferredForallWithSkolem where
         <> ". "
         <> displayShow y
         <> "`. There should be no skolems at this point."
-        <> " We are either using the wrong function from the PureScript library,"
-        <> " or there's a problem in the PureScript library."
-
-instance Display InferredKind where
-  display = \case
-    InferredKind ->
-      "The compiler inferred a kind."
-        <> " But, only kinds in the source file should exist at this point."
         <> " We are either using the wrong function from the PureScript library,"
         <> " or there's a problem in the PureScript library."
 

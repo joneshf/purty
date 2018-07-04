@@ -30,6 +30,7 @@ import qualified "this" Declaration
 import qualified "this" Exit
 import qualified "this" Export
 import qualified "this" File
+import qualified "this" Kind
 import qualified "this" Log
 import qualified "this" Module
 import qualified "this" Name
@@ -39,6 +40,7 @@ fromAbsFile ::
   ( Members
     ( Declaration.Errors
     :++: Export.Errors
+    :++: Kind.Errors
     :++: Name.Errors
     :++: '[ Error ParseError
           , File.File
@@ -82,6 +84,7 @@ fromPurtyFilePath ::
   ( Members
     ( Declaration.Errors
     :++: Export.Errors
+    :++: Kind.Errors
     :++: Name.Errors
     :++: '[ Error ParseError
           , File.File
@@ -119,6 +122,7 @@ program ::
   Eff
     ( Declaration.Errors
     :++: Export.Errors
+    :++: Kind.Errors
     :++: Name.Errors
     :++: '[ Error ParseError
           , Exit.Exit

@@ -44,6 +44,7 @@ import qualified "purty" Error
 import qualified "purty" Exit
 import qualified "purty" Export
 import qualified "purty" File
+import qualified "purty" Kind
 import qualified "purty" Log
 import qualified "purty" Name
 import qualified "purty" Purty
@@ -68,6 +69,7 @@ golden formatting testName goldenFile =
         $ interpretM Exit.io
         $ flip handleError Error.parseError
         $ Error.name
+        $ Error.kind
         $ Error.export
         $ Error.declaration
         $ test absFile
@@ -77,6 +79,7 @@ test ::
   Eff
     ( Declaration.Errors
     :++: Export.Errors
+    :++: Kind.Errors
     :++: Name.Errors
     :++: '[ Error ParseError
           , Exit.Exit

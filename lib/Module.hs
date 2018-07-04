@@ -26,6 +26,7 @@ import qualified "this" Declaration
 import qualified "this" Export
 import qualified "this" File
 import qualified "this" Import
+import qualified "this" Kind
 import qualified "this" Log
 import qualified "this" Name
 
@@ -64,7 +65,7 @@ dynamic ::
   Module
     Export.Sorted
     Import.Sorted
-    (Declaration.Declarations Declaration.Normalized)
+    (Declaration.Declarations Annotation.Normalized)
     a ->
   Doc b
 dynamic = \case
@@ -78,6 +79,7 @@ fromPureScript ::
   ( Members
     ( Declaration.Errors
     :++: Export.Errors
+    :++: Kind.Errors
     :++: Name.Errors
     )
     e
@@ -102,7 +104,7 @@ fromPureScript = \case
 
 normalize ::
   Module a b (Declaration.Declarations c) d ->
-  Module a b (Declaration.Declarations Declaration.Normalized) d
+  Module a b (Declaration.Declarations Annotation.Normalized) d
 normalize = \case
   Module ann name exports imports declarations ->
     Module ann name exports imports (Declaration.normalize declarations)
@@ -143,7 +145,7 @@ static ::
   Module
     Export.Sorted
     Import.Sorted
-    (Declaration.Declarations Declaration.Normalized) a ->
+    (Declaration.Declarations Annotation.Normalized) a ->
   Doc b
 static = \case
   Module _ann name exports imports declarations ->
