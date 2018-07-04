@@ -1,11 +1,22 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Main where
 
-import "rio" RIO
+import "rio" RIO hiding (encodeUtf8)
 
-import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
+import "freer-simple" Control.Monad.Freer
+    ( Eff
+    , interpretM
+    , reinterpret
+    , runM
+    )
+import "freer-simple" Control.Monad.Freer.Error              (Error(Error))
+import "freer-simple" Control.Monad.Freer.Reader             (Reader, runReader)
+import "text" Data.Text.Lazy.Encoding                        (encodeUtf8)
+import "prettyprinter" Data.Text.Prettyprint.Doc             (LayoutOptions)
+import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderLazy)
 import "path" Path
-    ( File
+    ( Abs
+    , File
     , Path
     , Rel
     , relfile
@@ -21,11 +32,13 @@ import "tasty" Test.Tasty
 import "tasty-golden" Test.Tasty.Golden
     ( goldenVsStringDiff
     )
+import "parsec" Text.Parsec                                  (ParseError)
 
-import "purty" Env   (Formatting(Dynamic, Static), defaultEnv)
-import "purty" Error (errors)
+import "purty" Env (Formatting(Dynamic, Static), defaultLayoutOptions)
 
-import qualified "purty" App
+import qualified "purty" Error
+import qualified "purty" Exit
+import qualified "purty" Log
 import qualified "purty" Purty
 
 main :: IO ()
@@ -39,10 +52,26 @@ golden formatting testName goldenFile =
   goldenVsStringDiff testName diff (toFilePath goldenFile) $ do
     absFile <- makeAbsolute goldenFile
     (_, logOptions) <- logOptionsMemory
-    withLogFunc logOptions $ \logFunc -> do
-      let env = defaultEnv formatting logFunc
-      stream <- App.run env (Purty.fromAbsFile absFile `App.handle` errors)
-      pure (fromStrictBytes $ encodeUtf8 $ renderStrict stream)
+    withLogFunc logOptions $ \logFunc ->
+      runM
+        $ runReader defaultLayoutOptions
+        $ runReader formatting
+        $ interpretM (Log.io logFunc)
+        $ interpretM Exit.io
+        $ reinterpret (\(Error e) -> Error.parseError e)
+        $ test absFile
+
+test ::
+  Path Abs File ->
+  Eff
+    '[ Error ParseError
+     , Log.Log
+     , Reader Formatting
+     , Reader LayoutOptions
+     , IO
+     ]
+    LByteString
+test absFile = encodeUtf8 . renderLazy <$> Purty.fromAbsFile absFile
 
 goldenTests :: TestTree
 goldenTests =

@@ -18,7 +18,7 @@ import "tasty-hunit" Test.Tasty.HUnit
     , testCase
     )
 
-import "purty" Env (defaultPrettyPrintConfig, layoutOptions)
+import "purty" Env (defaultLayoutOptions)
 
 import qualified "purty" Doc.Dynamic
 import qualified "purty" Doc.Static
@@ -173,4 +173,4 @@ openRow2 :: Language.PureScript.Type
 openRow2 = RCons "a" (TypeVar "b") (RCons "c" (TypeVar "d") (TypeVar "r"))
 
 renderText :: Doc a -> Text
-renderText = renderStrict . layoutSmart (layoutOptions defaultPrettyPrintConfig)
+renderText = renderStrict . layoutSmart defaultLayoutOptions

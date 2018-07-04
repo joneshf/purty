@@ -2,12 +2,12 @@ module AST where
 
 import "rio" RIO
 
-import "lens" Control.Lens                     (Prism', prism)
-import "lens" Control.Monad.Error.Lens         (throwing_)
-import "mtl" Control.Monad.Except              (MonadError)
-import "base" Data.List.NonEmpty               (NonEmpty, nonEmpty)
-import "semigroupoids" Data.Semigroup.Foldable (intercalateMap1)
+import "freer-simple" Control.Monad.Freer       (Eff, Members)
+import "freer-simple" Control.Monad.Freer.Error (throwError)
+import "base" Data.List.NonEmpty                (NonEmpty, nonEmpty)
+import "semigroupoids" Data.Semigroup.Foldable  (intercalateMap1)
 
+import qualified "freer-simple" Control.Monad.Freer.Error
 import qualified "purescript" Language.PureScript
 
 newtype Module
@@ -39,34 +39,21 @@ instance Display Error where
   display = \case
     MissingName -> "Module missing a name"
 
-class (IsMissingName error) => IsError error where
-  _Error :: Prism' error Error
-
-instance IsError Error where
-  _Error = prism id Right
-
-class IsMissingName error where
-  _MissingName :: Prism' error ()
-
-instance IsMissingName Error where
-  _MissingName = prism (const MissingName) $ \case
-    MissingName -> Right ()
-
 fromPureScript ::
-  (IsMissingName e, MonadError e f) =>
+  (Members '[Control.Monad.Freer.Error.Error Error] e) =>
   Language.PureScript.Module ->
-  f Module
+  Eff e Module
 fromPureScript = \case
   Language.PureScript.Module _ _ name _ _ -> fmap Module (fromModuleName name)
 
 fromModuleName ::
-  (IsMissingName e, MonadError e f) =>
+  (Members '[Control.Monad.Freer.Error.Error Error] e) =>
   Language.PureScript.ModuleName ->
-  f ModuleName
+  Eff e ModuleName
 fromModuleName = \case
   Language.PureScript.ModuleName names' ->
     maybe
-      (throwing_ _MissingName)
+      (throwError MissingName)
       pure
       (fmap ModuleName $ nonEmpty $ fmap fromProperName names')
 
