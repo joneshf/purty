@@ -7,8 +7,8 @@ import "freer-simple" Control.Monad.Freer (Eff, Member, send)
 import "base" GHC.Stack                   (callStack)
 
 data Log a where
-  Debug :: CallStack -> Utf8Builder -> Log ()
-  Error :: CallStack -> Utf8Builder -> Log ()
+  Debug :: !CallStack -> !Utf8Builder -> Log ()
+  Error :: !CallStack -> !Utf8Builder -> Log ()
 
 debug :: (HasCallStack, Member Log e) => Utf8Builder -> Eff e ()
 debug = send . Debug callStack
