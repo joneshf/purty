@@ -29,10 +29,12 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , braces
     , colon
     , dot
+    , lbrace
     , lparen
     , parens
     , pipe
     , pretty
+    , rbrace
     , rparen
     , space
     , (<+>)
@@ -87,8 +89,7 @@ docFromConstraint :: Constraint Annotation.Normalized -> Doc b
 docFromConstraint = \case
   Constraint x Nothing -> Name.docFromQualified Name.docFromClass x
   Constraint x (Just y) ->
-    Name.docFromQualified Name.docFromClass x
-      <+> intercalateMap1 space doc y
+    Name.docFromQualified Name.docFromClass x <+> intercalateMap1 space doc y
 
 normalizeConstraint :: Constraint a -> Constraint Annotation.Normalized
 normalizeConstraint = \case
@@ -156,7 +157,9 @@ instance (Display a) => Display (Row a) where
 docFromRow :: Row Annotation.Normalized -> Doc a
 docFromRow = \case
   RowAnnotation Annotation.None x -> docFromRow x
+  RowAnnotation Annotation.Braces RowEmpty -> lbrace <> rbrace
   RowAnnotation Annotation.Braces x -> braces (docFromRow x)
+  RowAnnotation Annotation.Parens RowEmpty -> lparen <> rparen
   RowAnnotation Annotation.Parens x -> parens (docFromRow x)
   RowEmpty -> lparen <> rparen
   RowCons x y z -> docFromLabel x <+> doc y <+> pipe <+> doc z
@@ -275,8 +278,8 @@ normalizeTypeApplication x y = case (x, y) of
           (Just (Name.Module (Name.Proper _ "Prim" :| [])))
           (Name.TypeConstructor (Name.Proper _ "Record"))
       )
-    , TypeRow {}
-    ) -> TypeAnnotation Annotation.Braces (normalize y)
+    , TypeRow row
+    ) -> TypeRow (RowAnnotation Annotation.Braces (normalizeRow row))
   (_, _) -> TypeApplication (normalize x) (normalize y)
 
 doc :: Type Annotation.Normalized -> Doc b
