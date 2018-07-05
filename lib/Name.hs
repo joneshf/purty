@@ -12,6 +12,30 @@ import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
 
+data Common a
+  = Common !a !Text
+  deriving (Eq, Functor, Ord)
+
+instance (Display a) => Display (Common a) where
+  display = \case
+    Common ann x ->
+      "Common annotation:"
+      <> display ann
+      <> ", common: "
+      <> display x
+
+docFromCommon :: Common a -> Doc b
+docFromCommon = \case
+  Common _ann name -> pretty name
+
+common ::
+  (Members '[Error InvalidCommon] e) =>
+  Language.PureScript.Ident ->
+  Eff e (Common Annotation.Unannotated)
+common = \case
+  Language.PureScript.Ident ident -> pure (Common Annotation.Unannotated ident)
+  ident -> throwError (InvalidCommon ident)
+
 newtype Constructor a
   = Constructor (Proper a)
   deriving (Functor)
@@ -201,8 +225,17 @@ typeOperator = \case
 -- Errors
 
 type Errors
-  = '[ Error Missing
+  = '[ Error InvalidCommon
+     , Error Missing
      ]
+
+newtype InvalidCommon
+  = InvalidCommon Language.PureScript.Ident
+
+instance Display InvalidCommon where
+  display = \case
+    InvalidCommon ident ->
+      "Invalid common name: " <> displayShow ident
 
 data Missing
   = Missing
