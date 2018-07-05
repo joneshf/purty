@@ -19,6 +19,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , align
     , braces
+    , colon
     , equals
     , indent
     , line
@@ -121,6 +122,7 @@ normalizeData = \case
 
 data Declaration a
   = DeclarationData !(Data a)
+  | DeclarationForeignData !(ForeignData a)
   | DeclarationForeignKind !(ForeignKind a)
   | DeclarationNewtype !(Newtype a)
   deriving (Functor)
@@ -128,12 +130,14 @@ data Declaration a
 instance (Display a) => Display (Declaration a) where
   display = \case
     DeclarationData x -> "Declaration Data: " <> display x
+    DeclarationForeignData x -> "Declaration Foreign Data: " <> display x
     DeclarationForeignKind x -> "Declaration Foreign Kind: " <> display x
     DeclarationNewtype x -> "Declaration Newtype: " <> display x
 
 normalizeDeclaration :: Declaration a -> Declaration Annotation.Normalized
 normalizeDeclaration = \case
   DeclarationData x -> DeclarationData (normalizeData x)
+  DeclarationForeignData x -> DeclarationForeignData (normalizeForeignData x)
   DeclarationForeignKind x -> DeclarationForeignKind (normalizeForeignKind x)
   DeclarationNewtype x -> DeclarationNewtype (normalizeNewtype x)
 
@@ -173,7 +177,11 @@ fromPureScript = \case
     pure (Just $ DeclarationNewtype newtype')
   Language.PureScript.DataDeclaration _ Language.PureScript.Newtype name _ constructors ->
     throwError (WrongNewtypeConstructors name constructors)
-  Language.PureScript.ExternDataDeclaration {} -> pure Nothing
+  Language.PureScript.ExternDataDeclaration _ type'' kind' -> do
+    kind <- Kind.fromPureScript kind'
+    let data' = ForeignData type' kind
+        type' = Name.type' type''
+    pure (Just $ DeclarationForeignData data')
   Language.PureScript.ExternDeclaration {} -> pure Nothing
   Language.PureScript.ExternKindDeclaration _ name' -> do
     let kind = ForeignKind name
@@ -204,6 +212,26 @@ normalize :: Declarations a -> Declarations Annotation.Normalized
 normalize = \case
   Declarations declarations' ->
     Declarations ((fmap . fmap) normalizeDeclaration declarations')
+
+data ForeignData a
+  = ForeignData !(Name.Type a) !(Kind.Kind a)
+  deriving (Functor)
+
+instance (Display a) => Display (ForeignData a) where
+  display = \case
+    ForeignData x y ->
+      "Foreign Data: "
+        <> "name: "
+        <> display x
+        <> ", kind: "
+        <> display y
+
+normalizeForeignData :: ForeignData a -> ForeignData Annotation.Normalized
+normalizeForeignData = \case
+  ForeignData type' kind ->
+    ForeignData
+      (Annotation.None <$ type')
+      (Kind.normalize kind)
 
 newtype ForeignKind a
   = ForeignKind (Name.Kind a)
@@ -273,6 +301,10 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
                   alternates
         DeclarationData (Data name variables Nothing) ->
           "data" <+> Name.docFromProper name <> Type.docFromVariables variables
+        DeclarationForeignData (ForeignData name kind) ->
+          "foreign import data" <+> Name.docFromType name
+            <+> colon <> colon
+            <+> Kind.doc kind
         DeclarationForeignKind (ForeignKind name) ->
           "foreign import kind" <+> Name.docFromKind name
         DeclarationNewtype (Newtype name variables constructor type'') ->
@@ -301,6 +333,10 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
                   alternates
         DeclarationData (Data name variables Nothing) ->
           "data" <+> Name.docFromProper name <> Type.docFromVariables variables
+        DeclarationForeignData (ForeignData name kind) ->
+          "foreign import data" <+> Name.docFromType name
+            <+> colon <> colon
+            <+> Kind.doc kind
         DeclarationForeignKind (ForeignKind name) ->
           "foreign import kind" <+> Name.docFromKind name
         DeclarationNewtype (Newtype name variables constructor type'') ->

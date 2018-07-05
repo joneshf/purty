@@ -141,6 +141,23 @@ docFromProper :: Proper a -> Doc b
 docFromProper = \case
   Proper _ann name -> pretty name
 
+newtype Type a
+  = Type (Proper a)
+  deriving (Eq, Functor, Ord)
+
+instance (Display a) => Display (Type a) where
+  display = \case
+    Type name -> "Type: " <> display name
+
+docFromType :: Type a -> Doc b
+docFromType = \case
+  Type name -> docFromProper name
+
+type' ::
+  Language.PureScript.ProperName 'Language.PureScript.TypeName ->
+  Type Annotation.Unannotated
+type' = Type . proper
+
 newtype TypeConstructor a
   = TypeConstructor (Proper a)
   deriving (Functor)
