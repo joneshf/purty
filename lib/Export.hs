@@ -75,7 +75,7 @@ data Export a
   | ExportType !(Type a)
   | ExportTypeOperator !(TypeOperator a)
   | ExportValue !(Value a)
-  | ExportValueOperator !(ValueOperator a)
+  | ExportValueOperator !(Name.ValueOperator a)
   deriving (Functor)
 
 instance (Display a) => Display (Export a) where
@@ -156,7 +156,7 @@ docFromExport = \case
   ExportType ty -> docFromType ty
   ExportTypeOperator op -> pure ("type" <+> Export.docFromTypeOperator op)
   ExportValue value' -> pure (Export.docFromValue value')
-  ExportValueOperator op -> pure (Export.docFromValueOperator op)
+  ExportValueOperator op -> pure (Name.docFromValueOperator op)
 
 export ::
   ( Members
@@ -183,7 +183,7 @@ export = \case
     pure (ExportTypeOperator $ typeOperator op)
   Language.PureScript.ValueRef _ ident -> fmap ExportValue (value ident)
   Language.PureScript.ValueOpRef _ op ->
-    pure (ExportValueOperator $ valueOperator op)
+    pure (ExportValueOperator $ Name.valueOperator op)
 
 newtype Exports a
   = Exports (Maybe (NonEmpty (Export a)))
@@ -203,7 +203,7 @@ data Sorted
       ![Name.Kind Annotation.Sorted]
       ![TypeOperator Annotation.Sorted]
       ![Type Annotation.Sorted]
-      ![ValueOperator Annotation.Sorted]
+      ![Name.ValueOperator Annotation.Sorted]
       ![Value Annotation.Sorted]
 
 instance Display Sorted where
@@ -345,29 +345,6 @@ value ::
 value = \case
   Language.PureScript.Ident ident -> pure (Value Annotation.Unannotated ident)
   ident -> throwError (InvalidExport ident)
-
-data ValueOperator a
-  = ValueOperator !a !Text
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (ValueOperator a) where
-  display = \case
-    ValueOperator ann op ->
-      "Value Operator annotation: "
-        <> display ann
-        <> ", op: ("
-        <> display op
-        <> ")"
-
-docFromValueOperator :: ValueOperator a -> Doc b
-docFromValueOperator = \case
-  ValueOperator _ann op -> parens (pretty op)
-
-valueOperator ::
-  Language.PureScript.OpName 'Language.PureScript.ValueOpName ->
-  ValueOperator Annotation.Unannotated
-valueOperator = \case
-  Language.PureScript.OpName name -> ValueOperator Annotation.Unannotated name
 
 fromPureScript ::
   ( Members

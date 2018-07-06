@@ -6,7 +6,7 @@ import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
-import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, dot, pretty)
+import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, dot, parens, pretty)
 
 import qualified "purescript" Language.PureScript
 
@@ -221,6 +221,31 @@ typeOperator ::
   TypeOperator Annotation.Unannotated
 typeOperator = \case
   Language.PureScript.OpName x -> TypeOperator Annotation.Unannotated x
+
+data ValueOperator a
+  = ValueOperator !a !Text
+  deriving (Eq, Functor, Ord)
+
+instance (Display a) => Display (ValueOperator a) where
+  display = \case
+    ValueOperator ann op ->
+      "Value Operator annotation: "
+        <> display ann
+        <> ", op: ("
+        <> display op
+        <> ")"
+
+docFromValueOperator :: ValueOperator a -> Doc b
+docFromValueOperator = \case
+  ValueOperator _ann op -> parens (pretty op)
+
+valueOperator ::
+  Language.PureScript.OpName 'Language.PureScript.ValueOpName ->
+  ValueOperator Annotation.Unannotated
+
+valueOperator =
+  \case
+    Language.PureScript.OpName name -> ValueOperator Annotation.Unannotated name
 
 -- Errors
 
