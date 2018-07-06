@@ -3,8 +3,8 @@ module Kind where
 import "rio" RIO
 
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
-import "freer-simple" Control.Monad.Freer.Error  (throwError, Error)
-import "prettyprinter" Data.Text.Prettyprint.Doc ((<+>), parens, braces, Doc)
+import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
+import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, braces, parens, (<+>))
 
 import qualified "purescript" Language.PureScript
 

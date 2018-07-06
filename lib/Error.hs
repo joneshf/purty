@@ -28,18 +28,6 @@ dataType x =
     Log.error (display err)
     Exit.failure
 
-kind ::
-  (Members '[Exit.Exit, Log.Log] e) =>
-  Eff (Kind.Errors :++: e) a ->
-  Eff e a
-kind x =
-  x `handleError` go
-  where
-  go err = do
-    Log.error "Problem converting a kind"
-    Log.error (display err)
-    Exit.failure
-
 export ::
   (Members '[Exit.Exit, Log.Log] e) =>
   Eff (Export.Errors :++: e) a ->
@@ -64,6 +52,18 @@ fixity x =
   where
   go err = do
     Log.error "Problem converting a fixity"
+    Log.error (display err)
+    Exit.failure
+
+kind ::
+  (Members '[Exit.Exit, Log.Log] e) =>
+  Eff (Kind.Errors :++: e) a ->
+  Eff e a
+kind x =
+  x `handleError` go
+  where
+  go err = do
+    Log.error "Problem converting a kind"
     Log.error (display err)
     Exit.failure
 
