@@ -3,7 +3,8 @@ module DataType where
 import "rio" RIO hiding (Data)
 
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
-import "freer-simple" Control.Monad.Freer.Error  (Error)
+import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
+import "base" Data.Bitraversable                 (bitraverse)
 import "base" Data.List                          (intersperse)
 import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
@@ -103,6 +104,35 @@ instance (Display a) => Display (Data a) where
           (\z -> ", alternates: [" <> intercalateMap1 ", " display z <> "]")
           z'
 
+data' ::
+  ( Members
+    '[ Error WrongNewtypeConstructors
+     , Error Kind.InferredKind
+     , Error Name.Missing
+     , Error Type.InferredConstraintData
+     , Error Type.InferredForallWithSkolem
+     , Error Type.InferredSkolem
+     , Error Type.InferredType
+     , Error Type.InfixTypeNotTypeOp
+     , Error Type.PrettyPrintForAll
+     , Error Type.PrettyPrintFunction
+     , Error Type.PrettyPrintObject
+     ]
+    e
+  ) =>
+  Language.PureScript.ProperName 'Language.PureScript.TypeName ->
+  [(Text, Maybe Language.PureScript.Kind)] ->
+  [ ( Language.PureScript.ProperName 'Language.PureScript.ConstructorName
+    , [ Language.PureScript.Type
+      ]
+    )
+  ] ->
+  Eff e (Data Annotation.Unannotated)
+data' name variables' constructors = do
+  alternates <- nonEmpty <$> traverse alternate constructors
+  variables <- traverse (bitraverse (pure . Type.Variable) (traverse Kind.fromPureScript)) variables'
+  pure (Data (Name.proper name) (Type.Variables $ nonEmpty variables) alternates)
+
 docFromData :: Data Annotation.Normalized -> Doc a
 docFromData = \case
   Data name variables (Just alternates) ->
@@ -152,6 +182,43 @@ docFromNewtype = \case
       where
       docConstructor = Name.docFromConstructor constructor
       docType = Type.doc type''
+
+newtype' ::
+  ( Members
+    '[ Error WrongNewtypeConstructors
+     , Error Kind.InferredKind
+     , Error Name.Missing
+     , Error Type.InferredConstraintData
+     , Error Type.InferredForallWithSkolem
+     , Error Type.InferredSkolem
+     , Error Type.InferredType
+     , Error Type.InfixTypeNotTypeOp
+     , Error Type.PrettyPrintForAll
+     , Error Type.PrettyPrintFunction
+     , Error Type.PrettyPrintObject
+     ]
+    e
+  ) =>
+  Language.PureScript.ProperName 'Language.PureScript.TypeName ->
+  [(Text, Maybe Language.PureScript.Kind)] ->
+  [ ( Language.PureScript.ProperName 'Language.PureScript.ConstructorName
+    , [ Language.PureScript.Type
+      ]
+    )
+  ] ->
+  Eff e (Newtype Annotation.Unannotated)
+newtype' name' variables' = \case
+  [(constructor', [ty'])] -> do
+    ty <- Type.fromPureScript ty'
+    variables <-
+      traverse
+        (bitraverse (pure . Type.Variable) (traverse Kind.fromPureScript))
+        variables'
+    let constructor = Name.constructor constructor'
+        name = Name.proper name'
+    pure (Newtype name (Type.Variables $ nonEmpty variables) constructor ty)
+  constructors ->
+    throwError (WrongNewtypeConstructors name' constructors)
 
 normalizeNewtype :: Newtype a -> Newtype Annotation.Normalized
 normalizeNewtype = \case

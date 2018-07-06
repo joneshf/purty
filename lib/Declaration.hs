@@ -9,9 +9,8 @@ module Declaration
 import "rio" RIO hiding (Data)
 
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
-import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
-import "base" Data.Bitraversable                 (bitraverse)
-import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
+import "freer-simple" Control.Monad.Freer.Error  (Error)
+import "base" Data.List.NonEmpty                 (NonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, line)
 
@@ -69,36 +68,16 @@ fromPureScript ::
   Eff e (Maybe (Declaration Annotation.Unannotated))
 fromPureScript = \case
   Language.PureScript.BoundValueDeclaration {} -> pure Nothing
-  Language.PureScript.DataDeclaration _ Language.PureScript.Data name' variables' constructors -> do
-    alternates <- nonEmpty <$> traverse DataType.alternate constructors
-    variables <- traverse (bitraverse (pure . Type.Variable) (traverse Kind.fromPureScript)) variables'
-    let data' = DataType.Data name (Type.Variables $ nonEmpty variables) alternates
-        name = Name.proper name'
-    pure (Just $ DeclarationData data')
-  Language.PureScript.DataDeclaration _ Language.PureScript.Newtype name' variables' [(constructor', [ty'])] -> do
-    ty <- Type.fromPureScript ty'
-    variables <- traverse (bitraverse (pure . Type.Variable) (traverse Kind.fromPureScript)) variables'
-    let constructor = Name.constructor constructor'
-        name = Name.proper name'
-        newtype' =
-          DataType.Newtype name (Type.Variables $ nonEmpty variables) constructor ty
-    pure (Just $ DeclarationNewtype newtype')
-  Language.PureScript.DataDeclaration _ Language.PureScript.Newtype name _ constructors ->
-    throwError (DataType.WrongNewtypeConstructors name constructors)
-  Language.PureScript.ExternDataDeclaration _ type'' kind' -> do
-    kind <- Kind.fromPureScript kind'
-    let data' = Foreign.Data type' kind
-        type' = Name.type' type''
-    pure (Just $ DeclarationForeignData data')
-  Language.PureScript.ExternDeclaration _ name' type'' -> do
-    name <- Name.common name'
-    type' <- Type.fromPureScript type''
-    let value = Foreign.Value name type'
-    pure (Just $ DeclarationForeignValue value)
-  Language.PureScript.ExternKindDeclaration _ name' -> do
-    let kind = Foreign.Kind name
-        name = Name.kind name'
-    pure (Just $ DeclarationForeignKind kind)
+  Language.PureScript.DataDeclaration _ Language.PureScript.Data name variables constructors ->
+    Just . DeclarationData <$> DataType.data' name variables constructors
+  Language.PureScript.DataDeclaration _ Language.PureScript.Newtype name variables constructors ->
+    Just . DeclarationNewtype <$> DataType.newtype' name variables constructors
+  Language.PureScript.ExternDataDeclaration _ type' kind ->
+    Just . DeclarationForeignData <$> Foreign.data' type' kind
+  Language.PureScript.ExternDeclaration _ name type' ->
+    Just . DeclarationForeignValue <$> Foreign.value name type'
+  Language.PureScript.ExternKindDeclaration _ name ->
+    pure (Just $ DeclarationForeignKind $ Foreign.kind name)
   Language.PureScript.FixityDeclaration {} -> pure Nothing
   Language.PureScript.TypeClassDeclaration {} -> pure Nothing
   Language.PureScript.TypeDeclaration {} -> pure Nothing
