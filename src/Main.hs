@@ -40,5 +40,5 @@ main = do
       $ Error.name
       $ Error.kind
       $ Error.export
-      $ Error.declaration
+      $ Error.dataType
       $ Purty.program cliArgs

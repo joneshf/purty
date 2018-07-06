@@ -7,7 +7,7 @@ import "freer-simple" Control.Monad.Freer.Error (handleError)
 import "freer-simple" Data.OpenUnion            ((:++:))
 import "parsec" Text.Parsec                     (ParseError)
 
-import qualified "this" Declaration
+import qualified "this" DataType
 import qualified "this" Exit
 import qualified "this" Export
 import qualified "this" Kind
@@ -15,11 +15,11 @@ import qualified "this" Log
 import qualified "this" Name
 import qualified "this" Type
 
-declaration ::
+dataType ::
   (Members '[Exit.Exit, Log.Log] e) =>
-  Eff (Declaration.Errors :++: e) a ->
+  Eff (DataType.Errors :++: e) a ->
   Eff e a
-declaration x =
+dataType x =
   x `handleError` go
   where
   go err = do
