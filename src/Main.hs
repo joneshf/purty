@@ -39,6 +39,7 @@ main = do
       $ Error.type'
       $ Error.name
       $ Error.kind
+      $ Error.fixity
       $ Error.export
       $ Error.dataType
       $ Purty.program cliArgs

@@ -274,7 +274,6 @@ dynamicOpen :: NonEmpty (Open Annotation.Sorted) -> Doc a
 dynamicOpen = \case
   opens ->
     line
-      <> line
       <> intercalateMap1 line go opens
   where
   go = \case
@@ -291,7 +290,6 @@ staticOpen :: NonEmpty (Open Annotation.Sorted) -> Doc a
 staticOpen = \case
   opens ->
     line
-      <> line
       <> intercalateMap1 line go opens
   where
   go = \case
@@ -365,20 +363,27 @@ instance Display Sorted where
         <> foldMap (\qualified -> "[" <> intercalateMap1 ", " display qualified <> "]") qualified'
 
 dynamic :: Sorted -> Doc b
-dynamic = \case
+dynamic x = case x of
   Sorted open hiding explicit qualified ->
     foldMap dynamicOpen open
       <> foldMap dynamicHiding hiding
       <> foldMap dynamicExplicit explicit
       <> foldMap dynamicQualified qualified
+      <> trailingLine x
 
 static :: Sorted -> Doc b
-static = \case
+static x = case x of
   Sorted open hiding explicit qualified ->
     foldMap staticOpen open
       <> foldMap staticHiding hiding
       <> foldMap staticExplicit explicit
       <> foldMap staticQualified qualified
+      <> trailingLine x
+
+trailingLine :: Sorted -> Doc a
+trailingLine = \case
+  Sorted Nothing Nothing Nothing Nothing -> mempty
+  _ -> line
 
 displayList :: Display a => [a] -> Utf8Builder
 displayList xs = "[" <> fold (intersperse ", " (display <$> xs)) <> "]"

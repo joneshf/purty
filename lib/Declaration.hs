@@ -18,6 +18,7 @@ import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
 import qualified "this" DataType
+import qualified "this" Fixity
 import qualified "this" Foreign
 import qualified "this" Kind
 import qualified "this" Name
@@ -25,6 +26,8 @@ import qualified "this" Type
 
 data Declaration a
   = DeclarationData !(DataType.Data a)
+  | DeclarationFixityType !(Fixity.Type a)
+  | DeclarationFixityValue !(Fixity.Value a)
   | DeclarationForeignData !(Foreign.Data a)
   | DeclarationForeignKind !(Foreign.Kind a)
   | DeclarationForeignValue !(Foreign.Value a)
@@ -34,6 +37,8 @@ data Declaration a
 instance (Display a) => Display (Declaration a) where
   display = \case
     DeclarationData x -> "Declaration Data: " <> display x
+    DeclarationFixityType x -> "Declaration Fixity Type: " <> display x
+    DeclarationFixityValue x -> "Declaration Fixity Value: " <> display x
     DeclarationForeignData x -> "Declaration Foreign Data: " <> display x
     DeclarationForeignKind x -> "Declaration Foreign Kind: " <> display x
     DeclarationForeignValue x -> "Declaration Foreign Value: " <> display x
@@ -42,6 +47,8 @@ instance (Display a) => Display (Declaration a) where
 normalizeDeclaration :: Declaration a -> Declaration Annotation.Normalized
 normalizeDeclaration = \case
   DeclarationData x -> DeclarationData (DataType.normalizeData x)
+  DeclarationFixityType x -> DeclarationFixityType (Fixity.normalizeType x)
+  DeclarationFixityValue x -> DeclarationFixityValue (Fixity.normalizeValue x)
   DeclarationForeignData x -> DeclarationForeignData (Foreign.normalizeData x)
   DeclarationForeignKind x -> DeclarationForeignKind (Foreign.normalizeKind x)
   DeclarationForeignValue x -> DeclarationForeignValue (Foreign.normalizeValue x)
@@ -50,6 +57,7 @@ normalizeDeclaration = \case
 fromPureScript ::
   ( Members
     '[ Error DataType.WrongNewtypeConstructors
+     , Error Fixity.NegativePrecedence
      , Error Kind.InferredKind
      , Error Name.InvalidCommon
      , Error Name.Missing
@@ -78,7 +86,10 @@ fromPureScript = \case
     Just . DeclarationForeignValue <$> Foreign.value name type'
   Language.PureScript.ExternKindDeclaration _ name ->
     pure (Just $ DeclarationForeignKind $ Foreign.kind name)
-  Language.PureScript.FixityDeclaration {} -> pure Nothing
+  Language.PureScript.FixityDeclaration _ (Left fixity) ->
+    Just . DeclarationFixityValue <$> Fixity.value fixity
+  Language.PureScript.FixityDeclaration _ (Right fixity) ->
+    Just . DeclarationFixityType <$> Fixity.type' fixity
   Language.PureScript.TypeClassDeclaration {} -> pure Nothing
   Language.PureScript.TypeDeclaration {} -> pure Nothing
   Language.PureScript.TypeInstanceDeclaration {} -> pure Nothing
@@ -110,6 +121,8 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
   dynamic' = static'
   go = \case
     DeclarationData data' -> DataType.docFromData data'
+    DeclarationFixityType type' -> Fixity.docFromType type'
+    DeclarationFixityValue value -> Fixity.docFromValue value
     DeclarationForeignData data' -> Foreign.docFromData data'
     DeclarationForeignKind kind -> Foreign.docFromKind kind
     DeclarationForeignValue value -> Foreign.docFromValue value
@@ -118,5 +131,4 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
     Declarations Nothing -> mempty
     Declarations (Just declarations) ->
       line
-        <> line
         <> intercalateMap1 line go declarations

@@ -44,6 +44,7 @@ import qualified "purty" Error
 import qualified "purty" Exit
 import qualified "purty" Export
 import qualified "purty" File
+import qualified "purty" Fixity
 import qualified "purty" Kind
 import qualified "purty" Log
 import qualified "purty" Name
@@ -72,6 +73,7 @@ golden formatting testName goldenFile =
         $ Error.type'
         $ Error.name
         $ Error.kind
+        $ Error.fixity
         $ Error.export
         $ Error.dataType
         $ test absFile
@@ -81,6 +83,7 @@ test ::
   Eff
     ( DataType.Errors
     :++: Export.Errors
+    :++: Fixity.Errors
     :++: Kind.Errors
     :++: Name.Errors
     :++: Type.Errors
@@ -115,6 +118,7 @@ dynamic =
     , golden Dynamic "do and if then else" [relfile|test/golden/files/dynamic/DoAndIfThenElse.purs|]
     , golden Dynamic "empty data" [relfile|test/golden/files/dynamic/EmptyData.purs|]
     , golden Dynamic "exports" [relfile|test/golden/files/dynamic/Exports.purs|]
+    , golden Dynamic "fixity" [relfile|test/golden/files/dynamic/Fixity.purs|]
     , golden Dynamic "imports" [relfile|test/golden/files/dynamic/Imports.purs|]
     , golden Dynamic "infix expression" [relfile|test/golden/files/dynamic/InfixExpression.purs|]
     , golden Dynamic "typeclass instance" [relfile|test/golden/files/dynamic/Instance.purs|]
@@ -147,6 +151,7 @@ static =
     , golden Static "do and if then else" [relfile|test/golden/files/static/DoAndIfThenElse.purs|]
     , golden Static "empty data" [relfile|test/golden/files/static/EmptyData.purs|]
     , golden Static "exports" [relfile|test/golden/files/static/Exports.purs|]
+    , golden Static "fixity" [relfile|test/golden/files/static/Fixity.purs|]
     , golden Static "imports" [relfile|test/golden/files/static/Imports.purs|]
     , golden Static "typeclass instance" [relfile|test/golden/files/static/Instance.purs|]
     , golden Static "infix expression" [relfile|test/golden/files/static/InfixExpression.purs|]

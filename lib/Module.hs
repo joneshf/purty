@@ -26,6 +26,7 @@ import qualified "this" DataType
 import qualified "this" Declaration
 import qualified "this" Export
 import qualified "this" File
+import qualified "this" Fixity
 import qualified "this" Import
 import qualified "this" Kind
 import qualified "this" Log
@@ -73,14 +74,15 @@ dynamic ::
 dynamic = \case
   Module _ann name exports imports declarations ->
     "module" <+> Name.docFromModule name <> Export.dynamic exports <+> "where"
+      <> line
       <> Import.dynamic imports
       <> Declaration.dynamic declarations
-      <> line
 
 fromPureScript ::
   ( Members
     ( DataType.Errors
     :++: Export.Errors
+    :++: Fixity.Errors
     :++: Kind.Errors
     :++: Name.Errors
     :++: Type.Errors
@@ -153,9 +155,9 @@ static ::
 static = \case
   Module _ann name exports imports declarations ->
     "module" <+> Name.docFromModule name <> Export.static exports <+> "where"
+      <> line
       <> Import.static imports
       <> Declaration.static declarations
-      <> line
 
 -- Errors
 

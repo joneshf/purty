@@ -6,7 +6,13 @@ import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
-import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, dot, parens, pretty)
+import "prettyprinter" Data.Text.Prettyprint.Doc
+    ( Doc
+    , braces
+    , dot
+    , parens
+    , pretty
+    )
 
 import qualified "purescript" Language.PureScript
 
@@ -216,6 +222,15 @@ docFromTypeOperator :: TypeOperator a -> Doc b
 docFromTypeOperator = \case
   TypeOperator _ann op -> pretty op
 
+docFromTypeOperator' :: TypeOperator Annotation.Normalized -> Doc a
+docFromTypeOperator' = \case
+  TypeOperator ann op -> annotation ann (pretty op)
+    where
+    annotation = \case
+      Annotation.Braces -> braces
+      Annotation.None -> id
+      Annotation.Parens -> parens
+
 typeOperator ::
   Language.PureScript.OpName 'Language.PureScript.TypeOpName ->
   TypeOperator Annotation.Unannotated
@@ -238,6 +253,15 @@ instance (Display a) => Display (ValueOperator a) where
 docFromValueOperator :: ValueOperator a -> Doc b
 docFromValueOperator = \case
   ValueOperator _ann op -> parens (pretty op)
+
+docFromValueOperator' :: ValueOperator Annotation.Normalized -> Doc a
+docFromValueOperator' = \case
+  ValueOperator ann op -> annotation ann (pretty op)
+    where
+    annotation = \case
+      Annotation.Braces -> braces
+      Annotation.None -> id
+      Annotation.Parens -> parens
 
 valueOperator ::
   Language.PureScript.OpName 'Language.PureScript.ValueOpName ->

@@ -10,6 +10,7 @@ import "parsec" Text.Parsec                     (ParseError)
 import qualified "this" DataType
 import qualified "this" Exit
 import qualified "this" Export
+import qualified "this" Fixity
 import qualified "this" Kind
 import qualified "this" Log
 import qualified "this" Name
@@ -51,6 +52,18 @@ export x =
   where
   go err = do
     Log.error "Problem converting the exports"
+    Log.error (display err)
+    Exit.failure
+
+fixity ::
+  (Members '[Exit.Exit, Log.Log] e) =>
+  Eff (Fixity.Errors :++: e) a ->
+  Eff e a
+fixity x =
+  x `handleError` go
+  where
+  go err = do
+    Log.error "Problem converting a fixity"
     Log.error (display err)
     Exit.failure
 

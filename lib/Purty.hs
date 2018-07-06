@@ -30,6 +30,7 @@ import qualified "this" DataType
 import qualified "this" Exit
 import qualified "this" Export
 import qualified "this" File
+import qualified "this" Fixity
 import qualified "this" Kind
 import qualified "this" Log
 import qualified "this" Module
@@ -40,6 +41,7 @@ import qualified "this" Type
 fromAbsFile ::
   ( Members
     ( DataType.Errors
+    :++: Fixity.Errors
     :++: Export.Errors
     :++: Kind.Errors
     :++: Name.Errors
@@ -86,6 +88,7 @@ fromPurtyFilePath ::
   ( Members
     ( DataType.Errors
     :++: Export.Errors
+    :++: Fixity.Errors
     :++: Kind.Errors
     :++: Name.Errors
     :++: Type.Errors
@@ -125,6 +128,7 @@ program ::
   Eff
     ( DataType.Errors
     :++: Export.Errors
+    :++: Fixity.Errors
     :++: Kind.Errors
     :++: Name.Errors
     :++: Type.Errors
