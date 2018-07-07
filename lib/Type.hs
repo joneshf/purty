@@ -22,20 +22,21 @@ import "rio" RIO hiding (Data)
 
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
-import "base" Data.List.NonEmpty                 (NonEmpty((:|)), nonEmpty)
+import "base" Data.List.NonEmpty
+    ( NonEmpty((:|))
+    , nonEmpty
+    , (<|)
+    )
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , braces
     , colon
+    , comma
     , dot
-    , lbrace
-    , lparen
     , parens
     , pipe
     , pretty
-    , rbrace
-    , rparen
     , space
     , (<+>)
     )
@@ -113,7 +114,7 @@ docFromForall = \case
 -- We're using the underlying PureScript representation here,
 -- as it handles unicode properly for the language.
 newtype Label
-  = Label PSString
+  = Label Language.PureScript.Label.Label
 
 instance Display Label where
   display = \case
@@ -123,52 +124,151 @@ instance Display Label where
 
 docFromLabel :: Label -> Doc a
 docFromLabel = \case
-  Label x -> pretty (Language.PureScript.prettyPrintString x)
+  Label x -> pretty (Language.PureScript.prettyPrintLabel x)
 
 label :: Language.PureScript.Label.Label -> Label
-label = \case
-  Language.PureScript.Label.Label x -> Label x
+label = Label
 
 data Row a
-  = RowAnnotation !a !(Row a)
-  | RowCons !Label !(Type a) !(Type a)
-  | RowEmpty
+  = Row !RowSurround !(Maybe (NonEmpty (RowPair a))) !(Rowpen a)
   deriving (Functor)
 
 instance (Display a) => Display (Row a) where
   display = \case
-    RowAnnotation x y ->
-      "Row Annotation: "
-        <> "annotation: "
+    Row x y z ->
+      "{Row: "
+        <> "surround: "
         <> display x
-        <> ", row: "
-        <> display y
-    RowCons x y z ->
-      "Row Cons: "
+        <> ", pairs: ["
+        <> foldMap (intercalateMap1 ", " display) y
+        <> "], rowpen: "
+        <> display z
+        <> "}"
+
+docFromRow :: Row Annotation.Normalized -> Doc a
+docFromRow = \case
+  Row x y z -> surround (pairs <> rowpen)
+    where
+    surround = case x of
+      RowBraces -> braces
+      RowParens -> parens
+    pairs = foldMap (intercalateMap1 (comma <> space) docFromRowPair) y
+    rowpen = docFromRowpen z
+
+normalizeRow :: Row a -> Row Annotation.Normalized
+normalizeRow = \case
+  Row surround y z ->
+    Row surround ((fmap . fmap) normalizeRowPair y) (normalizeRowpen z)
+
+row ::
+  ( Members
+    '[ Error InferredConstraintData
+     , Error InferredForallWithSkolem
+     , Error InferredSkolem
+     , Error InferredType
+     , Error InfixTypeNotTypeOp
+     , Error PrettyPrintForAll
+     , Error PrettyPrintFunction
+     , Error PrettyPrintObject
+     , Error Kind.InferredKind
+     , Error Name.Missing
+     ]
+    e
+  ) =>
+  Language.PureScript.Label.Label ->
+  Language.PureScript.Type ->
+  Language.PureScript.Type ->
+  Eff
+    e
+    (NonEmpty (RowPair Annotation.Unannotated), Rowpen Annotation.Unannotated)
+row x' y' = \case
+  Language.PureScript.REmpty -> do
+    pairs <- pure <$> rowPair x' y'
+    pure (pairs, Rowsed)
+  Language.PureScript.RCons x y z -> do
+    pair <- rowPair x' y'
+    (pairs, rowsed) <- row x y z
+    pure (pair <| pairs, rowsed)
+  z -> do
+    pairs <- pure <$> rowPair x' y'
+    type' <- fromPureScript z
+    pure (pairs, Rowpen type')
+
+data RowSurround
+  = RowBraces
+  | RowParens
+
+instance Display RowSurround where
+  display = \case
+    RowBraces -> "RowBraces"
+    RowParens -> "RowParens"
+
+data RowPair a
+  = RowPair !Label !(Type a)
+  deriving (Functor)
+
+instance (Display a) => Display (RowPair a) where
+  display = \case
+    RowPair x y ->
+      "{RowPair: "
         <> "label: "
         <> display x
         <> ", type: "
         <> display y
-        <> ", tail: "
-        <> display z
-    RowEmpty ->
-      "Row Empty"
+        <> "}"
 
-docFromRow :: Row Annotation.Normalized -> Doc a
-docFromRow = \case
-  RowAnnotation Annotation.None x -> docFromRow x
-  RowAnnotation Annotation.Braces RowEmpty -> lbrace <> rbrace
-  RowAnnotation Annotation.Braces x -> braces (docFromRow x)
-  RowAnnotation Annotation.Parens RowEmpty -> lparen <> rparen
-  RowAnnotation Annotation.Parens x -> parens (docFromRow x)
-  RowEmpty -> lparen <> rparen
-  RowCons x y z -> docFromLabel x <+> doc y <+> pipe <+> doc z
+docFromRowPair :: RowPair Annotation.Normalized -> Doc a
+docFromRowPair = \case
+  RowPair x y -> docFromLabel x <+> colon <> colon <+> doc y
 
-normalizeRow :: Row a -> Row Annotation.Normalized
-normalizeRow = \case
-  RowAnnotation _ann x -> normalizeRow x
-  RowCons x y z -> RowCons x (normalize y) (normalize z)
-  RowEmpty -> RowEmpty
+normalizeRowPair :: RowPair a -> RowPair Annotation.Normalized
+normalizeRowPair = \case
+  RowPair x y -> RowPair x (normalize y)
+
+rowPair ::
+  ( Members
+    '[ Error InferredConstraintData
+     , Error InferredForallWithSkolem
+     , Error InferredSkolem
+     , Error InferredType
+     , Error InfixTypeNotTypeOp
+     , Error PrettyPrintForAll
+     , Error PrettyPrintFunction
+     , Error PrettyPrintObject
+     , Error Kind.InferredKind
+     , Error Name.Missing
+     ]
+    e
+  ) =>
+  Language.PureScript.Label.Label ->
+  Language.PureScript.Type ->
+  Eff e (RowPair Annotation.Unannotated)
+rowPair x y = fmap (RowPair $ label x) (fromPureScript y)
+
+data Rowpen a
+  = Rowpen !(Type a)
+  | Rowsed
+  deriving (Functor)
+
+instance (Display a) => Display (Rowpen a) where
+  display = \case
+    Rowpen x ->
+      "{Rowpen: "
+        <> "type: "
+        <> display x
+        <> "}"
+    Rowsed ->
+      "rowsed"
+
+docFromRowpen :: Rowpen Annotation.Normalized -> Doc a
+docFromRowpen = \case
+  Rowpen x -> space <> pipe <+> doc x
+  Rowsed -> mempty
+
+normalizeRowpen :: Rowpen a -> Rowpen Annotation.Normalized
+normalizeRowpen = \case
+  Rowpen x -> Rowpen (normalize x)
+  Rowsed -> Rowsed
 
 -- |
 -- We're using the underlying PureScript representation here,
@@ -295,8 +395,8 @@ normalizeTypeApplication x' y' = case (x', y') of
           (Just (Name.Module (Name.Proper _ "Prim" :| [])))
           (Name.TypeConstructor (Name.Proper _ "Record"))
       )
-    , TypeRow row
-    ) -> TypeRow (RowAnnotation Annotation.Braces (normalizeRow row))
+    , TypeRow (Row _ pairs rowpen)
+    ) -> TypeRow (normalizeRow $ Row RowBraces pairs rowpen)
   (_, _) -> TypeApplication (normalize x') (normalize y')
 
 doc :: Type Annotation.Normalized -> Doc b
@@ -371,9 +471,10 @@ fromPureScript = \case
   Language.PureScript.ConstrainedType x y ->
     TypeConstrained <$> constraint x <*> fromPureScript y
   Language.PureScript.Skolem w x y z -> throwError (InferredSkolem w x y z)
-  Language.PureScript.REmpty -> pure (TypeRow RowEmpty)
-  Language.PureScript.RCons x y z ->
-    fmap TypeRow (RowCons (label x) <$> fromPureScript y <*> fromPureScript z)
+  Language.PureScript.REmpty -> pure (TypeRow $ Row RowParens Nothing Rowsed)
+  Language.PureScript.RCons x y z -> do
+    (pairs, rowpen) <- row x y z
+    pure (TypeRow $ Row RowParens (Just pairs) rowpen)
   Language.PureScript.KindedType x y ->
     TypeKinded <$> fromPureScript x <*> Kind.fromPureScript y
   Language.PureScript.PrettyPrintFunction x y ->
