@@ -191,6 +191,7 @@ data Type a
   | TypeApplication !(Type a) !(Type a)
   | TypeConstrained !(Constraint a) !(Type a)
   | TypeForall !Forall !(Type a)
+  | TypeFunction !(Type a) !(Type a)
   | TypeInfixOperator !(Type a) !(Name.Qualified Name.TypeOperator a) !(Type a)
   | TypeKinded !(Type a) !(Kind.Kind a)
   | TypeRow !(Row a)
@@ -227,6 +228,12 @@ instance (Display a) => Display (Type a) where
         <> "forall: "
         <> display x
         <> ", type: "
+        <> display y
+    TypeFunction x y ->
+      "Type Function: "
+        <> "input: "
+        <> display x
+        <> ", output: "
         <> display y
     TypeInfixOperator x y z ->
       "Type Infix Operator: "
@@ -272,7 +279,17 @@ instance (Display a) => Display (Type a) where
         <> display x
 
 normalizeTypeApplication :: Type a -> Type b -> Type Annotation.Normalized
-normalizeTypeApplication x y = case (x, y) of
+normalizeTypeApplication x' y' = case (x', y') of
+  ( TypeApplication
+      ( TypeTypeConstructor
+        ( Name.Qualified
+            (Just (Name.Module (Name.Proper _ "Prim" :| [])))
+            (Name.TypeConstructor (Name.Proper _ "Function"))
+        )
+      )
+      x
+    , y
+    ) -> TypeFunction (normalize x) (normalize y)
   ( TypeTypeConstructor
       ( Name.Qualified
           (Just (Name.Module (Name.Proper _ "Prim" :| [])))
@@ -280,7 +297,7 @@ normalizeTypeApplication x y = case (x, y) of
       )
     , TypeRow row
     ) -> TypeRow (RowAnnotation Annotation.Braces (normalizeRow row))
-  (_, _) -> TypeApplication (normalize x) (normalize y)
+  (_, _) -> TypeApplication (normalize x') (normalize y')
 
 doc :: Type Annotation.Normalized -> Doc b
 doc = \case
@@ -290,6 +307,7 @@ doc = \case
   TypeApplication x y -> doc x <+> doc y
   TypeConstrained x y -> docFromConstraint x <+> "=>" <+> doc y
   TypeForall x y -> docFromForall x <+> doc y
+  TypeFunction x y -> doc x <+> "->" <+> doc y
   TypeInfixOperator x y z -> doc x <+> Name.docFromQualified Name.docFromTypeOperator y <+> doc z
   TypeKinded x y -> doc x <+> colon <> colon <+> Kind.doc y
   TypeRow x -> docFromRow x
@@ -307,6 +325,7 @@ normalize = \case
   TypeConstrained x y ->
     TypeConstrained (normalizeConstraint x) (normalize y)
   TypeForall x y -> TypeForall x (normalize y)
+  TypeFunction x y -> TypeFunction (normalize x) (normalize y)
   TypeInfixOperator x y z ->
     TypeInfixOperator (normalize x) (Annotation.None <$ y) (normalize z)
   TypeKinded x y -> TypeKinded (normalize x) (Kind.normalize y)
