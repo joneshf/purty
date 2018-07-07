@@ -138,12 +138,14 @@ docFromData = \case
   Data name variables (Just alternates) ->
     "data" <+> Name.docFromProper name <> Type.docFromVariables variables
       <> line <> indent 2 (align doc)
+      <> line
       where
       doc =
         equals
           <+> intercalateMap1 (line <> pipe <> space) docFromAlternate alternates
   Data name variables Nothing ->
     "data" <+> Name.docFromProper name <> Type.docFromVariables variables
+      <> line
 
 normalizeData :: Data a -> Data Annotation.Normalized
 normalizeData = \case
@@ -179,6 +181,7 @@ docFromNewtype = \case
   Newtype name variables constructor type'' ->
     "newtype" <+> Name.docFromProper name <> Type.docFromVariables variables
       <> line <> indent 2 (equals <+> docConstructor <+> docType)
+      <> line
       where
       docConstructor = Name.docFromConstructor constructor
       docType = Type.doc type''
