@@ -397,6 +397,13 @@ normalizeTypeApplication x' y' = case (x', y') of
       )
     , TypeRow (Row _ pairs rowpen)
     ) -> TypeRow (normalizeRow $ Row RowBraces pairs rowpen)
+  ( TypeTypeConstructor
+      ( Name.Qualified
+          (Just (Name.Module (Name.Proper _ "Prim" :| [])))
+          (Name.TypeConstructor (Name.Proper _ "Record"))
+      )
+    , y
+    ) -> TypeRow (normalizeRow $ Row RowBraces Nothing $ Rowpen y)
   (_, _) -> TypeApplication (normalize x') (normalize y')
 
 doc :: Type Annotation.Normalized -> Doc b
