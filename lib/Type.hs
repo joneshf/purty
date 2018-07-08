@@ -1,6 +1,5 @@
 module Type
-  ( Declaration(Declaration)
-  , Errors
+  ( Errors
   , InferredConstraintData
   , InferredForallWithSkolem
   , InferredSkolem
@@ -12,13 +11,10 @@ module Type
   , Type
   , Variable(Variable)
   , Variables(Variables)
-  , declaration
   , doc
-  , docFromDeclaration
   , docFromVariables
   , fromPureScript
   , normalize
-  , normalizeDeclaration
   , normalizeVariables
   , variables
   ) where
@@ -108,63 +104,6 @@ normalizeConstraint :: Constraint a -> Constraint Annotation.Normalized
 normalizeConstraint = \case
   Constraint x y ->
     Constraint (Annotation.None <$ x) ((fmap . fmap) normalize y)
-
-data Declaration a
-  = Declaration !(Name.Common a) !(Type a)
-  deriving (Functor)
-
-instance (Display a) => Display (Declaration a) where
-  display = \case
-    Declaration x y ->
-      "Declaration: "
-        <> " name: "
-        <> display x
-        <> ", type: "
-        <> display y
-
-declaration ::
-  ( Members
-    '[ Error InferredConstraintData
-     , Error InferredForallWithSkolem
-     , Error InferredSkolem
-     , Error InferredType
-     , Error InfixTypeNotTypeOp
-     , Error PrettyPrintForAll
-     , Error PrettyPrintFunction
-     , Error PrettyPrintObject
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     ]
-    e
-  ) =>
-  Language.PureScript.TypeDeclarationData ->
-  Eff e (Declaration Annotation.Unannotated)
-declaration = \case
-  Language.PureScript.TypeDeclarationData _ ident type'' -> do
-    name <- Name.common ident
-    type' <- fromPureScript type''
-    pure (Declaration name type')
-
-docFromDeclaration ::
-  Declaration Annotation.Normalized ->
-  Variations.Variations (Doc a)
-docFromDeclaration = \case
-  Declaration name type' ->
-    Variations.Variations { Variations.multiLine, Variations.singleLine }
-    where
-    multiLine =
-      Name.docFromCommon name <+> colon <> colon
-        <> line
-        <> indent 2 (Variations.multiLine $ doc type')
-    singleLine =
-      Name.docFromCommon name <+> colon <> colon
-        <+> Variations.singleLine (doc type')
-
-normalizeDeclaration :: Declaration a -> Declaration Annotation.Normalized
-normalizeDeclaration = \case
-  Declaration name type' ->
-    Declaration (Annotation.None <$ name) (normalize type')
 
 newtype Forall
   = Forall (NonEmpty Variable)
