@@ -633,9 +633,10 @@ variables ::
   ) =>
   [(Text, Maybe Language.PureScript.Kind)] ->
   Eff e (Variables Annotation.Unannotated)
-variables x = do
-  vars <- traverse (bitraverse (pure . Variable) (traverse Kind.fromPureScript)) x
-  pure (Variables $ nonEmpty vars)
+variables x =
+  fmap
+    (Variables . nonEmpty)
+    (traverse (bitraverse (pure . Variable) (traverse Kind.fromPureScript)) x)
 
 data Wildcard
   = Wildcard
