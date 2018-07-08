@@ -27,6 +27,7 @@ import qualified "this" Annotation
 import qualified "this" Kind
 import qualified "this" Name
 import qualified "this" Type
+import qualified "this" Variations
 
 data Alternate a
   = Alternate !a !(Name.Constructor a) !(Maybe (NonEmpty (Type.Type a)))
@@ -76,9 +77,9 @@ docFromAlternate = \case
       Annotation.None   -> id
       Annotation.Braces -> braces
       Annotation.Parens -> parens
-    doc =
-      Name.docFromConstructor x
-        <> foldMap (\types -> space <> intercalateMap1 space Type.doc types) y
+    doc = Name.docFromConstructor x <> foldMap go y
+    go types =
+      space <> intercalateMap1 space (Variations.singleLine . Type.doc) types
 
 normalizeAlternate :: Alternate a -> Alternate Annotation.Normalized
 normalizeAlternate = \case
@@ -184,7 +185,7 @@ docFromNewtype = \case
       <> line
       where
       docConstructor = Name.docFromConstructor constructor
-      docType = Type.doc type''
+      docType = Variations.singleLine (Type.doc type'')
 
 newtype' ::
   ( Members

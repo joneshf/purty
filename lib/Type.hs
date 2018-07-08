@@ -34,6 +34,8 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , colon
     , comma
     , dot
+    , indent
+    , line
     , parens
     , pipe
     , pretty
@@ -48,6 +50,7 @@ import qualified "purescript" Language.PureScript.Label
 import qualified "this" Annotation
 import qualified "this" Kind
 import qualified "this" Name
+import qualified "this" Variations
 
 data Constraint a
   = Constraint !(Name.Qualified Name.Class a) !(Maybe (NonEmpty (Type a)))
@@ -86,11 +89,14 @@ constraint = \case
     y <- nonEmpty <$> traverse fromPureScript y'
     pure (Constraint x y)
 
-docFromConstraint :: Constraint Annotation.Normalized -> Doc b
-docFromConstraint = \case
+docFromConstraint ::
+  Constraint Annotation.Normalized ->
+  Variations.Variations (Doc b)
+docFromConstraint = pure . \case
   Constraint x Nothing -> Name.docFromQualified Name.docFromClass x
   Constraint x (Just y) ->
-    Name.docFromQualified Name.docFromClass x <+> intercalateMap1 space doc y
+    Name.docFromQualified Name.docFromClass x
+      <+> intercalateMap1 space (Variations.singleLine . doc) y
 
 normalizeConstraint :: Constraint a -> Constraint Annotation.Normalized
 normalizeConstraint = \case
@@ -219,7 +225,8 @@ instance (Display a) => Display (RowPair a) where
 
 docFromRowPair :: RowPair Annotation.Normalized -> Doc a
 docFromRowPair = \case
-  RowPair x y -> docFromLabel x <+> colon <> colon <+> doc y
+  RowPair x y ->
+    docFromLabel x <+> colon <> colon <+> Variations.singleLine (doc y)
 
 normalizeRowPair :: RowPair a -> RowPair Annotation.Normalized
 normalizeRowPair = \case
@@ -262,7 +269,7 @@ instance (Display a) => Display (Rowpen a) where
 
 docFromRowpen :: Rowpen Annotation.Normalized -> Doc a
 docFromRowpen = \case
-  Rowpen x -> space <> pipe <+> doc x
+  Rowpen x -> space <> pipe <+> Variations.singleLine (doc x)
   Rowsed -> mempty
 
 normalizeRowpen :: Rowpen a -> Rowpen Annotation.Normalized
@@ -406,24 +413,78 @@ normalizeTypeApplication x' y' = case (x', y') of
     ) -> TypeRow (normalizeRow $ Row RowBraces Nothing $ Rowpen y)
   (_, _) -> TypeApplication (normalize x') (normalize y')
 
-doc :: Type Annotation.Normalized -> Doc b
+doc :: Type Annotation.Normalized -> Variations.Variations (Doc b)
 doc = \case
   TypeAnnotation Annotation.None x -> doc x
-  TypeAnnotation Annotation.Braces x -> braces (doc x)
-  TypeAnnotation Annotation.Parens x -> parens (doc x)
-  TypeApplication x y -> doc x <+> doc y
-  TypeConstrained x y -> docFromConstraint x <+> "=>" <+> doc y
-  TypeForall x y -> docFromForall x <+> doc y
-  TypeFunction x y -> doc x <+> "->" <+> doc y
-  TypeInfixOperator x y z -> doc x <+> Name.docFromQualified Name.docFromTypeOperator y <+> doc z
-  TypeKinded x y -> doc x <+> colon <> colon <+> Kind.doc y
-  TypeRow x -> docFromRow x
+  TypeAnnotation Annotation.Braces x -> fmap braces (doc x)
+  TypeAnnotation Annotation.Parens x -> fmap parens (doc x)
+  TypeApplication x y ->
+    Variations.Variations { Variations.multiLine, Variations.singleLine }
+    where
+    multiLine =
+      Variations.multiLine (doc x)
+        <> line
+        <> indent 2 (Variations.multiLine $ doc y)
+    singleLine = Variations.singleLine (doc x) <+> Variations.singleLine (doc y)
+  TypeConstrained x y ->
+    Variations.Variations { Variations.multiLine, Variations.singleLine }
+    where
+    multiLine =
+      Variations.multiLine (docFromConstraint x) <+> "=>"
+        <> line
+        <> Variations.multiLine (doc y)
+    singleLine =
+      Variations.singleLine (docFromConstraint x) <+> "=>"
+        <+> Variations.singleLine (doc y)
+  TypeForall x y ->
+    Variations.Variations { Variations.multiLine, Variations.singleLine }
+    where
+    multiLine =
+      docFromForall x
+        <> line
+        <> Variations.multiLine (doc y)
+    singleLine = docFromForall x <+> Variations.singleLine (doc y)
+  TypeFunction x y ->
+    Variations.Variations { Variations.multiLine, Variations.singleLine }
+    where
+    multiLine =
+      Variations.multiLine (doc x) <+> "->"
+        <> line
+        <> Variations.multiLine (doc y)
+    singleLine =
+      Variations.singleLine (doc x) <+> "->" <+> Variations.singleLine (doc y)
+  TypeInfixOperator x y z ->
+    Variations.Variations { Variations.multiLine, Variations.singleLine }
+    where
+    multiLine =
+      Variations.multiLine (doc x)
+        <> line
+        <> indent 2 right
+      where
+      right =
+        Name.docFromQualified Name.docFromTypeOperator y
+          <+> Variations.multiLine (doc z)
+    singleLine =
+      Variations.singleLine (doc x)
+        <+> Name.docFromQualified Name.docFromTypeOperator y
+        <+> Variations.singleLine (doc z)
+  TypeKinded x y ->
+    Variations.Variations { Variations.multiLine, Variations.singleLine }
+    where
+    multiLine =
+      Variations.multiLine (doc x) <+> colon <> colon
+        <> line
+        <> indent 2 (Kind.doc y)
+    singleLine = Variations.singleLine (doc x) <+> colon <> colon <+> Kind.doc y
+  TypeRow x -> pure (docFromRow x)
   TypeParens x -> doc (TypeAnnotation Annotation.Parens x)
-  TypeSymbol x -> docFromSymbol x
-  TypeTypeConstructor x -> Name.docFromQualified Name.docFromTypeConstructor x
-  TypeTypeOperator x -> parens (Name.docFromQualified Name.docFromTypeOperator x)
-  TypeVariable x -> docFromVariable x
-  TypeWildcard x -> docFromWildcard x
+  TypeSymbol x -> pure (docFromSymbol x)
+  TypeTypeConstructor x ->
+    pure (Name.docFromQualified Name.docFromTypeConstructor x)
+  TypeTypeOperator x ->
+    pure (parens (Name.docFromQualified Name.docFromTypeOperator x))
+  TypeVariable x -> pure (docFromVariable x)
+  TypeWildcard x -> pure (docFromWildcard x)
 
 normalize :: Type a -> Type Annotation.Normalized
 normalize = \case

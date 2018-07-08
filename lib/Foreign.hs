@@ -4,7 +4,15 @@ import "rio" RIO hiding (Data)
 
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error)
-import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, colon, (<+>))
+import "prettyprinter" Data.Text.Prettyprint.Doc
+    ( Doc
+    , colon
+    , flatAlt
+    , group
+    , indent
+    , line
+    , (<+>)
+    )
 
 import qualified "purescript" Language.PureScript
 
@@ -12,6 +20,7 @@ import qualified "this" Annotation
 import qualified "this" Kind
 import qualified "this" Name
 import qualified "this" Type
+import qualified "this" Variations
 
 data Data a
   = Data !(Name.Type a) !(Kind.Kind a)
@@ -44,6 +53,7 @@ docFromData = \case
     "foreign import data" <+> Name.docFromType name
       <+> colon <> colon
       <+> Kind.doc kind'
+      <> line
 
 normalizeData :: Data a -> Data Annotation.Normalized
 normalizeData = \case
@@ -64,6 +74,7 @@ docFromKind :: Kind Annotation.Normalized -> Doc a
 docFromKind = \case
   Foreign.Kind name ->
     "foreign import kind" <+> Name.docFromKind name
+      <> line
 
 kind ::
   Language.PureScript.ProperName 'Language.PureScript.KindName ->
@@ -92,7 +103,13 @@ docFromValue = \case
   Foreign.Value name type' ->
     "foreign import" <+> Name.docFromCommon name
       <+> colon <> colon
-      <+> Type.doc type'
+      <> group (flatAlt multi single)
+      <> line
+    where
+    multi =
+      line
+        <> indent 2 (Variations.multiLine $ Type.doc type')
+    single = Variations.singleLine (Type.doc type')
 
 normalizeValue :: Value a -> Value Annotation.Normalized
 normalizeValue = \case

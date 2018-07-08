@@ -12,7 +12,7 @@ import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error)
 import "base" Data.List.NonEmpty                 (NonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
-import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, line)
+import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, flatAlt, line)
 
 import qualified "purescript" Language.PureScript
 
@@ -23,6 +23,7 @@ import qualified "this" Foreign
 import qualified "this" Kind
 import qualified "this" Name
 import qualified "this" Type
+import qualified "this" Variations
 
 data Declaration a
   = DeclarationData !(DataType.Data a)
@@ -118,17 +119,23 @@ normalize = \case
 dynamic, static :: Declarations Annotation.Normalized -> Doc a
 (dynamic, static) = (dynamic', static')
   where
-  dynamic' = static'
+  dynamic' = \case
+    Declarations Nothing -> mempty
+    Declarations (Just declarations) ->
+      line
+        <> intercalateMap1 line dynamicDoc declarations
+  dynamicDoc x =
+    flatAlt (Variations.multiLine $ go x) (Variations.singleLine $ go x)
   go = \case
-    DeclarationData data' -> DataType.docFromData data'
-    DeclarationFixityType type' -> Fixity.docFromType type'
-    DeclarationFixityValue value -> Fixity.docFromValue value
-    DeclarationForeignData data' -> Foreign.docFromData data'
-    DeclarationForeignKind kind -> Foreign.docFromKind kind
-    DeclarationForeignValue value -> Foreign.docFromValue value
-    DeclarationNewtype newtype' -> DataType.docFromNewtype newtype'
+    DeclarationData data' -> pure (DataType.docFromData data')
+    DeclarationFixityType type' -> pure (Fixity.docFromType type')
+    DeclarationFixityValue value -> pure (Fixity.docFromValue value)
+    DeclarationForeignData data' -> pure (Foreign.docFromData data')
+    DeclarationForeignKind kind -> pure (Foreign.docFromKind kind)
+    DeclarationForeignValue value -> pure (Foreign.docFromValue value)
+    DeclarationNewtype newtype' -> pure (DataType.docFromNewtype newtype')
   static' = \case
     Declarations Nothing -> mempty
     Declarations (Just declarations) ->
       line
-        <> intercalateMap1 line go declarations
+        <> intercalateMap1 line (Variations.multiLine . go) declarations
