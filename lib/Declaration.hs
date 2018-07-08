@@ -12,7 +12,7 @@ import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error)
 import "base" Data.List.NonEmpty                 (NonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
-import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, flatAlt, line)
+import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, flatAlt, group, line)
 
 import qualified "purescript" Language.PureScript
 
@@ -33,6 +33,7 @@ data Declaration a
   | DeclarationForeignKind !(Foreign.Kind a)
   | DeclarationForeignValue !(Foreign.Value a)
   | DeclarationNewtype !(DataType.Newtype a)
+  | DeclarationType !(Type.Declaration a)
   deriving (Functor)
 
 instance (Display a) => Display (Declaration a) where
@@ -44,6 +45,7 @@ instance (Display a) => Display (Declaration a) where
     DeclarationForeignKind x -> "Declaration Foreign Kind: " <> display x
     DeclarationForeignValue x -> "Declaration Foreign Value: " <> display x
     DeclarationNewtype x -> "Declaration Newtype: " <> display x
+    DeclarationType x -> "Declaration Type: " <> display x
 
 normalizeDeclaration :: Declaration a -> Declaration Annotation.Normalized
 normalizeDeclaration = \case
@@ -54,6 +56,7 @@ normalizeDeclaration = \case
   DeclarationForeignKind x -> DeclarationForeignKind (Foreign.normalizeKind x)
   DeclarationForeignValue x -> DeclarationForeignValue (Foreign.normalizeValue x)
   DeclarationNewtype x -> DeclarationNewtype (DataType.normalizeNewtype x)
+  DeclarationType x -> DeclarationType (Type.normalizeDeclaration x)
 
 fromPureScript ::
   ( Members
@@ -92,7 +95,8 @@ fromPureScript = \case
   Language.PureScript.FixityDeclaration _ (Right fixity) ->
     Just . DeclarationFixityType <$> Fixity.type' fixity
   Language.PureScript.TypeClassDeclaration {} -> pure Nothing
-  Language.PureScript.TypeDeclaration {} -> pure Nothing
+  Language.PureScript.TypeDeclaration declaration ->
+    Just . DeclarationType <$> Type.declaration declaration
   Language.PureScript.TypeInstanceDeclaration {} -> pure Nothing
   Language.PureScript.TypeSynonymDeclaration {} -> pure Nothing
   Language.PureScript.ValueDeclaration {} -> pure Nothing
@@ -124,18 +128,30 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
     Declarations (Just declarations) ->
       line
         <> intercalateMap1 line dynamicDoc declarations
-  dynamicDoc x =
-    flatAlt (Variations.multiLine $ go x) (Variations.singleLine $ go x)
-  go = \case
-    DeclarationData data' -> pure (DataType.docFromData data')
-    DeclarationFixityType type' -> pure (Fixity.docFromType type')
-    DeclarationFixityValue value -> pure (Fixity.docFromValue value)
-    DeclarationForeignData data' -> pure (Foreign.docFromData data')
-    DeclarationForeignKind kind -> pure (Foreign.docFromKind kind)
-    DeclarationForeignValue value -> pure (Foreign.docFromValue value)
-    DeclarationNewtype newtype' -> pure (DataType.docFromNewtype newtype')
+  dynamicDoc = \case
+    DeclarationData data' -> DataType.docFromData data'
+    DeclarationFixityType type' -> Fixity.docFromType type'
+    DeclarationFixityValue value -> Fixity.docFromValue value
+    DeclarationForeignData data' -> Foreign.docFromData data'
+    DeclarationForeignKind kind -> Foreign.docFromKind kind
+    DeclarationForeignValue value -> Foreign.docFromValue value
+    DeclarationNewtype newtype' -> DataType.docFromNewtype newtype'
+    DeclarationType declaration ->
+      group (flatAlt (Variations.multiLine doc) $ Variations.singleLine doc)
+        where
+        doc = Type.docFromDeclaration declaration
   static' = \case
     Declarations Nothing -> mempty
     Declarations (Just declarations) ->
       line
-        <> intercalateMap1 line (Variations.multiLine . go) declarations
+        <> intercalateMap1 line staticDoc declarations
+  staticDoc = \case
+    DeclarationData data' -> DataType.docFromData data'
+    DeclarationFixityType type' -> Fixity.docFromType type'
+    DeclarationFixityValue value -> Fixity.docFromValue value
+    DeclarationForeignData data' -> Foreign.docFromData data'
+    DeclarationForeignKind kind -> Foreign.docFromKind kind
+    DeclarationForeignValue value -> Foreign.docFromValue value
+    DeclarationNewtype newtype' -> DataType.docFromNewtype newtype'
+    DeclarationType declaration ->
+      Variations.multiLine (Type.docFromDeclaration declaration)
