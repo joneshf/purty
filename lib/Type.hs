@@ -486,13 +486,7 @@ doc = \case
   TypeAnnotation Annotation.Braces x -> fmap braces (doc x)
   TypeAnnotation Annotation.Parens x -> fmap parens (doc x)
   TypeApplication x y ->
-    Variations.Variations { Variations.multiLine, Variations.singleLine }
-    where
-    multiLine =
-      Variations.multiLine (doc x)
-        <> line
-        <> indent 2 (Variations.multiLine $ doc y)
-    singleLine = Variations.singleLine (doc x) <+> Variations.singleLine (doc y)
+    pure (Variations.singleLine (doc x) <+> Variations.singleLine (doc y))
   TypeConstrained x y ->
     Variations.Variations { Variations.multiLine, Variations.singleLine }
     where
