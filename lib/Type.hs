@@ -9,21 +9,17 @@ module Type
   , PrettyPrintForAll
   , PrettyPrintFunction
   , PrettyPrintObject
-  , Synonym(Synonym)
   , Type
   , Variable(Variable)
   , Variables(Variables)
   , declaration
   , doc
   , docFromDeclaration
-  , docFromSynonym
   , docFromVariables
   , fromPureScript
   , normalize
   , normalizeDeclaration
-  , normalizeSynonym
   , normalizeVariables
-  , synonym
   , variables
   ) where
 
@@ -44,7 +40,6 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , colon
     , comma
     , dot
-    , equals
     , indent
     , line
     , parens
@@ -366,68 +361,6 @@ instance Display Symbol where
 docFromSymbol :: Symbol -> Doc a
 docFromSymbol = \case
   Symbol x -> pretty (Language.PureScript.prettyPrintString x)
-
-data Synonym a
-  = Synonym !(Name.Type a) !(Variables a) !(Type a)
-  deriving (Functor)
-
-instance (Display a) => Display (Synonym a) where
-  display = \case
-    Synonym x y z ->
-      "{Synonym: "
-        <> "name: "
-        <> display x
-        <> ", variables: "
-        <> display y
-        <> ", type: "
-        <> display z
-        <> "}"
-
-docFromSynonym :: Synonym Annotation.Normalized -> Variations.Variations (Doc a)
-docFromSynonym = \case
-  Synonym x y z ->
-    Variations.Variations { Variations.multiLine, Variations.singleLine }
-      where
-      multiLine =
-        "type" <+> Name.docFromType x <> docFromVariables y
-          <> line
-          <> indent 2 (equals <+> Variations.multiLine (doc z))
-          <> line
-      singleLine =
-        "type" <+> Name.docFromType x <> docFromVariables y
-          <> line
-          <> indent 2 (equals <+> Variations.singleLine (doc z))
-          <> line
-
-normalizeSynonym :: Synonym a -> Synonym Annotation.Normalized
-normalizeSynonym = \case
-  Synonym x y z ->
-    Synonym (Annotation.None <$ x) (normalizeVariables y) (normalize z)
-
-synonym ::
-  ( Members
-    '[ Error InferredConstraintData
-     , Error InferredForallWithSkolem
-     , Error InferredSkolem
-     , Error InferredType
-     , Error InfixTypeNotTypeOp
-     , Error PrettyPrintForAll
-     , Error PrettyPrintFunction
-     , Error PrettyPrintObject
-     , Error Kind.InferredKind
-     , Error Name.Missing
-     ]
-    e
-  ) =>
-  Language.PureScript.ProperName 'Language.PureScript.TypeName ->
-  [(Text, Maybe Language.PureScript.Kind)] ->
-  Language.PureScript.Type ->
-  Eff e (Synonym Annotation.Unannotated)
-synonym name' variables' type'' = do
-  let name = Name.type' name'
-  vars <- variables variables'
-  type' <- fromPureScript type''
-  pure (Synonym name vars type')
 
 data Type a
   = TypeAnnotation !a !(Type a)

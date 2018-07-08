@@ -22,6 +22,7 @@ import qualified "this" Fixity
 import qualified "this" Foreign
 import qualified "this" Kind
 import qualified "this" Name
+import qualified "this" Synonym
 import qualified "this" Type
 import qualified "this" Variations
 
@@ -33,7 +34,7 @@ data Declaration a
   | DeclarationForeignKind !(Foreign.Kind a)
   | DeclarationForeignValue !(Foreign.Value a)
   | DeclarationNewtype !(DataType.Newtype a)
-  | DeclarationSynonym !(Type.Synonym a)
+  | DeclarationSynonym !(Synonym.Synonym a)
   | DeclarationType !(Type.Declaration a)
   deriving (Functor)
 
@@ -58,7 +59,7 @@ normalizeDeclaration = \case
   DeclarationForeignKind x -> DeclarationForeignKind (Foreign.normalizeKind x)
   DeclarationForeignValue x -> DeclarationForeignValue (Foreign.normalizeValue x)
   DeclarationNewtype x -> DeclarationNewtype (DataType.normalizeNewtype x)
-  DeclarationSynonym x -> DeclarationSynonym (Type.normalizeSynonym x)
+  DeclarationSynonym x -> DeclarationSynonym (Synonym.normalize x)
   DeclarationType x -> DeclarationType (Type.normalizeDeclaration x)
 
 fromPureScript ::
@@ -102,7 +103,7 @@ fromPureScript = \case
     Just . DeclarationType <$> Type.declaration declaration
   Language.PureScript.TypeInstanceDeclaration {} -> pure Nothing
   Language.PureScript.TypeSynonymDeclaration _ name variables type' ->
-    Just . DeclarationSynonym <$> Type.synonym name variables type'
+    Just . DeclarationSynonym <$> Synonym.fromPureScript name variables type'
   Language.PureScript.ValueDeclaration {} -> pure Nothing
   Language.PureScript.BindingGroupDeclaration {} -> pure Nothing
   Language.PureScript.DataBindingGroupDeclaration {} -> pure Nothing
@@ -142,8 +143,7 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
     DeclarationForeignValue value ->
       Variations.singleLine (Foreign.docFromValue value)
     DeclarationNewtype newtype' -> DataType.docFromNewtype newtype'
-    DeclarationSynonym synonym ->
-      Variations.singleLine (Type.docFromSynonym synonym)
+    DeclarationSynonym synonym -> Variations.singleLine (Synonym.doc synonym)
     DeclarationType declaration ->
       group (flatAlt (Variations.multiLine doc) $ Variations.singleLine doc)
         where
@@ -163,7 +163,6 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
     DeclarationForeignValue value ->
       Variations.multiLine (Foreign.docFromValue value)
     DeclarationNewtype newtype' -> DataType.docFromNewtype newtype'
-    DeclarationSynonym synonym ->
-      Variations.multiLine (Type.docFromSynonym synonym)
+    DeclarationSynonym synonym -> Variations.multiLine (Synonym.doc synonym)
     DeclarationType declaration ->
       Variations.multiLine (Type.docFromDeclaration declaration)
