@@ -1,9 +1,6 @@
 module Type
   ( Declaration(Declaration)
   , Errors
-  , Type
-  , Variable(Variable)
-  , Variables(Variables)
   , InferredConstraintData
   , InferredForallWithSkolem
   , InferredSkolem
@@ -13,6 +10,9 @@ module Type
   , PrettyPrintFunction
   , PrettyPrintObject
   , Synonym(Synonym)
+  , Type
+  , Variable(Variable)
+  , Variables(Variables)
   , declaration
   , doc
   , docFromDeclaration
