@@ -4,7 +4,6 @@ import "rio" RIO hiding (Data)
 
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
-import "base" Data.Bitraversable                 (bitraverse)
 import "base" Data.List                          (intersperse)
 import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
@@ -131,8 +130,8 @@ data' ::
   Eff e (Data Annotation.Unannotated)
 data' name variables' constructors = do
   alternates <- nonEmpty <$> traverse alternate constructors
-  variables <- traverse (bitraverse (pure . Type.Variable) (traverse Kind.fromPureScript)) variables'
-  pure (Data (Name.proper name) (Type.Variables $ nonEmpty variables) alternates)
+  variables <- Type.variables variables'
+  pure (Data (Name.proper name) variables alternates)
 
 docFromData :: Data Annotation.Normalized -> Doc a
 docFromData = \case
@@ -214,13 +213,10 @@ newtype' ::
 newtype' name' variables' = \case
   [(constructor', [ty'])] -> do
     ty <- Type.fromPureScript ty'
-    variables <-
-      traverse
-        (bitraverse (pure . Type.Variable) (traverse Kind.fromPureScript))
-        variables'
+    variables <- Type.variables variables'
     let constructor = Name.constructor constructor'
         name = Name.proper name'
-    pure (Newtype name (Type.Variables $ nonEmpty variables) constructor ty)
+    pure (Newtype name variables constructor ty)
   constructors ->
     throwError (WrongNewtypeConstructors name' constructors)
 

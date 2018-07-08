@@ -20,12 +20,14 @@ module Type
   , normalize
   , normalizeDeclaration
   , normalizeVariables
+  , variables
   ) where
 
 import "rio" RIO hiding (Data)
 
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
+import "base" Data.Bitraversable                 (bitraverse)
 import "base" Data.List.NonEmpty
     ( NonEmpty((:|))
     , nonEmpty
@@ -642,9 +644,9 @@ newtype Variables a
 instance (Display a) => Display (Variables a) where
   display = \case
     Variables Nothing -> "No Variables"
-    Variables (Just variables) ->
+    Variables (Just x') ->
       "Variables: ["
-        <> intercalateMap1 ", " go variables
+        <> intercalateMap1 ", " go x'
         <> "]"
         where
         go = \case
@@ -661,7 +663,7 @@ instance (Display a) => Display (Variables a) where
 docFromVariables :: Variables Annotation.Normalized -> Doc b
 docFromVariables = \case
   Variables Nothing -> mempty
-  Variables (Just variables) -> space <> intercalateMap1 space go variables
+  Variables (Just x) -> space <> intercalateMap1 space go x
     where
     go = \case
       (variable, Nothing) -> docFromVariable variable
@@ -675,8 +677,21 @@ docFromVariables = \case
 
 normalizeVariables :: Variables a -> Variables Annotation.Normalized
 normalizeVariables = \case
-  Variables variables ->
-    Variables ((fmap . fmap . fmap . fmap) Kind.normalize variables)
+  Variables x ->
+    Variables ((fmap . fmap . fmap . fmap) Kind.normalize x)
+
+variables ::
+  ( Members
+    '[ Error Kind.InferredKind
+     , Error Name.Missing
+     ]
+    e
+  ) =>
+  [(Text, Maybe Language.PureScript.Kind)] ->
+  Eff e (Variables Annotation.Unannotated)
+variables x = do
+  vars <- traverse (bitraverse (pure . Variable) (traverse Kind.fromPureScript)) x
+  pure (Variables $ nonEmpty vars)
 
 data Wildcard
   = Wildcard
