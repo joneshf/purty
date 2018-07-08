@@ -26,6 +26,7 @@ import "this" Env
     )
 
 import qualified "this" Annotation
+import qualified "this" Declaration.Class
 import qualified "this" Declaration.DataType
 import qualified "this" Declaration.Fixity
 import qualified "this" Exit
@@ -40,7 +41,8 @@ import qualified "this" Type
 
 fromAbsFile ::
   ( Members
-    ( Declaration.DataType.Errors
+    ( Declaration.Class.Errors
+    :++: Declaration.DataType.Errors
     :++: Declaration.Fixity.Errors
     :++: Export.Errors
     :++: Kind.Errors
@@ -86,7 +88,8 @@ fromAbsFile filePath = do
 
 fromPurtyFilePath ::
   ( Members
-    ( Declaration.DataType.Errors
+    ( Declaration.Class.Errors
+    :++: Declaration.DataType.Errors
     :++: Declaration.Fixity.Errors
     :++: Export.Errors
     :++: Kind.Errors
@@ -126,7 +129,8 @@ fromPurtyFilePath filePath = do
 program ::
   Args ->
   Eff
-    ( Declaration.DataType.Errors
+    ( Declaration.Class.Errors
+    :++: Declaration.DataType.Errors
     :++: Declaration.Fixity.Errors
     :++: Export.Errors
     :++: Kind.Errors

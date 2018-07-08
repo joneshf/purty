@@ -17,6 +17,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, flatAlt, group, line)
 import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
+import qualified "this" Declaration.Class
 import qualified "this" Declaration.DataType
 import qualified "this" Declaration.Fixity
 import qualified "this" Declaration.Foreign
@@ -28,7 +29,8 @@ import qualified "this" Type
 import qualified "this" Variations
 
 data Declaration a
-  = DeclarationData !(Declaration.DataType.Data a)
+  = DeclarationClass !(Declaration.Class.Class a)
+  | DeclarationData !(Declaration.DataType.Data a)
   | DeclarationFixityType !(Declaration.Fixity.Type a)
   | DeclarationFixityValue !(Declaration.Fixity.Value a)
   | DeclarationForeignData !(Declaration.Foreign.Data a)
@@ -41,6 +43,7 @@ data Declaration a
 
 instance (Display a) => Display (Declaration a) where
   display = \case
+    DeclarationClass x -> "Declaration Class: " <> display x
     DeclarationData x -> "Declaration Data: " <> display x
     DeclarationFixityType x -> "Declaration Fixity Type: " <> display x
     DeclarationFixityValue x -> "Declaration Fixity Value: " <> display x
@@ -53,6 +56,7 @@ instance (Display a) => Display (Declaration a) where
 
 normalizeDeclaration :: Declaration a -> Declaration Annotation.Normalized
 normalizeDeclaration = \case
+  DeclarationClass x -> DeclarationClass (Declaration.Class.normalize x)
   DeclarationData x -> DeclarationData (Declaration.DataType.normalizeData x)
   DeclarationFixityType x ->
     DeclarationFixityType (Declaration.Fixity.normalizeType x)
@@ -71,7 +75,9 @@ normalizeDeclaration = \case
 
 fromPureScript ::
   ( Members
-    '[ Error Declaration.DataType.WrongNewtypeConstructors
+    '[ Error Declaration.Class.InvalidTypeClassMethod
+     , Error Declaration.Class.MissingTypeVariable
+     , Error Declaration.DataType.WrongNewtypeConstructors
      , Error Declaration.Fixity.NegativePrecedence
      , Error Kind.InferredKind
      , Error Name.InvalidCommon
@@ -105,7 +111,8 @@ fromPureScript = \case
     Just . DeclarationFixityValue <$> Declaration.Fixity.value fixity
   Language.PureScript.FixityDeclaration _ (Right fixity) ->
     Just . DeclarationFixityType <$> Declaration.Fixity.type' fixity
-  Language.PureScript.TypeClassDeclaration {} -> pure Nothing
+  Language.PureScript.TypeClassDeclaration _ name variables constraints funDeps methods ->
+    Just . DeclarationClass <$> Declaration.Class.fromPureScript constraints name variables funDeps methods
   Language.PureScript.TypeDeclaration declaration ->
     Just . DeclarationType <$> Declaration.Type.fromPureScript declaration
   Language.PureScript.TypeInstanceDeclaration {} -> pure Nothing
@@ -141,6 +148,8 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
       line
         <> intercalateMap1 line dynamicDoc declarations
   dynamicDoc = \case
+    DeclarationClass class' ->
+      Variations.singleLine (Declaration.Class.doc class')
     DeclarationData data' -> Declaration.DataType.docFromData data'
     DeclarationFixityType type' -> Declaration.Fixity.docFromType type'
     DeclarationFixityValue value -> Declaration.Fixity.docFromValue value
@@ -162,6 +171,8 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
       line
         <> intercalateMap1 line staticDoc declarations
   staticDoc = \case
+    DeclarationClass class' ->
+      Variations.multiLine (Declaration.Class.doc class')
     DeclarationData data' -> Declaration.DataType.docFromData data'
     DeclarationFixityType type' -> Declaration.Fixity.docFromType type'
     DeclarationFixityValue value -> Declaration.Fixity.docFromValue value

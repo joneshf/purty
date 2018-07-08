@@ -1,5 +1,6 @@
 module Type
-  ( Errors
+  ( Constraint
+  , Errors
   , InferredConstraintData
   , InferredForallWithSkolem
   , InferredSkolem
@@ -11,10 +12,14 @@ module Type
   , Type
   , Variable(Variable)
   , Variables(Variables)
+  , constraint
   , doc
+  , docFromConstraint
+  , docFromVariable
   , docFromVariables
   , fromPureScript
   , normalize
+  , normalizeConstraint
   , normalizeVariables
   , variables
   ) where

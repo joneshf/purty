@@ -24,6 +24,9 @@ instance Applicative Variations where
   pure x = Variations x x
   Variations f g <*> Variations x y = Variations (f x) (g y)
 
+instance (Semigroup a) => Semigroup (Variations a) where
+  Variations w x <> Variations y z = Variations (w <> y) (x <> z)
+
 parenthesize :: (a -> Variations (Doc b)) -> NonEmpty a -> Variations (Doc b)
 parenthesize f xs =
   Variations

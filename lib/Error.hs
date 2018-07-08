@@ -7,6 +7,7 @@ import "freer-simple" Control.Monad.Freer.Error (handleError)
 import "freer-simple" Data.OpenUnion            ((:++:))
 import "parsec" Text.Parsec                     (ParseError)
 
+import qualified "this" Declaration.Class
 import qualified "this" Declaration.DataType
 import qualified "this" Declaration.Fixity
 import qualified "this" Exit
@@ -15,6 +16,19 @@ import qualified "this" Kind
 import qualified "this" Log
 import qualified "this" Name
 import qualified "this" Type
+
+declarationClass ::
+  (Members '[Exit.Exit, Log.Log] e) =>
+  Eff (Declaration.Class.Errors :++: e) a ->
+  Eff e a
+declarationClass x =
+  x `handleError` go
+    `handleError` go
+  where
+  go err = do
+    Log.error "Problem converting a type class"
+    Log.error (display err)
+    Exit.failure
 
 declarationDataType ::
   (Members '[Exit.Exit, Log.Log] e) =>

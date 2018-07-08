@@ -23,6 +23,7 @@ import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
 import qualified "this" Declaration
+import qualified "this" Declaration.Class
 import qualified "this" Declaration.DataType
 import qualified "this" Declaration.Fixity
 import qualified "this" Export
@@ -80,7 +81,8 @@ dynamic = \case
 
 fromPureScript ::
   ( Members
-    ( Declaration.DataType.Errors
+    ( Declaration.Class.Errors
+    :++: Declaration.DataType.Errors
     :++: Declaration.Fixity.Errors
     :++: Export.Errors
     :++: Kind.Errors

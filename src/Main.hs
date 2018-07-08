@@ -42,4 +42,5 @@ main = do
       $ Error.export
       $ Error.declarationFixity
       $ Error.declarationDataType
+      $ Error.declarationClass
       $ Purty.program cliArgs
