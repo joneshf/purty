@@ -104,17 +104,23 @@ normalizeConstraint = \case
     Constraint (Annotation.None <$ x) ((fmap . fmap) normalize y)
 
 newtype Forall
-  = Forall Text
+  = Forall (NonEmpty Variable)
 
 instance Display Forall where
   display = \case
     Forall x ->
       "Forall: "
-        <> display x
+        <> "variables: ["
+        <> intercalateMap1 ", " display x
+        <> "]"
 
 docFromForall :: Forall -> Doc a
 docFromForall = \case
-  Forall x -> "forall" <+> pretty x <> dot
+  Forall x -> "forall" <+> intercalateMap1 space docFromVariable x <> dot
+
+normalizeForall :: Forall -> Forall -> Forall
+normalizeForall x' y' = case (x', y') of
+  (Forall x, Forall y) -> Forall (y <> x)
 
 -- |
 -- We're using the underlying PureScript representation here,
@@ -492,6 +498,7 @@ normalize = \case
   TypeApplication x y -> normalizeTypeApplication x y
   TypeConstrained x y ->
     TypeConstrained (normalizeConstraint x) (normalize y)
+  TypeForall x (TypeForall y z) -> normalize (TypeForall (normalizeForall x y) z)
   TypeForall x y -> TypeForall x (normalize y)
   TypeFunction x y -> TypeFunction (normalize x) (normalize y)
   TypeInfixOperator x y z ->
@@ -533,7 +540,7 @@ fromPureScript = \case
     fmap TypeTypeOperator (Name.qualified (pure . Name.typeOperator) x)
   Language.PureScript.TypeApp x y -> TypeApplication <$> fromPureScript x <*> fromPureScript y
   Language.PureScript.ForAll x y Nothing ->
-    fmap (TypeForall $ Forall x) (fromPureScript y)
+    fmap (TypeForall $ Forall $ pure $ Variable x) (fromPureScript y)
   Language.PureScript.ForAll x y (Just z) ->
     throwError (InferredForallWithSkolem x y z)
   Language.PureScript.ConstrainedType x y ->
