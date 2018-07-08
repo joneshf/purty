@@ -1,4 +1,4 @@
-module Synonym where
+module Declaration.Synonym where
 
 import "rio" RIO
 

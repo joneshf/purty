@@ -17,24 +17,24 @@ import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, flatAlt, group, line)
 import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
-import qualified "this" DataType
-import qualified "this" Fixity
-import qualified "this" Foreign
+import qualified "this" Declaration.DataType
+import qualified "this" Declaration.Fixity
+import qualified "this" Declaration.Foreign
+import qualified "this" Declaration.Synonym
 import qualified "this" Kind
 import qualified "this" Name
-import qualified "this" Synonym
 import qualified "this" Type
 import qualified "this" Variations
 
 data Declaration a
-  = DeclarationData !(DataType.Data a)
-  | DeclarationFixityType !(Fixity.Type a)
-  | DeclarationFixityValue !(Fixity.Value a)
-  | DeclarationForeignData !(Foreign.Data a)
-  | DeclarationForeignKind !(Foreign.Kind a)
-  | DeclarationForeignValue !(Foreign.Value a)
-  | DeclarationNewtype !(DataType.Newtype a)
-  | DeclarationSynonym !(Synonym.Synonym a)
+  = DeclarationData !(Declaration.DataType.Data a)
+  | DeclarationFixityType !(Declaration.Fixity.Type a)
+  | DeclarationFixityValue !(Declaration.Fixity.Value a)
+  | DeclarationForeignData !(Declaration.Foreign.Data a)
+  | DeclarationForeignKind !(Declaration.Foreign.Kind a)
+  | DeclarationForeignValue !(Declaration.Foreign.Value a)
+  | DeclarationNewtype !(Declaration.DataType.Newtype a)
+  | DeclarationSynonym !(Declaration.Synonym.Synonym a)
   | DeclarationType !(Type.Declaration a)
   deriving (Functor)
 
@@ -52,20 +52,26 @@ instance (Display a) => Display (Declaration a) where
 
 normalizeDeclaration :: Declaration a -> Declaration Annotation.Normalized
 normalizeDeclaration = \case
-  DeclarationData x -> DeclarationData (DataType.normalizeData x)
-  DeclarationFixityType x -> DeclarationFixityType (Fixity.normalizeType x)
-  DeclarationFixityValue x -> DeclarationFixityValue (Fixity.normalizeValue x)
-  DeclarationForeignData x -> DeclarationForeignData (Foreign.normalizeData x)
-  DeclarationForeignKind x -> DeclarationForeignKind (Foreign.normalizeKind x)
-  DeclarationForeignValue x -> DeclarationForeignValue (Foreign.normalizeValue x)
-  DeclarationNewtype x -> DeclarationNewtype (DataType.normalizeNewtype x)
-  DeclarationSynonym x -> DeclarationSynonym (Synonym.normalize x)
+  DeclarationData x -> DeclarationData (Declaration.DataType.normalizeData x)
+  DeclarationFixityType x ->
+    DeclarationFixityType (Declaration.Fixity.normalizeType x)
+  DeclarationFixityValue x ->
+    DeclarationFixityValue (Declaration.Fixity.normalizeValue x)
+  DeclarationForeignData x ->
+    DeclarationForeignData (Declaration.Foreign.normalizeData x)
+  DeclarationForeignKind x ->
+    DeclarationForeignKind (Declaration.Foreign.normalizeKind x)
+  DeclarationForeignValue x ->
+    DeclarationForeignValue (Declaration.Foreign.normalizeValue x)
+  DeclarationNewtype x ->
+    DeclarationNewtype (Declaration.DataType.normalizeNewtype x)
+  DeclarationSynonym x -> DeclarationSynonym (Declaration.Synonym.normalize x)
   DeclarationType x -> DeclarationType (Type.normalizeDeclaration x)
 
 fromPureScript ::
   ( Members
-    '[ Error DataType.WrongNewtypeConstructors
-     , Error Fixity.NegativePrecedence
+    '[ Error Declaration.DataType.WrongNewtypeConstructors
+     , Error Declaration.Fixity.NegativePrecedence
      , Error Kind.InferredKind
      , Error Name.InvalidCommon
      , Error Name.Missing
@@ -85,25 +91,25 @@ fromPureScript ::
 fromPureScript = \case
   Language.PureScript.BoundValueDeclaration {} -> pure Nothing
   Language.PureScript.DataDeclaration _ Language.PureScript.Data name variables constructors ->
-    Just . DeclarationData <$> DataType.data' name variables constructors
+    Just . DeclarationData <$> Declaration.DataType.data' name variables constructors
   Language.PureScript.DataDeclaration _ Language.PureScript.Newtype name variables constructors ->
-    Just . DeclarationNewtype <$> DataType.newtype' name variables constructors
+    Just . DeclarationNewtype <$> Declaration.DataType.newtype' name variables constructors
   Language.PureScript.ExternDataDeclaration _ type' kind ->
-    Just . DeclarationForeignData <$> Foreign.data' type' kind
+    Just . DeclarationForeignData <$> Declaration.Foreign.data' type' kind
   Language.PureScript.ExternDeclaration _ name type' ->
-    Just . DeclarationForeignValue <$> Foreign.value name type'
+    Just . DeclarationForeignValue <$> Declaration.Foreign.value name type'
   Language.PureScript.ExternKindDeclaration _ name ->
-    pure (Just $ DeclarationForeignKind $ Foreign.kind name)
+    pure (Just $ DeclarationForeignKind $ Declaration.Foreign.kind name)
   Language.PureScript.FixityDeclaration _ (Left fixity) ->
-    Just . DeclarationFixityValue <$> Fixity.value fixity
+    Just . DeclarationFixityValue <$> Declaration.Fixity.value fixity
   Language.PureScript.FixityDeclaration _ (Right fixity) ->
-    Just . DeclarationFixityType <$> Fixity.type' fixity
+    Just . DeclarationFixityType <$> Declaration.Fixity.type' fixity
   Language.PureScript.TypeClassDeclaration {} -> pure Nothing
   Language.PureScript.TypeDeclaration declaration ->
     Just . DeclarationType <$> Type.declaration declaration
   Language.PureScript.TypeInstanceDeclaration {} -> pure Nothing
   Language.PureScript.TypeSynonymDeclaration _ name variables type' ->
-    Just . DeclarationSynonym <$> Synonym.fromPureScript name variables type'
+    Just . DeclarationSynonym <$> Declaration.Synonym.fromPureScript name variables type'
   Language.PureScript.ValueDeclaration {} -> pure Nothing
   Language.PureScript.BindingGroupDeclaration {} -> pure Nothing
   Language.PureScript.DataBindingGroupDeclaration {} -> pure Nothing
@@ -134,16 +140,17 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
       line
         <> intercalateMap1 line dynamicDoc declarations
   dynamicDoc = \case
-    DeclarationData data' -> DataType.docFromData data'
-    DeclarationFixityType type' -> Fixity.docFromType type'
-    DeclarationFixityValue value -> Fixity.docFromValue value
+    DeclarationData data' -> Declaration.DataType.docFromData data'
+    DeclarationFixityType type' -> Declaration.Fixity.docFromType type'
+    DeclarationFixityValue value -> Declaration.Fixity.docFromValue value
     DeclarationForeignData data' ->
-      Variations.singleLine (Foreign.docFromData data')
-    DeclarationForeignKind kind -> Foreign.docFromKind kind
+      Variations.singleLine (Declaration.Foreign.docFromData data')
+    DeclarationForeignKind kind -> Declaration.Foreign.docFromKind kind
     DeclarationForeignValue value ->
-      Variations.singleLine (Foreign.docFromValue value)
-    DeclarationNewtype newtype' -> DataType.docFromNewtype newtype'
-    DeclarationSynonym synonym -> Variations.singleLine (Synonym.doc synonym)
+      Variations.singleLine (Declaration.Foreign.docFromValue value)
+    DeclarationNewtype newtype' -> Declaration.DataType.docFromNewtype newtype'
+    DeclarationSynonym synonym ->
+      Variations.singleLine (Declaration.Synonym.doc synonym)
     DeclarationType declaration ->
       group (flatAlt (Variations.multiLine doc) $ Variations.singleLine doc)
         where
@@ -154,15 +161,16 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
       line
         <> intercalateMap1 line staticDoc declarations
   staticDoc = \case
-    DeclarationData data' -> DataType.docFromData data'
-    DeclarationFixityType type' -> Fixity.docFromType type'
-    DeclarationFixityValue value -> Fixity.docFromValue value
+    DeclarationData data' -> Declaration.DataType.docFromData data'
+    DeclarationFixityType type' -> Declaration.Fixity.docFromType type'
+    DeclarationFixityValue value -> Declaration.Fixity.docFromValue value
     DeclarationForeignData data' ->
-      Variations.multiLine (Foreign.docFromData data')
-    DeclarationForeignKind kind -> Foreign.docFromKind kind
+      Variations.multiLine (Declaration.Foreign.docFromData data')
+    DeclarationForeignKind kind -> Declaration.Foreign.docFromKind kind
     DeclarationForeignValue value ->
-      Variations.multiLine (Foreign.docFromValue value)
-    DeclarationNewtype newtype' -> DataType.docFromNewtype newtype'
-    DeclarationSynonym synonym -> Variations.multiLine (Synonym.doc synonym)
+      Variations.multiLine (Declaration.Foreign.docFromValue value)
+    DeclarationNewtype newtype' -> Declaration.DataType.docFromNewtype newtype'
+    DeclarationSynonym synonym ->
+      Variations.multiLine (Declaration.Synonym.doc synonym)
     DeclarationType declaration ->
       Variations.multiLine (Type.docFromDeclaration declaration)

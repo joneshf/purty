@@ -26,11 +26,11 @@ import "this" Env
     )
 
 import qualified "this" Annotation
-import qualified "this" DataType
+import qualified "this" Declaration.DataType
+import qualified "this" Declaration.Fixity
 import qualified "this" Exit
 import qualified "this" Export
 import qualified "this" File
-import qualified "this" Fixity
 import qualified "this" Kind
 import qualified "this" Log
 import qualified "this" Module
@@ -40,8 +40,8 @@ import qualified "this" Type
 
 fromAbsFile ::
   ( Members
-    ( DataType.Errors
-    :++: Fixity.Errors
+    ( Declaration.DataType.Errors
+    :++: Declaration.Fixity.Errors
     :++: Export.Errors
     :++: Kind.Errors
     :++: Name.Errors
@@ -86,9 +86,9 @@ fromAbsFile filePath = do
 
 fromPurtyFilePath ::
   ( Members
-    ( DataType.Errors
+    ( Declaration.DataType.Errors
+    :++: Declaration.Fixity.Errors
     :++: Export.Errors
-    :++: Fixity.Errors
     :++: Kind.Errors
     :++: Name.Errors
     :++: Type.Errors
@@ -126,9 +126,9 @@ fromPurtyFilePath filePath = do
 program ::
   Args ->
   Eff
-    ( DataType.Errors
+    ( Declaration.DataType.Errors
+    :++: Declaration.Fixity.Errors
     :++: Export.Errors
-    :++: Fixity.Errors
     :++: Kind.Errors
     :++: Name.Errors
     :++: Type.Errors

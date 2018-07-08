@@ -1,4 +1,4 @@
-module Fixity where
+module Declaration.Fixity where
 
 import "rio" RIO
 

@@ -39,12 +39,12 @@ import "parsec" Text.Parsec                                  (ParseError)
 
 import "purty" Env (Formatting(Dynamic, Static), defaultLayoutOptions)
 
-import qualified "purty" DataType
+import qualified "purty" Declaration.DataType
+import qualified "purty" Declaration.Fixity
 import qualified "purty" Error
 import qualified "purty" Exit
 import qualified "purty" Export
 import qualified "purty" File
-import qualified "purty" Fixity
 import qualified "purty" Kind
 import qualified "purty" Log
 import qualified "purty" Name
@@ -73,17 +73,17 @@ golden formatting testName goldenFile =
         $ Error.type'
         $ Error.name
         $ Error.kind
-        $ Error.fixity
         $ Error.export
-        $ Error.dataType
+        $ Error.declarationFixity
+        $ Error.declarationDataType
         $ test absFile
 
 test ::
   Path Abs File ->
   Eff
-    ( DataType.Errors
+    ( Declaration.DataType.Errors
+    :++: Declaration.Fixity.Errors
     :++: Export.Errors
-    :++: Fixity.Errors
     :++: Kind.Errors
     :++: Name.Errors
     :++: Type.Errors

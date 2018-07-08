@@ -1,4 +1,4 @@
-module DataType where
+module Declaration.DataType where
 
 import "rio" RIO hiding (Data)
 

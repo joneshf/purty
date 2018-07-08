@@ -1,4 +1,4 @@
-module Foreign where
+module Declaration.Foreign where
 
 import "rio" RIO hiding (Data)
 
@@ -79,7 +79,7 @@ instance (Display a) => Display (Kind a) where
 
 docFromKind :: Kind Annotation.Normalized -> Doc a
 docFromKind = \case
-  Foreign.Kind name ->
+  Kind name ->
     "foreign import kind" <+> Name.docFromKind name
       <> line
 
@@ -107,7 +107,7 @@ instance (Display a) => Display (Value a) where
 
 docFromValue :: Value Annotation.Normalized -> Variations.Variations (Doc a)
 docFromValue = \case
-  Foreign.Value name type' ->
+  Value name type' ->
     Variations.Variations { Variations.multiLine, Variations.singleLine }
       where
       multiLine =

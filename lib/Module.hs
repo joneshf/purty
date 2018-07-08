@@ -22,11 +22,11 @@ import "parsec" Text.Parsec                      (ParseError)
 import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
-import qualified "this" DataType
 import qualified "this" Declaration
+import qualified "this" Declaration.DataType
+import qualified "this" Declaration.Fixity
 import qualified "this" Export
 import qualified "this" File
-import qualified "this" Fixity
 import qualified "this" Import
 import qualified "this" Kind
 import qualified "this" Log
@@ -80,9 +80,9 @@ dynamic = \case
 
 fromPureScript ::
   ( Members
-    ( DataType.Errors
+    ( Declaration.DataType.Errors
+    :++: Declaration.Fixity.Errors
     :++: Export.Errors
-    :++: Fixity.Errors
     :++: Kind.Errors
     :++: Name.Errors
     :++: Type.Errors
