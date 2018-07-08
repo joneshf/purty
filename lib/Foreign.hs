@@ -7,8 +7,6 @@ import "freer-simple" Control.Monad.Freer.Error  (Error)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , colon
-    , flatAlt
-    , group
     , indent
     , line
     , (<+>)
@@ -47,13 +45,22 @@ data' ::
   Eff e (Data Annotation.Unannotated)
 data' type' kind' = Data (Name.type' type') <$> Kind.fromPureScript kind'
 
-docFromData :: Data Annotation.Normalized -> Doc a
+docFromData :: Data Annotation.Normalized -> Variations.Variations (Doc a)
 docFromData = \case
   Data name kind' ->
-    "foreign import data" <+> Name.docFromType name
-      <+> colon <> colon
-      <+> Kind.doc kind'
-      <> line
+    Variations.Variations { Variations.multiLine, Variations.singleLine }
+      where
+      multiLine =
+        "foreign import data" <+> Name.docFromType name
+          <+> colon <> colon
+          <> line
+          <> indent 2 (Variations.multiLine $ Kind.doc kind')
+          <> line
+      singleLine =
+        "foreign import data" <+> Name.docFromType name
+          <+> colon <> colon
+          <+> Variations.singleLine (Kind.doc kind')
+          <> line
 
 normalizeData :: Data a -> Data Annotation.Normalized
 normalizeData = \case
@@ -98,18 +105,21 @@ instance (Display a) => Display (Value a) where
         <> ", type: "
         <> display y
 
-docFromValue :: Value Annotation.Normalized -> Doc a
+docFromValue :: Value Annotation.Normalized -> Variations.Variations (Doc a)
 docFromValue = \case
   Foreign.Value name type' ->
-    "foreign import" <+> Name.docFromCommon name
-      <+> colon <> colon
-      <> group (flatAlt multi single)
-      <> line
-    where
-    multi =
-      line
-        <> indent 2 (Variations.multiLine $ Type.doc type')
-    single = Variations.singleLine (Type.doc type')
+    Variations.Variations { Variations.multiLine, Variations.singleLine }
+      where
+      multiLine =
+        "foreign import" <+> Name.docFromCommon name
+          <+> colon <> colon
+          <> line
+          <> indent 2 (Variations.multiLine $ Type.doc type')
+          <> line
+      singleLine =
+        "foreign import" <+> Name.docFromCommon name
+          <+> colon <> colon <+> Variations.singleLine (Type.doc type')
+          <> line
 
 normalizeValue :: Value a -> Value Annotation.Normalized
 normalizeValue = \case

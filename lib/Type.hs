@@ -535,8 +535,12 @@ doc = \case
     multiLine =
       Variations.multiLine (doc x) <+> colon <> colon
         <> line
-        <> indent 2 (Kind.doc y)
-    singleLine = Variations.singleLine (doc x) <+> colon <> colon <+> Kind.doc y
+        <> indent 2 (Variations.multiLine $ Kind.doc y)
+    singleLine =
+      Variations.singleLine (doc x)
+        <+> colon
+        <> colon
+        <+> Variations.singleLine (Kind.doc y)
   TypeRow x -> pure (docFromRow x)
   TypeParens x -> doc (TypeAnnotation Annotation.Parens x)
   TypeSymbol x -> pure (docFromSymbol x)
@@ -661,8 +665,13 @@ docFromVariables = \case
     where
     go = \case
       (variable, Nothing) -> docFromVariable variable
-      (variable, Just kind') ->
-        parens (docFromVariable variable <+> colon <> colon <+> Kind.doc kind')
+      (variable, Just kind') -> parens doc'
+        where
+        doc' =
+          docFromVariable variable
+            <+> colon
+            <> colon
+            <+> Variations.singleLine (Kind.doc kind')
 
 normalizeVariables :: Variables a -> Variables Annotation.Normalized
 normalizeVariables = \case

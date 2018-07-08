@@ -4,12 +4,20 @@ import "rio" RIO
 
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
-import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, braces, parens, (<+>))
+import "prettyprinter" Data.Text.Prettyprint.Doc
+    ( Doc
+    , braces
+    , indent
+    , line
+    , parens
+    , (<+>)
+    )
 
 import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
 import qualified "this" Name
+import qualified "this" Variations
 
 data Kind a
   = KindAnnotation !a !(Kind a)
@@ -37,14 +45,22 @@ instance (Display a) => Display (Kind a) where
       "Kind Row: "
         <> display x
 
-doc :: Kind Annotation.Normalized -> Doc b
+doc :: Kind Annotation.Normalized -> Variations.Variations (Doc b)
 doc = \case
   KindAnnotation Annotation.None x -> doc x
-  KindAnnotation Annotation.Braces x -> braces (doc x)
-  KindAnnotation Annotation.Parens x -> parens (doc x)
-  KindFunction x y -> doc x <+> "->" <+> doc y
-  KindName x -> Name.docFromQualified Name.docFromKind x
-  KindRow x -> "#" <+> doc x
+  KindAnnotation Annotation.Braces x -> fmap braces (doc x)
+  KindAnnotation Annotation.Parens x -> fmap parens (doc x)
+  KindFunction x y ->
+    Variations.Variations { Variations.multiLine, Variations.singleLine }
+      where
+      multiLine =
+        Variations.multiLine (doc x) <+> "->"
+          <> line
+          <> indent 2 (Variations.multiLine $ doc y)
+      singleLine =
+        Variations.singleLine (doc x) <+> "->" <+> Variations.singleLine (doc y)
+  KindName x -> pure (Name.docFromQualified Name.docFromKind x)
+  KindRow x -> fmap ("#" <+>) (doc x)
 
 fromPureScript ::
   (Members '[Error InferredKind, Error Name.Missing] e) =>

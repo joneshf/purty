@@ -132,9 +132,11 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
     DeclarationData data' -> DataType.docFromData data'
     DeclarationFixityType type' -> Fixity.docFromType type'
     DeclarationFixityValue value -> Fixity.docFromValue value
-    DeclarationForeignData data' -> Foreign.docFromData data'
+    DeclarationForeignData data' ->
+      Variations.singleLine (Foreign.docFromData data')
     DeclarationForeignKind kind -> Foreign.docFromKind kind
-    DeclarationForeignValue value -> Foreign.docFromValue value
+    DeclarationForeignValue value ->
+      Variations.singleLine (Foreign.docFromValue value)
     DeclarationNewtype newtype' -> DataType.docFromNewtype newtype'
     DeclarationType declaration ->
       group (flatAlt (Variations.multiLine doc) $ Variations.singleLine doc)
@@ -149,9 +151,11 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
     DeclarationData data' -> DataType.docFromData data'
     DeclarationFixityType type' -> Fixity.docFromType type'
     DeclarationFixityValue value -> Fixity.docFromValue value
-    DeclarationForeignData data' -> Foreign.docFromData data'
+    DeclarationForeignData data' ->
+      Variations.multiLine (Foreign.docFromData data')
     DeclarationForeignKind kind -> Foreign.docFromKind kind
-    DeclarationForeignValue value -> Foreign.docFromValue value
+    DeclarationForeignValue value ->
+      Variations.multiLine (Foreign.docFromValue value)
     DeclarationNewtype newtype' -> DataType.docFromNewtype newtype'
     DeclarationType declaration ->
       Variations.multiLine (Type.docFromDeclaration declaration)
