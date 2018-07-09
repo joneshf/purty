@@ -29,6 +29,7 @@ import qualified "this" Annotation
 import qualified "this" Declaration.Class
 import qualified "this" Declaration.DataType
 import qualified "this" Declaration.Fixity
+import qualified "this" Declaration.Value
 import qualified "this" Exit
 import qualified "this" Export
 import qualified "this" File
@@ -44,6 +45,7 @@ fromAbsFile ::
     ( Declaration.Class.Errors
     :++: Declaration.DataType.Errors
     :++: Declaration.Fixity.Errors
+    :++: Declaration.Value.Errors
     :++: Export.Errors
     :++: Kind.Errors
     :++: Name.Errors
@@ -91,6 +93,7 @@ fromPurtyFilePath ::
     ( Declaration.Class.Errors
     :++: Declaration.DataType.Errors
     :++: Declaration.Fixity.Errors
+    :++: Declaration.Value.Errors
     :++: Export.Errors
     :++: Kind.Errors
     :++: Name.Errors
@@ -132,6 +135,7 @@ program ::
     ( Declaration.Class.Errors
     :++: Declaration.DataType.Errors
     :++: Declaration.Fixity.Errors
+    :++: Declaration.Value.Errors
     :++: Export.Errors
     :++: Kind.Errors
     :++: Name.Errors

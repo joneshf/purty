@@ -10,6 +10,7 @@ import "parsec" Text.Parsec                     (ParseError)
 import qualified "this" Declaration.Class
 import qualified "this" Declaration.DataType
 import qualified "this" Declaration.Fixity
+import qualified "this" Declaration.Value
 import qualified "this" Exit
 import qualified "this" Export
 import qualified "this" Kind
@@ -51,6 +52,19 @@ declarationFixity x =
   where
   go err = do
     Log.error "Problem converting a fixity"
+    Log.error (display err)
+    Exit.failure
+
+declarationValue ::
+  (Members '[Exit.Exit, Log.Log] e) =>
+  Eff (Declaration.Value.Errors :++: e) a ->
+  Eff e a
+declarationValue x =
+  x `handleError` go
+    `handleError` go
+  where
+  go err = do
+    Log.error "Problem converting a value"
     Log.error (display err)
     Exit.failure
 

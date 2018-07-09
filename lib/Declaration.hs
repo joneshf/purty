@@ -23,6 +23,7 @@ import qualified "this" Declaration.Fixity
 import qualified "this" Declaration.Foreign
 import qualified "this" Declaration.Synonym
 import qualified "this" Declaration.Type
+import qualified "this" Declaration.Value
 import qualified "this" Kind
 import qualified "this" Name
 import qualified "this" Type
@@ -39,6 +40,7 @@ data Declaration a
   | DeclarationNewtype !(Declaration.DataType.Newtype a)
   | DeclarationSynonym !(Declaration.Synonym.Synonym a)
   | DeclarationType !(Declaration.Type.Type a)
+  | DeclarationValue !(Declaration.Value.Value a)
   deriving (Functor)
 
 instance (Display a) => Display (Declaration a) where
@@ -53,6 +55,7 @@ instance (Display a) => Display (Declaration a) where
     DeclarationNewtype x -> "Declaration Newtype: " <> display x
     DeclarationSynonym x -> "Declaration Synonym: " <> display x
     DeclarationType x -> "Declaration Type: " <> display x
+    DeclarationValue x -> "Declaration Value: " <> display x
 
 normalizeDeclaration :: Declaration a -> Declaration Annotation.Normalized
 normalizeDeclaration = \case
@@ -72,6 +75,7 @@ normalizeDeclaration = \case
     DeclarationNewtype (Declaration.DataType.normalizeNewtype x)
   DeclarationSynonym x -> DeclarationSynonym (Declaration.Synonym.normalize x)
   DeclarationType x -> DeclarationType (Declaration.Type.normalize x)
+  DeclarationValue x -> DeclarationValue (Declaration.Value.normalize x)
 
 fromPureScript ::
   ( Members
@@ -79,6 +83,8 @@ fromPureScript ::
      , Error Declaration.Class.MissingTypeVariable
      , Error Declaration.DataType.WrongNewtypeConstructors
      , Error Declaration.Fixity.NegativePrecedence
+     , Error Declaration.Value.BinaryBinderWithoutOperator
+     , Error Declaration.Value.NoExpressions
      , Error Kind.InferredKind
      , Error Name.InvalidCommon
      , Error Name.Missing
@@ -118,7 +124,8 @@ fromPureScript = \case
   Language.PureScript.TypeInstanceDeclaration {} -> pure Nothing
   Language.PureScript.TypeSynonymDeclaration _ name variables type' ->
     Just . DeclarationSynonym <$> Declaration.Synonym.fromPureScript name variables type'
-  Language.PureScript.ValueDeclaration {} -> pure Nothing
+  Language.PureScript.ValueDeclaration declaration ->
+    Just . DeclarationValue <$> Declaration.Value.fromPureScript declaration
   Language.PureScript.BindingGroupDeclaration {} -> pure Nothing
   Language.PureScript.DataBindingGroupDeclaration {} -> pure Nothing
   Language.PureScript.ImportDeclaration {} -> pure Nothing
@@ -165,6 +172,10 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
       group (flatAlt (Variations.multiLine doc) $ Variations.singleLine doc)
         where
         doc = Declaration.Type.doc declaration
+    DeclarationValue declaration ->
+      group (flatAlt (Variations.multiLine doc) $ Variations.singleLine doc)
+        where
+        doc = Declaration.Value.doc declaration
   static' = \case
     Declarations Nothing -> mempty
     Declarations (Just declarations) ->
@@ -186,3 +197,5 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
       Variations.multiLine (Declaration.Synonym.doc synonym)
     DeclarationType declaration ->
       Variations.multiLine (Declaration.Type.doc declaration)
+    DeclarationValue declaration ->
+      Variations.multiLine (Declaration.Value.doc declaration)

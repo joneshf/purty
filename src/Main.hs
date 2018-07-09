@@ -40,6 +40,7 @@ main = do
       $ Error.name
       $ Error.kind
       $ Error.export
+      $ Error.declarationValue
       $ Error.declarationFixity
       $ Error.declarationDataType
       $ Error.declarationClass

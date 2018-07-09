@@ -42,6 +42,7 @@ import "purty" Env (Formatting(Dynamic, Static), defaultLayoutOptions)
 import qualified "purty" Declaration.Class
 import qualified "purty" Declaration.DataType
 import qualified "purty" Declaration.Fixity
+import qualified "purty" Declaration.Value
 import qualified "purty" Error
 import qualified "purty" Exit
 import qualified "purty" Export
@@ -75,6 +76,7 @@ golden formatting testName goldenFile =
         $ Error.name
         $ Error.kind
         $ Error.export
+        $ Error.declarationValue
         $ Error.declarationFixity
         $ Error.declarationDataType
         $ Error.declarationClass
@@ -86,6 +88,7 @@ test ::
     ( Declaration.Class.Errors
     :++: Declaration.DataType.Errors
     :++: Declaration.Fixity.Errors
+    :++: Declaration.Value.Errors
     :++: Export.Errors
     :++: Kind.Errors
     :++: Name.Errors
