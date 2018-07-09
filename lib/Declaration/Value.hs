@@ -9,7 +9,7 @@ import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , colon
-    , hardline
+    , equals
     , indent
     , lbrace
     , lbracket
@@ -138,6 +138,43 @@ normalizeBinder = \case
   BinderVariable x -> BinderVariable (Annotation.None <$ x)
   BinderWildcard -> BinderWildcard
 
+data Expression a
+  = ExpressionCommented !(Expression a) ![Comment.Comment]
+  | ExpressionLiteral !(Literal (Expression a))
+  deriving (Functor, Show)
+
+docFromExpression ::
+  Expression Annotation.Normalized ->
+  Variations.Variations (Doc a)
+docFromExpression = \case
+  ExpressionCommented x' y ->
+    fmap (\x -> foldMap Comment.doc y <> x) (docFromExpression x')
+  ExpressionLiteral x -> docFromLiteral docFromExpression x
+
+expression ::
+  ( Members
+    '[ Error NotImplemented
+     ]
+    e
+  ) =>
+  Language.PureScript.Expr ->
+  Eff e (Expression Annotation.Unannotated)
+expression = \case
+  Language.PureScript.Literal _ x ->
+    fmap ExpressionLiteral (literal expression x)
+  Language.PureScript.PositionedValue _ x y -> do
+    let comments = fmap Comment.fromPureScript x
+    expr <- expression y
+    pure (ExpressionCommented expr comments)
+  x -> throwError (NotImplemented x)
+
+normalizeExpression :: Expression a -> Expression Annotation.Normalized
+normalizeExpression = \case
+  ExpressionCommented x y ->
+    ExpressionCommented (normalizeExpression x) y
+  ExpressionLiteral x ->
+    ExpressionLiteral (fmap normalizeExpression x)
+
 data Literal a
   = LiteralArray !(Maybe (NonEmpty a))
   | LiteralBoolean !Bool
@@ -205,12 +242,15 @@ recordPair f = \case
   (x, y) -> fmap (RecordPair $ Language.PureScript.Label.Label x) (f y)
 
 data Value a
-  = Value !(Name.Common a) !(Maybe (NonEmpty (Binder a)))
+  = ValueExpression
+      !(Name.Common a)
+      !(Maybe (NonEmpty (Binder a)))
+      !(Expression a)
   deriving (Functor, Show)
 
 doc :: Value Annotation.Normalized -> Variations.Variations (Doc a)
 doc = \case
-  Value x y ->
+  ValueExpression x y z ->
     Variations.Variations { Variations.multiLine, Variations.singleLine }
       where
       bindersDoc binders =
@@ -218,16 +258,20 @@ doc = \case
       multiLine =
         Name.docFromCommon x
           <> foldMap bindersDoc y
-          <> hardline
+          <+> equals
+          <+> Variations.multiLine (docFromExpression z)
       singleLine =
         Name.docFromCommon x
           <> foldMap bindersDoc y
-          <> hardline
+          <+> equals
+          <+> Variations.singleLine (docFromExpression z)
 
 fromPureScript ::
   ( Members
     '[ Error BinaryBinderWithoutOperator
+     , Error InvalidExpressions
      , Error NoExpressions
+     , Error NotImplemented
      , Error Name.InvalidCommon
      , Error Name.Missing
      , Error Kind.InferredKind
@@ -249,23 +293,29 @@ fromPureScript ::
 fromPureScript = \case
   Language.PureScript.ValueDeclarationData _ name _ _ [] ->
     throwError (NoExpressions name)
-  Language.PureScript.ValueDeclarationData _ name' _ binders' _ -> do
+  Language.PureScript.ValueDeclarationData _ name' _ binders' [Language.PureScript.GuardedExpr [] expr'] -> do
     name <- Name.common name'
     binders <- nonEmpty <$> traverse binder binders'
-    pure (Value name binders)
+    expr <- expression expr'
+    pure (ValueExpression name binders expr)
+  Language.PureScript.ValueDeclarationData _ name _ _ exprs ->
+    throwError (InvalidExpressions name exprs)
 
 normalize :: Value a -> Value Annotation.Normalized
 normalize = \case
-  Value name binders ->
-    Value
+  ValueExpression name binders expr ->
+    ValueExpression
       (Annotation.None <$ name)
       ((fmap . fmap) normalizeBinder binders)
+      (normalizeExpression expr)
 
 -- Errors
 
 type Errors
   = '[ Error BinaryBinderWithoutOperator
+     , Error InvalidExpressions
      , Error NoExpressions
+     , Error NotImplemented
      ]
 
 data BinaryBinderWithoutOperator
@@ -288,6 +338,21 @@ instance Display BinaryBinderWithoutOperator where
         <> " If there is an operator nested within, we should handle that case."
         <> " Otherwise, this is probably a problem in the PureScript library."
 
+data InvalidExpressions
+  = InvalidExpressions
+      !Language.PureScript.Ident
+      ![Language.PureScript.GuardedExpr]
+
+instance Display InvalidExpressions where
+  display = \case
+    InvalidExpressions x y ->
+      "We received a value `"
+        <> displayShow x
+        <> "` with the wrong combinations of expressions `"
+        <> displayShow y
+        <> "`. There should either be exactly one expression without any guards"
+        <> ", or at least one expression where all are guarded."
+
 newtype NoExpressions
   = NoExpressions Language.PureScript.Ident
 
@@ -298,3 +363,13 @@ instance Display NoExpressions where
         <> displayShow x
         <> "` that had no expressions."
         <> " This is most likely a problem with the PureScript library."
+
+newtype NotImplemented
+  = NotImplemented Language.PureScript.Expr
+
+instance Display NotImplemented where
+  display = \case
+    NotImplemented x ->
+      "We haven't implemented this type of expression yet `"
+        <> displayShow x
+        <> "`."

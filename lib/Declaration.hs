@@ -73,7 +73,9 @@ fromPureScript ::
      , Error Declaration.DataType.WrongNewtypeConstructors
      , Error Declaration.Fixity.NegativePrecedence
      , Error Declaration.Value.BinaryBinderWithoutOperator
+     , Error Declaration.Value.InvalidExpressions
      , Error Declaration.Value.NoExpressions
+     , Error Declaration.Value.NotImplemented
      , Error Kind.InferredKind
      , Error Name.InvalidCommon
      , Error Name.Missing
@@ -158,6 +160,7 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
         doc = Declaration.Type.doc declaration
     DeclarationValue declaration ->
       group (flatAlt (Variations.multiLine doc) $ Variations.singleLine doc)
+        <> line
         where
         doc = Declaration.Value.doc declaration
   static' = \case
@@ -183,3 +186,4 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
       Variations.multiLine (Declaration.Type.doc declaration)
     DeclarationValue declaration ->
       Variations.multiLine (Declaration.Value.doc declaration)
+        <> line
