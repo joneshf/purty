@@ -22,16 +22,7 @@ import qualified "this" Variations
 
 data Data a
   = Data !(Name.Type a) !(Kind.Kind a)
-  deriving (Functor)
-
-instance (Display a) => Display (Data a) where
-  display = \case
-    Data x y ->
-      "Data: "
-        <> "name: "
-        <> display x
-        <> ", kind: "
-        <> display y
+  deriving (Functor, Show)
 
 data' ::
   ( Members
@@ -68,14 +59,7 @@ normalizeData = \case
 
 newtype Kind a
   = Kind (Name.Kind a)
-  deriving (Functor)
-
-instance (Display a) => Display (Kind a) where
-  display = \case
-    Kind x ->
-      "Kind: "
-        <> "name: "
-        <> display x
+  deriving (Functor, Show)
 
 docFromKind :: Kind Annotation.Normalized -> Doc a
 docFromKind = \case
@@ -94,16 +78,7 @@ normalizeKind = \case
 
 data Value a
   = Value !(Name.Common a) !(Type.Type a)
-  deriving (Functor)
-
-instance (Display a) => Display (Value a) where
-  display = \case
-    Value x y ->
-      "Value: "
-        <> "name: "
-        <> display x
-        <> ", type: "
-        <> display y
+  deriving (Functor, Show)
 
 docFromValue :: Value Annotation.Normalized -> Variations.Variations (Doc a)
 docFromValue = \case

@@ -22,16 +22,7 @@ import qualified "this" Variations
 
 data Type a
   = Type !(Name.Common a) !(Type.Type a)
-  deriving (Functor)
-
-instance (Display a) => Display (Type a) where
-  display = \case
-    Type x y ->
-      "Type: "
-        <> " name: "
-        <> display x
-        <> ", type: "
-        <> display y
+  deriving (Functor, Show)
 
 fromPureScript ::
   ( Members

@@ -30,17 +30,7 @@ import qualified "this" Variations
 
 data Alternate a
   = Alternate !a !(Name.Constructor a) !(Maybe (NonEmpty (Type.Type a)))
-  deriving (Functor)
-
-instance (Display a) => Display (Alternate a) where
-  display = \case
-    Alternate x y z' ->
-      "Alternate: "
-        <> "annotation: "
-        <> display x
-        <> ", constructor: "
-        <> display y
-        <> foldMap (\z -> ", types: [" <> intercalateMap1 ", " display z <> "]") z'
+  deriving (Functor, Show)
 
 alternate ::
   ( Members
@@ -90,19 +80,7 @@ normalizeAlternate = \case
 
 data Data a
   = Data !(Name.Proper a) !(Type.Variables a) !(Maybe (NonEmpty (Alternate a)))
-  deriving (Functor)
-
-instance (Display a) => Display (Data a) where
-  display = \case
-    Data x y z' ->
-      "Data"
-        <> " name:"
-        <> display x
-        <> ", variables:"
-        <> display y
-        <> foldMap
-          (\z -> ", alternates: [" <> intercalateMap1 ", " display z <> "]")
-          z'
+  deriving (Functor, Show)
 
 data' ::
   ( Members
@@ -161,20 +139,7 @@ data Newtype a
     !(Type.Variables a)
     !(Name.Constructor a)
     !(Type.Type a)
-  deriving (Functor)
-
-instance (Display a) => Display (Newtype a) where
-  display = \case
-    Newtype name variables constructor type'' ->
-      "Newtype"
-        <> " name: "
-        <> display name
-        <> ", variables:"
-        <> display variables
-        <> ", constuctor:"
-        <> display constructor
-        <> ", type:"
-        <> display type''
+  deriving (Functor, Show)
 
 docFromNewtype :: Newtype Annotation.Normalized -> Doc a
 docFromNewtype = \case

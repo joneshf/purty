@@ -61,15 +61,7 @@ import qualified "this" Variations
 
 data Constraint a
   = Constraint !(Name.Qualified Name.Class a) !(Maybe (NonEmpty (Type a)))
-  deriving (Functor)
-
-instance (Display a) => Display (Constraint a) where
-  display = \case
-    Constraint x y' ->
-      "Constraint: "
-        <> "class: "
-        <> display x
-        <> foldMap (\y -> ", types: [" <> intercalateMap1 ", " display y <> "]") y'
+  deriving (Functor, Show)
 
 constraint ::
   ( Members
@@ -112,14 +104,7 @@ normalizeConstraint = \case
 
 newtype Forall
   = Forall (NonEmpty Variable)
-
-instance Display Forall where
-  display = \case
-    Forall x ->
-      "Forall: "
-        <> "variables: ["
-        <> intercalateMap1 ", " display x
-        <> "]"
+  deriving (Show)
 
 docFromForall :: Forall -> Doc a
 docFromForall = \case
@@ -134,12 +119,7 @@ normalizeForall x' y' = case (x', y') of
 -- as it handles unicode properly for the language.
 newtype Label
   = Label Language.PureScript.Label.Label
-
-instance Display Label where
-  display = \case
-    Label x ->
-      "Label: "
-        <> displayShow x
+  deriving (Show)
 
 docFromLabel :: Label -> Doc a
 docFromLabel = \case
@@ -150,19 +130,7 @@ label = Label
 
 data Row a
   = Row !RowSurround !(Maybe (NonEmpty (RowPair a))) !(Rowpen a)
-  deriving (Functor)
-
-instance (Display a) => Display (Row a) where
-  display = \case
-    Row x y z ->
-      "{Row: "
-        <> "surround: "
-        <> display x
-        <> ", pairs: ["
-        <> foldMap (intercalateMap1 ", " display) y
-        <> "], rowpen: "
-        <> display z
-        <> "}"
+  deriving (Functor, Show)
 
 docFromRow :: Row Annotation.Normalized -> Doc a
 docFromRow = \case
@@ -216,25 +184,11 @@ row x' y' = \case
 data RowSurround
   = RowBraces
   | RowParens
-
-instance Display RowSurround where
-  display = \case
-    RowBraces -> "RowBraces"
-    RowParens -> "RowParens"
+  deriving (Show)
 
 data RowPair a
   = RowPair !Label !(Type a)
-  deriving (Functor)
-
-instance (Display a) => Display (RowPair a) where
-  display = \case
-    RowPair x y ->
-      "{RowPair: "
-        <> "label: "
-        <> display x
-        <> ", type: "
-        <> display y
-        <> "}"
+  deriving (Functor, Show)
 
 docFromRowPair :: RowPair Annotation.Normalized -> Doc a
 docFromRowPair = \case
@@ -268,17 +222,7 @@ rowPair x y = fmap (RowPair $ label x) (fromPureScript y)
 data Rowpen a
   = Rowpen !(Type a)
   | Rowsed
-  deriving (Functor)
-
-instance (Display a) => Display (Rowpen a) where
-  display = \case
-    Rowpen x ->
-      "{Rowpen: "
-        <> "type: "
-        <> display x
-        <> "}"
-    Rowsed ->
-      "rowsed"
+  deriving (Functor, Show)
 
 docFromRowpen :: Rowpen Annotation.Normalized -> Doc a
 docFromRowpen = \case
@@ -295,12 +239,7 @@ normalizeRowpen = \case
 -- as it handles unicode properly for the language.
 newtype Symbol
   = Symbol PSString
-
-instance Display Symbol where
-  display = \case
-    Symbol x ->
-      "Symbol: "
-        <> displayShow x
+  deriving (Show)
 
 docFromSymbol :: Symbol -> Doc a
 docFromSymbol = \case
@@ -321,82 +260,7 @@ data Type a
   | TypeTypeOperator !(Name.Qualified Name.TypeOperator a)
   | TypeVariable !Variable
   | TypeWildcard !Wildcard
-  deriving (Functor)
-
-instance (Display a) => Display (Type a) where
-  display = \case
-    TypeAnnotation ann x ->
-      "Type Annotation: "
-        <> "annotation: "
-        <> display ann
-        <> ", type: "
-        <> display x
-    TypeApplication x y ->
-      "Type Application: "
-        <> "left: "
-        <> display x
-        <> ", right: "
-        <> display y
-    TypeConstrained x y ->
-      "Type Constrained: "
-        <> "constraint: "
-        <> display x
-        <> ", type: "
-        <> display y
-    TypeForall x y ->
-      "Type Forall: "
-        <> "forall: "
-        <> display x
-        <> ", type: "
-        <> display y
-    TypeFunction x y ->
-      "Type Function: "
-        <> "input: "
-        <> display x
-        <> ", output: "
-        <> display y
-    TypeInfixOperator x y z ->
-      "Type Infix Operator: "
-        <> "left: "
-        <> display x
-        <> ", operator: "
-        <> display y
-        <> ", right: "
-        <> display z
-    TypeKinded x y ->
-      "Type Kinded: "
-        <> "type: "
-        <> display x
-        <> ", kind: "
-        <> display y
-    TypeParens x ->
-      "Type Parens: "
-        <> "type: "
-        <> display x
-    TypeRow x ->
-      "Type Row: "
-        <> "row: "
-        <> display x
-    TypeSymbol x ->
-      "Type Symbol: "
-        <> "symbol: "
-        <> display x
-    TypeTypeConstructor x ->
-      "Type Constructor: "
-        <> "constructor: "
-        <> display x
-    TypeTypeOperator x ->
-      "Type Operator: "
-        <> "operator: "
-        <> display x
-    TypeVariable x ->
-      "Type Variable: "
-        <> "variable: "
-        <> display x
-    TypeWildcard x ->
-      "Type Wildcard: "
-        <> "wildcard: "
-        <> display x
+  deriving (Functor, Show)
 
 normalizeTypeApplication :: Type a -> Type b -> Type Annotation.Normalized
 normalizeTypeApplication x' y' = case (x', y') of
@@ -572,10 +436,7 @@ fromPureScript = \case
 
 newtype Variable
   = Variable Text
-
-instance Display Variable where
-  display = \case
-    Variable x -> "Variable: " <> display x
+  deriving (Show)
 
 docFromVariable :: Variable -> Doc a
 docFromVariable = \case
@@ -583,26 +444,7 @@ docFromVariable = \case
 
 newtype Variables a
   = Variables (Maybe (NonEmpty (Variable, Maybe (Kind.Kind a))))
-  deriving (Functor)
-
-instance (Display a) => Display (Variables a) where
-  display = \case
-    Variables Nothing -> "No Variables"
-    Variables (Just x') ->
-      "Variables: ["
-        <> intercalateMap1 ", " go x'
-        <> "]"
-        where
-        go = \case
-          (variable, Nothing) ->
-            "Variable: "
-              <> display variable
-              <> ", No Kind"
-          (variable, Just x) ->
-            "Variable: "
-              <> display variable
-              <> ", Kind: "
-              <> display x
+  deriving (Functor, Show)
 
 docFromVariables :: Variables Annotation.Normalized -> Doc b
 docFromVariables = \case
@@ -640,11 +482,7 @@ variables x =
 
 data Wildcard
   = Wildcard
-
-instance Display Wildcard where
-  display = \case
-    Wildcard ->
-      "Wildcard"
+  deriving (Show)
 
 docFromWildcard :: Wildcard -> Doc a
 docFromWildcard = \case

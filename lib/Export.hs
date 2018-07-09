@@ -10,7 +10,6 @@ import "base" Data.List.NonEmpty
     , nonEmpty
     , sortBy
     )
-import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , align
@@ -31,6 +30,7 @@ import qualified "purescript" Language.PureScript
 import "this" Variations (Variations(Variations, multiLine, singleLine))
 
 import qualified "this" Annotation
+import qualified "this" Log
 import qualified "this" Name
 import qualified "this" Variations
 
@@ -39,19 +39,7 @@ data Constructors a
   | ConstructorsNone
   | ConstructorsSome !(NonEmpty (Name.Proper a))
   | ConstructorsAll
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (Constructors a) where
-  display = \case
-    ConstructorsAnnotation ann constructors ->
-      "Constructors annotation: "
-        <> display ann
-        <> ", constructors: "
-        <> display constructors
-    ConstructorsNone -> "No constructors"
-    ConstructorsSome names ->
-      "Some constructors: [" <> intercalateMap1 ", " display names <> "]"
-    ConstructorsAll -> "All constructors"
+  deriving (Eq, Functor, Ord, Show)
 
 docFromConstructors :: Constructors Annotation.Sorted -> Variations (Doc a)
 docFromConstructors = \case
@@ -76,22 +64,7 @@ data Export a
   | ExportTypeOperator !(TypeOperator a)
   | ExportValue !(Value a)
   | ExportValueOperator !(Name.ValueOperator a)
-  deriving (Functor)
-
-instance (Display a) => Display (Export a) where
-  display = \case
-    ExportAnnotation ann x ->
-      "Export annotation: "
-        <> display ann
-        <> ", export: "
-        <> display x
-    ExportClass name -> "Export class: " <> display name
-    ExportKind name -> "Export kind: " <> display name
-    ExportModule name -> "Export module: " <> display name
-    ExportType ty -> "Export type: " <> display ty
-    ExportTypeOperator op -> "Export type operator: " <> display op
-    ExportValue ident -> "Export value: " <> display ident
-    ExportValueOperator op -> "Export value operator: " <> display op
+  deriving (Functor, Show)
 
 compareExport :: Export a -> Export b -> Ordering
 compareExport x' y' = case (x', y') of
@@ -187,12 +160,9 @@ export = \case
 
 newtype Exports a
   = Exports (Maybe (NonEmpty (Export a)))
+  deriving (Show)
 
-instance (Display a) => Display (Exports a) where
-  display = \case
-    Exports Nothing -> "No Exports"
-    Exports (Just exports) ->
-      "Exports: [" <> intercalateMap1 ", " display exports <> "]"
+instance (Log.Inspect a) => Log.Inspect (Exports a)
 
 data Sorted
   = NoExports
@@ -205,28 +175,9 @@ data Sorted
       ![Type Annotation.Sorted]
       ![Name.ValueOperator Annotation.Sorted]
       ![Value Annotation.Sorted]
+  deriving (Show)
 
-instance Display Sorted where
-  display = \case
-    NoExports -> "No Exports"
-    Sorted export' modules classes kinds typeOperators types values valueOperators ->
-      "Sorted "
-        <> "export: "
-        <> display export'
-        <> ", modules: "
-        <> displayList modules
-        <> ", classes: "
-        <> displayList classes
-        <> ", kinds: "
-        <> displayList kinds
-        <> ", typeOperators: "
-        <> displayList typeOperators
-        <> ", types: "
-        <> displayList types
-        <> ", values: "
-        <> displayList values
-        <> ", valueOperators: "
-        <> displayList valueOperators
+instance Log.Inspect Sorted
 
 displayList :: Display a => [a] -> Utf8Builder
 displayList xs = "[" <> fold (intersperse ", " (display <$> xs)) <> "]"
@@ -274,16 +225,7 @@ dynamic, static :: Sorted -> Doc b
 
 data Type a
   = Type !(Name.Proper a) !(Constructors a)
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (Type a) where
-  display = \case
-    Type name constructors ->
-      "Type name: "
-        <> display name
-        <> ", constructors: ("
-        <> display constructors
-        <> ")"
+  deriving (Eq, Functor, Ord, Show)
 
 docFromType :: Type Annotation.Sorted -> Variations (Doc b)
 docFromType = \case
@@ -301,16 +243,7 @@ type' name = Type (Name.proper name) . \case
 
 data TypeOperator a
   = TypeOperator !a !Text
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (TypeOperator a) where
-  display = \case
-    TypeOperator ann op ->
-      "Type Operator annotation: "
-        <> display ann
-        <> ", op: ("
-        <> display op
-        <> ")"
+  deriving (Eq, Functor, Ord, Show)
 
 docFromTypeOperator :: TypeOperator a -> Doc b
 docFromTypeOperator = \case
@@ -324,15 +257,7 @@ typeOperator = \case
 
 data Value a
   = Value !a !Text
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (Value a) where
-  display = \case
-    Value ann x ->
-      "Value annotation:"
-      <> display ann
-      <> ", value: "
-      <> display x
+  deriving (Eq, Functor, Ord, Show)
 
 docFromValue :: Value a -> Doc b
 docFromValue = \case

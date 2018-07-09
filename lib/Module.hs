@@ -42,29 +42,15 @@ data Module exports imports declarations a
       !exports
       !imports
       !declarations
-  deriving (Functor)
+  deriving (Functor, Show)
 
 instance
-  ( Display a
-  , Display b
-  , Display c
-  , Display d
+  ( Log.Inspect a
+  , Log.Inspect b
+  , Log.Inspect c
+  , Log.Inspect d
   ) =>
-  Display (Module a b c d) where
-    display = \case
-      Module ann name exports imports declarations ->
-        "{Module "
-          <> "annotation: "
-          <> display ann
-          <> ", name: "
-          <> display name
-          <> ", exports: "
-          <> display exports
-          <> ", imports: "
-          <> display imports
-          <> ", declarations: "
-          <> display declarations
-          <> "}"
+  Log.Inspect (Module a b c d)
 
 dynamic ::
   Module

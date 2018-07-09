@@ -9,17 +9,7 @@ import qualified "purescript" Language.PureScript
 data Comment
   = Block !Text
   | Line !Text
-
-instance Display Comment where
-  display = \case
-    Block x ->
-      "{Block: "
-        <> display x
-        <> "}"
-    Line x ->
-      "{Line: "
-        <> display x
-        <> "}"
+  deriving (Show)
 
 doc :: Comment -> Doc a
 doc = \case

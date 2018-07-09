@@ -24,26 +24,7 @@ data Kind a
   | KindFunction !(Kind a) !(Kind a)
   | KindName !(Name.Qualified Name.Kind a)
   | KindRow !(Kind a)
-  deriving (Functor)
-
-instance (Display a) => Display (Kind a) where
-  display = \case
-    KindAnnotation ann x ->
-      "Kind annotation: "
-        <> display ann
-        <> ", kind: "
-        <> display x
-    KindFunction x y ->
-      "Kind Function: "
-        <> display x
-        <> " -> "
-        <> display y
-    KindName x ->
-      "Kind Name: "
-        <> display x
-    KindRow x ->
-      "Kind Row: "
-        <> display x
+  deriving (Functor, Show)
 
 doc :: Kind Annotation.Normalized -> Variations.Variations (Doc b)
 doc = \case

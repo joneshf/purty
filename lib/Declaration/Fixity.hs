@@ -17,12 +17,8 @@ data Associativity
   = AssociativityLeft
   | AssociativityNone
   | AssociativityRight
+  deriving (Show)
 
-instance Display Associativity where
-  display = \case
-    AssociativityLeft -> "AssociativityLeft"
-    AssociativityNone -> "AssociativityNone"
-    AssociativityRight -> "AssociativityRight"
 
 associativity :: Language.PureScript.Fixity -> Associativity
 associativity = \case
@@ -39,12 +35,7 @@ docFromAssociativity = \case
 
 newtype Precedence
   = Precedence Natural
-
-instance Display Precedence where
-  display = \case
-    Precedence x ->
-      "Precedence: "
-       <> displayShow x
+  deriving (Show)
 
 docFromPrecedence :: Precedence -> Doc a
 docFromPrecedence = \case
@@ -71,20 +62,7 @@ data Type a
       !Precedence
       !(Name.Qualified Name.Type a)
       !(Name.TypeOperator a)
-  deriving (Functor)
-
-instance (Display a) => Display (Type a) where
-  display = \case
-    Type w x y z ->
-      "Type:"
-        <> " associativity: "
-        <> display w
-        <> ", precedence: "
-        <> display x
-        <> ", type: "
-        <> display y
-        <> ", operator: "
-        <> display z
+  deriving (Functor, Show)
 
 docFromType :: Type Annotation.Normalized -> Doc b
 docFromType = \case
@@ -130,30 +108,7 @@ data Value a
       !Precedence
       !(Name.Qualified Name.Common a)
       !(Name.ValueOperator a)
-  deriving (Functor)
-
-instance (Display a) => Display (Value a) where
-  display = \case
-    ValueConstructor w x y z ->
-      "Value Constructor:"
-        <> " associativity: "
-        <> display w
-        <> ", precedence: "
-        <> display x
-        <> ", constructor: "
-        <> display y
-        <> ", operator: "
-        <> display z
-    ValueValue w x y z ->
-      "Value Value:"
-        <> " associativity: "
-        <> display w
-        <> ", precedence: "
-        <> display x
-        <> ", name: "
-        <> display y
-        <> ", operator: "
-        <> display z
+  deriving (Functor, Show)
 
 docFromValue :: Value Annotation.Normalized -> Doc b
 docFromValue = \case

@@ -22,19 +22,7 @@ import qualified "this" Variations
 
 data Synonym a
   = Synonym !(Name.Type a) !(Type.Variables a) !(Type.Type a)
-  deriving (Functor)
-
-instance (Display a) => Display (Synonym a) where
-  display = \case
-    Synonym x y z ->
-      "{Synonym: "
-        <> "name: "
-        <> display x
-        <> ", variables: "
-        <> display y
-        <> ", type: "
-        <> display z
-        <> "}"
+  deriving (Functor, Show)
 
 doc :: Synonym Annotation.Normalized -> Variations.Variations (Doc a)
 doc = \case

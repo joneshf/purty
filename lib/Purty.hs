@@ -63,15 +63,17 @@ fromAbsFile ::
   Eff e (SimpleDocStream Annotation.Sorted)
 fromAbsFile filePath = do
   formatting <- ask
-  Log.debug ("Formatting: " <> display formatting)
+  Log.debug "Formatting:"
+  Log.inspect formatting
   layoutOptions <- ask
-  Log.debug ("LayoutOptions: " <> displayShow layoutOptions)
+  Log.debug "LayoutOptions:"
+  Log.inspect layoutOptions
   m <- Module.parse filePath
   Log.debug "Parsed module:"
-  Log.debug (displayShow m)
+  Log.inspect m
   ast <- Module.fromPureScript m
   Log.debug "Converted AST:"
-  Log.debug (display ast)
+  Log.inspect ast
   let sorted = Module.sortImports (Module.sortExports ast)
       normalized = Module.normalize sorted
       doc = case formatting of
@@ -79,13 +81,13 @@ fromAbsFile filePath = do
         Static  -> Module.static normalized
       stream = layoutSmart layoutOptions doc
   Log.debug "Sorted AST:"
-  Log.debug (display sorted)
+  Log.inspect sorted
   Log.debug "Normalized AST:"
-  Log.debug (display normalized)
+  Log.inspect normalized
   Log.debug "Doc:"
-  Log.debug (displayShow doc)
+  Log.inspect doc
   Log.debug "Stream:"
-  Log.debug (displayShow stream)
+  Log.inspect stream
   pure stream
 
 fromPurtyFilePath ::
@@ -113,14 +115,17 @@ fromPurtyFilePath ::
   Eff e ()
 fromPurtyFilePath filePath = do
   output <- ask
-  Log.debug ("Output: " <> display output)
-  Log.debug ("Converting " <> display filePath <> " to an absolute path")
+  Log.debug "Output:"
+  Log.inspect output
+  Log.debug "Converting the following file path to an absolute path:"
+  Log.inspect filePath
   absPath <- File.absolute filePath
-  Log.debug ("Converted file to absolute: " <> displayShow absPath)
+  Log.debug "Converted file to absolute:"
+  Log.inspect absPath
   Log.debug "Running main `purty` program"
   stream <- Purty.fromAbsFile absPath
   Log.debug "Successfully created stream for rendering"
-  Log.debug (displayShow $ void stream)
+  Log.inspect (void stream)
   case output of
     InPlace -> do
       Log.debug "Replacing file"

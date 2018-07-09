@@ -38,24 +38,7 @@ data Class a
       !(Type.Variables a)
       !(Maybe (NonEmpty FunctionalDependency))
       !(Maybe (NonEmpty (Declaration.Type.Type a)))
-  deriving (Functor)
-
-instance (Display a) => Display (Class a) where
-  display = \case
-    Class constraints name variables funDeps methods ->
-      "{Class: "
-        <> "constraints: ["
-        <> foldMap (intercalateMap1 ", " display) constraints
-        <> "], name: "
-        <> display name
-        <> ", variables: "
-        <> display variables
-        <> ", functional dependencies: ["
-        <> foldMap (intercalateMap1 ", " display) funDeps
-        <> "], methods: ["
-        <> foldMap (intercalateMap1 ", " display) methods
-        <> "]"
-        <> "}"
+  deriving (Functor, Show)
 
 doc :: Class Annotation.Normalized -> Variations.Variations (Doc a)
 doc = \case
@@ -139,17 +122,7 @@ data FunctionalDependency
   = FunctionalDependency
       !(Maybe (NonEmpty Type.Variable))
       !(Maybe (NonEmpty Type.Variable))
-
-instance Display FunctionalDependency where
-  display = \case
-    FunctionalDependency x y ->
-      "{Functional Dependency: "
-        <> "determiners: ["
-        <> foldMap (intercalateMap1 ", " display) x
-        <> "], determined: ["
-        <> foldMap (intercalateMap1 ", " display) y
-        <> "]"
-        <> "}"
+  deriving (Show)
 
 docFromFunctionalDependency :: FunctionalDependency -> Doc a
 docFromFunctionalDependency = \case

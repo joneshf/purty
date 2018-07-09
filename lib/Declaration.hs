@@ -25,6 +25,7 @@ import qualified "this" Declaration.Synonym
 import qualified "this" Declaration.Type
 import qualified "this" Declaration.Value
 import qualified "this" Kind
+import qualified "this" Log
 import qualified "this" Name
 import qualified "this" Type
 import qualified "this" Variations
@@ -41,21 +42,9 @@ data Declaration a
   | DeclarationSynonym !(Declaration.Synonym.Synonym a)
   | DeclarationType !(Declaration.Type.Type a)
   | DeclarationValue !(Declaration.Value.Value a)
-  deriving (Functor)
+  deriving (Functor, Show)
 
-instance (Display a) => Display (Declaration a) where
-  display = \case
-    DeclarationClass x -> "Declaration Class: " <> display x
-    DeclarationData x -> "Declaration Data: " <> display x
-    DeclarationFixityType x -> "Declaration Fixity Type: " <> display x
-    DeclarationFixityValue x -> "Declaration Fixity Value: " <> display x
-    DeclarationForeignData x -> "Declaration Foreign Data: " <> display x
-    DeclarationForeignKind x -> "Declaration Foreign Kind: " <> display x
-    DeclarationForeignValue x -> "Declaration Foreign Value: " <> display x
-    DeclarationNewtype x -> "Declaration Newtype: " <> display x
-    DeclarationSynonym x -> "Declaration Synonym: " <> display x
-    DeclarationType x -> "Declaration Type: " <> display x
-    DeclarationValue x -> "Declaration Value: " <> display x
+instance (Log.Inspect a) => Log.Inspect (Declaration a)
 
 normalizeDeclaration :: Declaration a -> Declaration Annotation.Normalized
 normalizeDeclaration = \case
@@ -132,14 +121,9 @@ fromPureScript = \case
 
 newtype Declarations a
   = Declarations (Maybe (NonEmpty (Declaration a)))
+  deriving (Show)
 
-instance (Display a) => Display (Declarations a) where
-  display = \case
-    Declarations Nothing -> "No Declarations"
-    Declarations (Just declarations) ->
-      "Declarations ["
-        <> intercalateMap1 ", " display declarations
-        <> "]"
+instance (Log.Inspect a) => Log.Inspect (Declarations a)
 
 normalize :: Declarations a -> Declarations Annotation.Normalized
 normalize = \case

@@ -7,14 +7,9 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , PageWidth(AvailablePerLine)
     )
 import "dhall" Dhall                             (Inject, Interpret)
-import "path" Path
-    ( Abs
-    , File
-    , Path
-    , Rel
-    , fromAbsFile
-    , fromRelFile
-    )
+import "path" Path                               (Abs, File, Path, Rel)
+
+import qualified "this" Log
 
 data Config
   = Config
@@ -22,17 +17,9 @@ data Config
     , output     :: !Output
     , verbosity  :: !Verbosity
     }
-  deriving (Generic)
+  deriving (Generic, Show)
 
-instance Display Config where
-  display Config { formatting, verbosity, output } =
-    "{"
-      <> display formatting
-      <> ", "
-      <> display output
-      <> ", "
-      <> display verbosity
-      <> "}"
+instance Log.Inspect Config
 
 instance Inject Config
 
@@ -54,12 +41,9 @@ defaultConfig =
 data Formatting
   = Dynamic
   | Static
-  deriving (Generic)
+  deriving (Generic, Show)
 
-instance Display Formatting where
-  display = \case
-    Dynamic -> "Dynamic"
-    Static -> "Static"
+instance Log.Inspect Formatting
 
 instance Inject Formatting
 
@@ -70,12 +54,9 @@ instance Interpret Formatting
 data Output
   = InPlace
   | StdOut
-  deriving (Generic)
+  deriving (Generic, Show)
 
-instance Display Output where
-  display = \case
-    InPlace -> "Formatting files in-place"
-    StdOut -> "Writing formatted files to stdout"
+instance Log.Inspect Output
 
 instance Inject Output
 
@@ -88,12 +69,9 @@ data PurtyFilePath
   = AbsFile !(Path Abs File)
   | RelFile !(Path Rel File)
   | Unparsed !Text
+  deriving (Show)
 
-instance Display PurtyFilePath where
-  display = \case
-    AbsFile path -> "Absolute file: " <> displayShow (fromAbsFile path)
-    RelFile path -> "Relative file: " <> displayShow (fromRelFile path)
-    Unparsed path -> "Unparsed: " <> displayShow path
+instance Log.Inspect PurtyFilePath
 
 -- |
 -- The minimum level of logs to display.
@@ -103,12 +81,9 @@ instance Display PurtyFilePath where
 data Verbosity
   = Verbose
   | NotVerbose
-  deriving (Eq, Generic)
+  deriving (Eq, Generic, Show)
 
-instance Display Verbosity where
-  display = \case
-    Verbose -> "Verbose"
-    NotVerbose -> "Not verbose"
+instance Log.Inspect Verbosity
 
 instance Inject Verbosity
 

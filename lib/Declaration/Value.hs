@@ -48,69 +48,7 @@ data Binder a
   | BinderTyped !(Binder a) !(Type.Type a)
   | BinderVariable !(Name.Common a)
   | BinderWildcard
-  deriving (Functor)
-
-instance (Display a) => Display (Binder a) where
-  display = \case
-    BinderAs x y ->
-      "{BinderAs: "
-        <> "name: "
-        <> display x
-        <> ", binder: "
-        <> display y
-        <> "}"
-    BinderBinary x y z ->
-      "{BinderBinary: "
-        <> "left: "
-        <> display x
-        <> "operator: "
-        <> display y
-        <> "right: "
-        <> display z
-        <> "}"
-    BinderCommented x y ->
-      "{BinderCommented: "
-        <> "binder: "
-        <> display x
-        <> ", comments: "
-        <> displayList y
-        <> "}"
-    BinderConstructor x y ->
-      "{BinderConstructor: "
-        <> "constructor: "
-        <> display x
-        <> ", binders: "
-        <> displayNonEmpty y
-        <> "}"
-    BinderLiteral x ->
-      "{BinderLiteral: "
-        <> "literal: "
-        <> display x
-        <> "}"
-    BinderOperator x ->
-      "{BinderOperator: "
-        <> "operator: "
-        <> display x
-        <> "}"
-    BinderParens x ->
-      "{BinderParens: "
-        <> "binder: "
-        <> display x
-        <> "}"
-    BinderTyped x y ->
-      "{BinderTyped: "
-        <> "binder: "
-        <> display x
-        <> ", type: "
-        <> display y
-        <> "}"
-    BinderVariable x ->
-      "{BinderVariable: "
-        <> "variable: "
-        <> display x
-        <> "}"
-    BinderWildcard ->
-      "BinderWildcard"
+  deriving (Functor, Show)
 
 binder ::
   ( Members
@@ -209,45 +147,7 @@ data Literal a
   | LiteralNumber !Double
   | LiteralRecord !(Maybe (NonEmpty (RecordPair a)))
   | LiteralString !Language.PureScript.PSString.PSString
-  deriving (Functor)
-
-instance (Display a) => Display (Literal a) where
-  display = \case
-    LiteralArray x ->
-      "{LiteralArray: "
-        <> "array: "
-        <> displayNonEmpty x
-        <> "}"
-    LiteralBoolean x ->
-      "{LiteralBoolean: "
-        <> "boolean: "
-        <> displayShow x
-        <> "}"
-    LiteralChar x ->
-      "{LiteralChar: "
-        <> "char: "
-        <> display x
-        <> "}"
-    LiteralInt x ->
-      "{LiteralInt: "
-        <> "int: "
-        <> display x
-        <> "}"
-    LiteralNumber x ->
-      "{LiteralNumber: "
-        <> "number: "
-        <> display x
-        <> "}"
-    LiteralRecord x ->
-      "{LiteralRecord: "
-        <> "record: "
-        <> displayNonEmpty x
-        <> "}"
-    LiteralString x ->
-      "{LiteralString: "
-        <> "string: "
-        <> displayShow x
-        <> "}"
+  deriving (Functor, Show)
 
 docFromLiteral ::
   (a -> Variations.Variations (Doc b)) ->
@@ -278,17 +178,7 @@ literal f = \case
 
 data RecordPair a
   = RecordPair !Language.PureScript.Label.Label !a
-  deriving (Functor)
-
-instance (Display a) => Display (RecordPair a) where
-  display = \case
-    RecordPair x y ->
-      "{RecordPair: "
-        <> "label: "
-        <> displayShow x
-        <> ", value: "
-        <> display y
-        <> "}"
+  deriving (Functor, Show)
 
 docFromRecordPair ::
   (a -> Variations.Variations (Doc b)) ->
@@ -317,18 +207,7 @@ recordPair f = \case
 
 data Value a
   = Value !(Name.Common a) !(Maybe (NonEmpty (Binder a)))
-  deriving (Functor)
-
-instance (Display a) => Display (Value a) where
-  display = \case
-    Value x y ->
-      "{Value "
-        <> "name: "
-        <> display x
-        <> ", binders: ["
-        <> foldMap (intercalateMap1 ", " display) y
-        <> "]"
-        <> "}"
+  deriving (Functor, Show)
 
 doc :: Value Annotation.Normalized -> Variations.Variations (Doc a)
 doc = \case

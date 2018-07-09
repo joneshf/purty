@@ -2,28 +2,24 @@ module Annotation where
 
 import "rio" RIO
 
+import qualified "this" Log
+
 data Normalized
   = None
   | Braces
   | Parens
+  deriving (Show)
 
-instance Display Normalized where
-  display = \case
-    None -> "No annotation"
-    Braces -> "Braces"
-    Parens -> "Parens"
+instance Log.Inspect Normalized
 
 data Sorted
   = Sorted
   deriving (Show)
 
-instance Display Sorted where
-  display = \case
-    Sorted -> "Sorted"
+instance Log.Inspect Sorted
 
 data Unannotated
   = Unannotated
+  deriving (Show)
 
-instance Display Unannotated where
-  display = \case
-    Unannotated -> "Unannotated"
+instance Log.Inspect Unannotated

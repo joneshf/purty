@@ -22,6 +22,7 @@ import qualified "purescript" Language.PureScript
 
 import "this" Export (Export)
 
+import qualified "this" Log
 import qualified "this" Annotation
 import qualified "this" Export
 import qualified "this" Name
@@ -29,23 +30,11 @@ import qualified "this" Variations
 
 newtype Alias a
   = Alias (Maybe (Name.Module a))
-  deriving (Eq, Functor, Ord)
+  deriving (Eq, Functor, Ord, Show)
 
 data Explicit a
   = Explicit !a !(Name.Module a) ![Export a] !(Alias a)
-  deriving (Functor)
-
-instance (Display a) => Display (Explicit a) where
-  display = \case
-    Explicit ann name exports (Alias alias') ->
-      "Explicit"
-        <> " annotation: "
-        <> display ann
-        <> ", name: "
-        <> display name
-        <> ", exports: "
-        <> displayList exports
-        <> foldMap (\alias -> ", alias: " <> display alias) alias'
+  deriving (Functor, Show)
 
 dynamicExplicit :: NonEmpty (Explicit Annotation.Sorted) -> Doc a
 dynamicExplicit = \case
@@ -96,19 +85,7 @@ staticExplicit = \case
 
 data Hiding a
   = Hiding !a !(Name.Module a) ![Export a] !(Alias a)
-  deriving (Functor)
-
-instance (Display a) => Display (Hiding a) where
-  display = \case
-    Hiding ann name exports (Alias alias') ->
-      "Hiding"
-        <> " annotation: "
-        <> display ann
-        <> ", name: "
-        <> display name
-        <> ", exports: "
-        <> displayList exports
-        <> foldMap (\alias -> ", alias: " <> display alias) alias'
+  deriving (Functor, Show)
 
 dynamicHiding :: NonEmpty (Hiding Annotation.Sorted) -> Doc a
 dynamicHiding = \case
@@ -165,14 +142,7 @@ data Import a
   | ImportHiding !(Hiding a)
   | ImportOpen !(Open a)
   | ImportQualified !(Qualified a)
-  deriving (Functor)
-
-instance (Display a) => Display (Import a) where
-  display = \case
-    ImportExplicit explicit -> "Import Explicit: " <> display explicit
-    ImportHiding hiding -> "Import Hiding: " <> display hiding
-    ImportOpen open -> "Import Open: " <> display open
-    ImportQualified qualified -> "Import Qualified: " <> display qualified
+  deriving (Functor, Show)
 
 fromPureScript ::
   ( Member (Error Name.Missing) e
@@ -250,25 +220,13 @@ sort = \case
 
 newtype Imports a
   = Imports (Maybe (NonEmpty (Import a)))
+  deriving (Show)
 
-instance (Display a) => Display (Imports a) where
-  display = \case
-    Imports imports' ->
-      "Imports"
-        <> foldMap (\imports -> "[" <> intercalateMap1 ", " display imports <> "]") imports'
+instance (Log.Inspect a) => Log.Inspect (Imports a)
 
 data Open a
   = Open !a !(Name.Module a)
-  deriving (Functor)
-
-instance (Display a) => Display (Open a) where
-  display = \case
-    Open ann name  ->
-      "Open"
-        <> " annotation: "
-        <> display ann
-        <> ", name: "
-        <> display name
+  deriving (Functor, Show)
 
 dynamicOpen :: NonEmpty (Open Annotation.Sorted) -> Doc a
 dynamicOpen = \case
@@ -298,17 +256,7 @@ staticOpen = \case
 
 data Qualified a
   = Qualified !a !(Name.Module a) !(Alias a)
-  deriving (Functor)
-
-instance (Display a) => Display (Qualified a) where
-  display = \case
-    Qualified ann name (Alias alias') ->
-      "Qualified"
-        <> " annotation: "
-        <> display ann
-        <> ", name: "
-        <> display name
-        <> foldMap (\alias -> ", alias: " <> display alias) alias'
+  deriving (Functor, Show)
 
 dynamicQualified :: NonEmpty (Qualified Annotation.Sorted) -> Doc a
 dynamicQualified = \case
@@ -348,19 +296,9 @@ data Sorted
       !(Maybe (NonEmpty (Hiding Annotation.Sorted)))
       !(Maybe (NonEmpty (Explicit Annotation.Sorted)))
       !(Maybe (NonEmpty (Qualified Annotation.Sorted)))
+  deriving (Show)
 
-instance Display Sorted where
-  display = \case
-    Sorted open' hiding' explicit' qualified' ->
-      "Sorted"
-        <> " open: "
-        <> foldMap (\open -> "[" <> intercalateMap1 ", " display open <> "]") open'
-        <> ", hiding: "
-        <> foldMap (\hiding -> "[" <> intercalateMap1 ", " display hiding <> "]") hiding'
-        <> ", explicit: "
-        <> foldMap (\explicit -> "[" <> intercalateMap1 ", " display explicit <> "]") explicit'
-        <> ", qualified: "
-        <> foldMap (\qualified -> "[" <> intercalateMap1 ", " display qualified <> "]") qualified'
+instance Log.Inspect Sorted
 
 dynamic :: Sorted -> Doc b
 dynamic x = case x of

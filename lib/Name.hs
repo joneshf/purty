@@ -20,15 +20,7 @@ import qualified "this" Annotation
 
 data Common a
   = Common !a !Text
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (Common a) where
-  display = \case
-    Common ann x ->
-      "Common annotation:"
-      <> display ann
-      <> ", common: "
-      <> display x
+  deriving (Eq, Functor, Ord, Show)
 
 docFromCommon :: Common a -> Doc b
 docFromCommon = \case
@@ -44,11 +36,7 @@ common = \case
 
 newtype Constructor a
   = Constructor (Proper a)
-  deriving (Functor)
-
-instance (Display a) => Display (Constructor a) where
-  display = \case
-    Constructor name -> "Constructor: " <> display name
+  deriving (Functor, Show)
 
 constructor ::
   Language.PureScript.ProperName 'Language.PureScript.ConstructorName ->
@@ -61,11 +49,7 @@ docFromConstructor = \case
 
 newtype Class a
   = Class (Proper a)
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (Class a) where
-  display = \case
-    Class name -> "Class: " <> display name
+  deriving (Eq, Functor, Ord, Show)
 
 class' ::
   Language.PureScript.ProperName 'Language.PureScript.ClassName ->
@@ -78,11 +62,7 @@ docFromClass = \case
 
 newtype Kind a
   = Kind (Proper a)
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (Kind a) where
-  display = \case
-    Kind name -> "Kind: " <> display name
+  deriving (Eq, Functor, Ord, Show)
 
 docFromKind :: Kind a -> Doc b
 docFromKind = \case
@@ -95,12 +75,7 @@ kind = Kind . proper
 
 newtype Module a
   = Module (NonEmpty (Proper a))
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (Module a) where
-  display = \case
-    Module names ->
-      "Module: [" <> intercalateMap1 ", " display names <> "]"
+  deriving (Eq, Functor, Ord, Show)
 
 docFromModule :: Module a -> Doc b
 docFromModule = \case
@@ -116,20 +91,7 @@ module' = \case
 
 data Qualified f a
   = Qualified !(Maybe (Module a)) !(f a)
-  deriving (Functor)
-
-instance (Display a, Display (f a)) => Display (Qualified f a) where
-  display = \case
-    Qualified Nothing x ->
-      "UnQualified: "
-        <> "qualified: "
-        <> display x
-    Qualified (Just x) y ->
-      "Qualified: "
-        <> "module: "
-        <> display x
-        <> ", qualified: "
-        <> display y
+  deriving (Functor, Show)
 
 docFromQualified :: (f a -> Doc b) -> Qualified f a -> Doc b
 docFromQualified f = \case
@@ -149,15 +111,7 @@ qualified f = \case
 
 data Proper a
   = Proper !a !Text
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (Proper a) where
-  display = \case
-    Proper ann name ->
-      "Proper annotation: "
-        <> display ann
-        <> ", name: "
-        <> display name
+  deriving (Eq, Functor, Ord, Show)
 
 compareProper :: Proper a -> Proper b -> Ordering
 compareProper x' y' = case (x', y') of
@@ -173,11 +127,7 @@ docFromProper = \case
 
 newtype Type a
   = Type (Proper a)
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (Type a) where
-  display = \case
-    Type name -> "Type: " <> display name
+  deriving (Eq, Functor, Ord, Show)
 
 docFromType :: Type a -> Doc b
 docFromType = \case
@@ -190,11 +140,7 @@ type' = Type . proper
 
 newtype TypeConstructor a
   = TypeConstructor (Proper a)
-  deriving (Functor)
-
-instance (Display a) => Display (TypeConstructor a) where
-  display = \case
-    TypeConstructor name -> "TypeConstructor: " <> display name
+  deriving (Functor, Show)
 
 docFromTypeConstructor :: TypeConstructor a -> Doc b
 docFromTypeConstructor = \case
@@ -207,16 +153,7 @@ typeConstructor = TypeConstructor . proper
 
 data TypeOperator a
   = TypeOperator !a !Text
-  deriving (Functor)
-
-instance (Display a) => Display (TypeOperator a) where
-  display = \case
-    TypeOperator ann op ->
-      "Type Operator: "
-        <> "annotation: "
-        <> display ann
-        <> ", operator: "
-        <> display op
+  deriving (Functor, Show)
 
 docFromTypeOperator :: TypeOperator a -> Doc b
 docFromTypeOperator = \case
@@ -239,16 +176,7 @@ typeOperator = \case
 
 data ValueOperator a
   = ValueOperator !a !Text
-  deriving (Eq, Functor, Ord)
-
-instance (Display a) => Display (ValueOperator a) where
-  display = \case
-    ValueOperator ann op ->
-      "Value Operator annotation: "
-        <> display ann
-        <> ", op: ("
-        <> display op
-        <> ")"
+  deriving (Eq, Functor, Ord, Show)
 
 docFromValueOperator :: ValueOperator a -> Doc b
 docFromValueOperator = \case
