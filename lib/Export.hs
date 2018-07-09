@@ -179,9 +179,6 @@ data Sorted
 
 instance Log.Inspect Sorted
 
-displayList :: Display a => [a] -> Utf8Builder
-displayList xs = "[" <> fold (intersperse ", " (display <$> xs)) <> "]"
-
 dynamic, static :: Sorted -> Doc b
 (dynamic, static) = (dynamic', static')
   where

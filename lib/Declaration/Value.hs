@@ -4,7 +4,6 @@ import "rio" RIO
 
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
-import "base" Data.List                          (intersperse)
 import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
@@ -261,12 +260,6 @@ normalize = \case
     Value
       (Annotation.None <$ name)
       ((fmap . fmap) normalizeBinder binders)
-
-displayList :: Display a => [a] -> Utf8Builder
-displayList xs = "[" <> fold (intersperse ", " (display <$> xs)) <> "]"
-
-displayNonEmpty :: (Display a) => Maybe (NonEmpty a) -> Utf8Builder
-displayNonEmpty xs = "[" <> foldMap (intercalateMap1 ", " display) xs <> "]"
 
 -- Errors
 

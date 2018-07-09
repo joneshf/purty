@@ -6,9 +6,9 @@ import "rio" RIO
 import "freer-simple" Control.Monad.Freer (Eff, Member, send)
 import "base" GHC.Stack                   (callStack)
 
-import qualified "path" Path
 import qualified "prettyprinter" Data.Text.Prettyprint.Doc
 import qualified "purescript" Language.PureScript
+import qualified "path" Path
 
 class (Show a) => Inspect a
 

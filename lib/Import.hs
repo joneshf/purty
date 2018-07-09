@@ -4,7 +4,7 @@ import "rio" RIO
 
 import "freer-simple" Control.Monad.Freer        (Eff, Member)
 import "freer-simple" Control.Monad.Freer.Error  (Error)
-import "base" Data.List                          (intersperse, sortOn)
+import "base" Data.List                          (sortOn)
 import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
@@ -22,9 +22,9 @@ import qualified "purescript" Language.PureScript
 
 import "this" Export (Export)
 
-import qualified "this" Log
 import qualified "this" Annotation
 import qualified "this" Export
+import qualified "this" Log
 import qualified "this" Name
 import qualified "this" Variations
 
@@ -322,6 +322,3 @@ trailingLine :: Sorted -> Doc a
 trailingLine = \case
   Sorted Nothing Nothing Nothing Nothing -> mempty
   _ -> line
-
-displayList :: Display a => [a] -> Utf8Builder
-displayList xs = "[" <> fold (intersperse ", " (display <$> xs)) <> "]"
