@@ -10,10 +10,8 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , colon
     , equals
-    , indent
     , lbrace
     , lbracket
-    , line
     , parens
     , pretty
     , rbrace
@@ -227,8 +225,7 @@ docFromRecordPair f = \case
       multiLine =
         pretty (Language.PureScript.prettyPrintLabel x)
           <> colon
-          <> line
-          <> indent 2 (Variations.singleLine $ f y)
+          <+> Variations.multiLine (f y)
       singleLine =
         pretty (Language.PureScript.prettyPrintLabel x)
           <> colon
