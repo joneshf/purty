@@ -233,7 +233,8 @@ staticDo = \case
   DoLet x -> "let" <+> align (vsep $ toList $ fmap staticLetBinding x)
 
 data Expression a
-  = ExpressionApplication !(Expression a) !(Expression a)
+  = ExpressionAdo !(NonEmpty (Do a)) !(Expression a)
+  | ExpressionApplication !(Expression a) !(Expression a)
   | ExpressionCommented !(Expression a) ![Comment.Comment]
   | ExpressionConstructor !(Name.Qualified Name.Constructor a)
   | ExpressionDo !(NonEmpty (Do a))
@@ -249,6 +250,12 @@ data Expression a
 
 dynamicExpression :: Expression Annotation.Normalized -> Doc a
 dynamicExpression = \case
+  ExpressionAdo x y ->
+    "ado"
+      <> line
+      <> indent 2 (align $ vsep (toList $ fmap dynamicDo x) <> expressionDoc)
+      where
+      expressionDoc = line <> "in" <+> dynamicExpression y
   ExpressionApplication x y -> dynamicExpression x <+> dynamicExpression y
   ExpressionCommented x y -> foldMap Comment.doc y <> dynamicExpression x
   ExpressionConstructor x -> Name.docFromQualified Name.docFromConstructor x
@@ -320,6 +327,12 @@ expression ::
   Language.PureScript.Expr ->
   Eff e (Expression Annotation.Unannotated)
 expression = \case
+  Language.PureScript.Ado x y -> do
+    statements' <- nonEmpty <$> traverse do' x
+    expr <- expression y
+    case statements' of
+      Nothing         -> throwError DoWithoutStatements
+      Just statements -> pure (ExpressionAdo statements expr)
   Language.PureScript.App x y ->
     ExpressionApplication <$> expression x <*> expression y
   Language.PureScript.BinaryNoParens x y z -> do
@@ -363,6 +376,7 @@ expression = \case
 
 labelFromExpression :: Expression a -> Maybe Language.PureScript.Label.Label
 labelFromExpression = \case
+  ExpressionAdo _ _ -> Nothing
   ExpressionApplication _ _ -> Nothing
   ExpressionCommented _ _ -> Nothing
   ExpressionConstructor (Name.Qualified (Just _) _) -> Nothing
@@ -387,6 +401,8 @@ labelFromExpression = \case
 
 normalizeExpression :: Expression a -> Expression Annotation.Normalized
 normalizeExpression = \case
+  ExpressionAdo x y ->
+    ExpressionAdo (fmap normalizeDo x) (normalizeExpression y)
   ExpressionApplication x y ->
     ExpressionApplication (normalizeExpression x) (normalizeExpression y)
   ExpressionCommented x y -> ExpressionCommented (normalizeExpression x) y
@@ -412,6 +428,12 @@ normalizeExpression = \case
 
 staticExpression :: Expression Annotation.Normalized -> Doc a
 staticExpression = \case
+  ExpressionAdo x y ->
+    "ado"
+      <> line
+      <> indent 2 (align $ vsep (toList $ fmap staticDo x) <> expressionDoc)
+      where
+      expressionDoc = line <> "in" <+> staticExpression y
   ExpressionApplication x y -> staticExpression x <+> staticExpression y
   ExpressionCommented x y -> foldMap Comment.doc y <> staticExpression x
   ExpressionConstructor x -> Name.docFromQualified Name.docFromConstructor x
