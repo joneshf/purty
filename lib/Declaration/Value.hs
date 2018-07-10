@@ -126,6 +126,22 @@ docFromBinder = \case
   BinderVariable x -> Name.docFromCommon x
   BinderWildcard -> "_"
 
+labelFromBinder :: Binder a -> Maybe Language.PureScript.Label.Label
+labelFromBinder = \case
+  BinderAs _ _ -> Nothing
+  BinderBinary _ _ _ -> Nothing
+  BinderCommented _ _ -> Nothing
+  BinderConstructor _ _ -> Nothing
+  BinderLiteral _ -> Nothing
+  BinderOperator _ -> Nothing
+  BinderParens x -> labelFromBinder x
+  BinderTyped _ _ -> Nothing
+  BinderVariable (Name.Common _ x) -> Just label
+    where
+    label =
+      Language.PureScript.Label.Label (Language.PureScript.PSString.mkString x)
+  BinderWildcard -> Nothing
+
 normalizeBinder :: Binder a -> Binder Annotation.Normalized
 normalizeBinder = \case
   BinderAs x y -> BinderAs (Annotation.None <$ x) (normalizeBinder y)
@@ -136,7 +152,8 @@ normalizeBinder = \case
     BinderConstructor
       (Annotation.None <$ x)
       ((fmap . fmap) normalizeBinder y)
-  BinderLiteral x -> BinderLiteral (fmap normalizeBinder x)
+  BinderLiteral x ->
+    BinderLiteral (normalizeLiteral labelFromBinder normalizeBinder x)
   BinderOperator x -> BinderOperator (Annotation.None <$ x)
   BinderParens x -> BinderParens (normalizeBinder x)
   BinderTyped x y -> BinderTyped (normalizeBinder x) (Type.normalize y)
@@ -344,6 +361,30 @@ expression = \case
     pure (ExpressionVariable name)
   x -> throwError (NotImplemented x)
 
+labelFromExpression :: Expression a -> Maybe Language.PureScript.Label.Label
+labelFromExpression = \case
+  ExpressionApplication _ _ -> Nothing
+  ExpressionCommented _ _ -> Nothing
+  ExpressionConstructor (Name.Qualified (Just _) _) -> Nothing
+  ExpressionConstructor (Name.Qualified Nothing (Name.Constructor (Name.Proper _ x))) ->
+    Just label
+      where
+      label =
+        Language.PureScript.Label.Label (Language.PureScript.PSString.mkString x)
+  ExpressionDo _ -> Nothing
+  ExpressionInfix _ _ _ -> Nothing
+  ExpressionLet _ _ -> Nothing
+  ExpressionLiteral _ -> Nothing
+  ExpressionOperator _ -> Nothing
+  ExpressionParens x -> labelFromExpression x
+  ExpressionTyped _ _ -> Nothing
+  ExpressionVariable (Name.Qualified (Just _) _) -> Nothing
+  ExpressionVariable (Name.Qualified Nothing (Name.Common _ x)) -> Just label
+    where
+    label =
+      Language.PureScript.Label.Label (Language.PureScript.PSString.mkString x)
+  ExpressionWhere _ _ -> Nothing
+
 normalizeExpression :: Expression a -> Expression Annotation.Normalized
 normalizeExpression = \case
   ExpressionApplication x y ->
@@ -358,7 +399,9 @@ normalizeExpression = \case
       (normalizeExpression z)
   ExpressionLet x y ->
     ExpressionLet (fmap normalizeLetBinding x) (normalizeExpression y)
-  ExpressionLiteral x -> ExpressionLiteral (fmap normalizeExpression x)
+  ExpressionLiteral x ->
+    ExpressionLiteral
+      (normalizeLiteral labelFromExpression normalizeExpression x)
   ExpressionOperator x -> ExpressionOperator (Annotation.None <$ x)
   ExpressionParens x -> ExpressionParens (normalizeExpression x)
   ExpressionTyped x y ->
@@ -506,8 +549,23 @@ literal f = \case
     LiteralRecord . nonEmpty <$> traverse (recordPair f) x
   Language.PureScript.StringLiteral x -> pure (LiteralString x)
 
+normalizeLiteral ::
+  (f a -> Maybe Language.PureScript.Label.Label) ->
+  (f a -> f Annotation.Normalized) ->
+  Literal (f a) ->
+  Literal (f Annotation.Normalized)
+normalizeLiteral f g = \case
+  LiteralArray x -> LiteralArray ((fmap . fmap) g x)
+  LiteralBoolean x -> LiteralBoolean x
+  LiteralChar x -> LiteralChar x
+  LiteralInt x -> LiteralInt x
+  LiteralNumber x -> LiteralNumber x
+  LiteralRecord x -> LiteralRecord ((fmap . fmap) (normalizeRecordPair f g) x)
+  LiteralString x -> LiteralString x
+
 data RecordPair a
   = RecordPair !Language.PureScript.Label.Label !a
+  | RecordPun !Language.PureScript.Label.Label
   deriving (Functor, Show)
 
 docFromRecordPair ::
@@ -526,6 +584,20 @@ docFromRecordPair f = \case
         pretty (Language.PureScript.prettyPrintLabel x)
           <> colon
           <+> Variations.singleLine (f y)
+  RecordPun x -> pure (pretty $ Language.PureScript.prettyPrintLabel x)
+
+normalizeRecordPair ::
+  (f a -> Maybe Language.PureScript.Label.Label) ->
+  (f a -> f Annotation.Normalized) ->
+  RecordPair (f a) ->
+  RecordPair (f Annotation.Normalized)
+normalizeRecordPair f g = \case
+  RecordPair x y -> case f y of
+    Nothing -> RecordPair x (g y)
+    Just label
+      | label == x -> RecordPun x
+      | otherwise -> RecordPair x (g y)
+  RecordPun x -> RecordPun x
 
 recordPair ::
   (a -> Eff e b) ->
