@@ -218,6 +218,7 @@ staticDo = \case
 data Expression a
   = ExpressionApplication !(Expression a) !(Expression a)
   | ExpressionCommented !(Expression a) ![Comment.Comment]
+  | ExpressionConstructor !(Name.Qualified Name.Constructor a)
   | ExpressionDo !(NonEmpty (Do a))
   | ExpressionInfix !(Expression a) !(Expression a) !(Expression a)
   | ExpressionLet !(NonEmpty (LetBinding a)) !(Expression a)
@@ -232,6 +233,7 @@ dynamicExpression :: Expression Annotation.Normalized -> Doc a
 dynamicExpression = \case
   ExpressionApplication x y -> dynamicExpression x <+> dynamicExpression y
   ExpressionCommented x y -> foldMap Comment.doc y <> dynamicExpression x
+  ExpressionConstructor x -> Name.docFromQualified Name.docFromConstructor x
   ExpressionDo x ->
     "do"
       <> line
@@ -302,6 +304,8 @@ expression = \case
     ExpressionApplication <$> expression x <*> expression y
   Language.PureScript.BinaryNoParens x y z -> do
     ExpressionInfix <$> expression y <*> expression x <*> expression z
+  Language.PureScript.Constructor _ x ->
+    fmap ExpressionConstructor (Name.qualified (pure . Name.constructor) x)
   Language.PureScript.Do x -> do
     statements' <- nonEmpty <$> traverse do' x
     case statements' of
@@ -338,6 +342,7 @@ normalizeExpression = \case
   ExpressionApplication x y ->
     ExpressionApplication (normalizeExpression x) (normalizeExpression y)
   ExpressionCommented x y -> ExpressionCommented (normalizeExpression x) y
+  ExpressionConstructor x -> ExpressionConstructor (Annotation.None <$ x)
   ExpressionDo x -> ExpressionDo (fmap normalizeDo x)
   ExpressionInfix x y z ->
     ExpressionInfix
@@ -357,6 +362,7 @@ staticExpression :: Expression Annotation.Normalized -> Doc a
 staticExpression = \case
   ExpressionApplication x y -> staticExpression x <+> staticExpression y
   ExpressionCommented x y -> foldMap Comment.doc y <> staticExpression x
+  ExpressionConstructor x -> Name.docFromQualified Name.docFromConstructor x
   ExpressionDo x ->
     "do"
       <> line
