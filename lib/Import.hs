@@ -40,8 +40,8 @@ dynamicExplicit :: NonEmpty (Explicit Annotation.Sorted) -> Doc a
 dynamicExplicit = \case
   explicits ->
     line
-      <> line
       <> intercalateMap1 line go explicits
+      <> line
   where
   go = \case
     Explicit _ann name imports' (Alias alias') ->
@@ -67,8 +67,8 @@ staticExplicit :: NonEmpty (Explicit Annotation.Sorted) -> Doc a
 staticExplicit = \case
   explicits ->
     line
-      <> line
       <> intercalateMap1 line go explicits
+      <> line
   where
   go = \case
     Explicit _ann name imports' (Alias alias') ->
@@ -91,8 +91,8 @@ dynamicHiding :: NonEmpty (Hiding Annotation.Sorted) -> Doc a
 dynamicHiding = \case
   hidings ->
     line
-      <> line
       <> intercalateMap1 line go hidings
+      <> line
   where
   go = \case
     Hiding _ann name imports' (Alias alias') ->
@@ -120,8 +120,8 @@ staticHiding :: NonEmpty (Hiding Annotation.Sorted) -> Doc a
 staticHiding = \case
   hidings ->
     line
-      <> line
       <> intercalateMap1 line go hidings
+      <> line
   where
   go = \case
     Hiding _ann name imports' (Alias alias') ->
@@ -233,6 +233,7 @@ dynamicOpen = \case
   opens ->
     line
       <> intercalateMap1 line go opens
+      <> line
   where
   go = \case
     Open _ann name ->
@@ -249,6 +250,7 @@ staticOpen = \case
   opens ->
     line
       <> intercalateMap1 line go opens
+      <> line
   where
   go = \case
     Open _ann name ->
@@ -262,8 +264,8 @@ dynamicQualified :: NonEmpty (Qualified Annotation.Sorted) -> Doc a
 dynamicQualified = \case
   qualifieds ->
     line
-      <> line
       <> intercalateMap1 line go qualifieds
+      <> line
   where
   go = \case
     Qualified _ann name (Alias alias') ->
@@ -281,8 +283,8 @@ staticQualified :: NonEmpty (Qualified Annotation.Sorted) -> Doc a
 staticQualified = \case
   qualifieds ->
     line
-      <> line
       <> intercalateMap1 line go qualifieds
+      <> line
   where
   go = \case
     Qualified _ann name (Alias alias') ->
@@ -307,7 +309,6 @@ dynamic x = case x of
       <> foldMap dynamicHiding hiding
       <> foldMap dynamicExplicit explicit
       <> foldMap dynamicQualified qualified
-      <> trailingLine x
 
 static :: Sorted -> Doc b
 static x = case x of
@@ -316,9 +317,3 @@ static x = case x of
       <> foldMap staticHiding hiding
       <> foldMap staticExplicit explicit
       <> foldMap staticQualified qualified
-      <> trailingLine x
-
-trailingLine :: Sorted -> Doc a
-trailingLine = \case
-  Sorted Nothing Nothing Nothing Nothing -> mempty
-  _ -> line
