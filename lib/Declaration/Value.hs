@@ -225,6 +225,7 @@ data Expression a
   | ExpressionLiteral !(Literal (Expression a))
   | ExpressionOperator !(Name.Qualified Name.ValueOperator a)
   | ExpressionParens !(Expression a)
+  | ExpressionTyped !(Expression a) !(Type.Type a)
   | ExpressionVariable !(Name.Qualified Name.Common a)
   | ExpressionWhere !(Expression a) !(NonEmpty (WhereDeclaration a))
   deriving (Functor, Show)
@@ -262,6 +263,8 @@ dynamicExpression = \case
       docFromLiteral (pure . dynamicExpression) x
   ExpressionOperator x -> Name.docFromQualified Name.docFromValueOperator x
   ExpressionParens x -> parens (dynamicExpression x)
+  ExpressionTyped x y ->
+    staticExpression x <+> colon <> colon <+> Variations.singleLine (Type.doc y)
   ExpressionVariable x -> Name.docFromQualified Name.docFromCommon x
   ExpressionWhere x y -> whereDoc
     where
@@ -332,6 +335,10 @@ expression = \case
     let comments = fmap Comment.fromPureScript x
     expr <- expression y
     pure (ExpressionCommented expr comments)
+  Language.PureScript.TypedValue _ x y -> do
+    expr <- expression x
+    type' <- Type.fromPureScript y
+    pure (ExpressionTyped expr type')
   Language.PureScript.Var _ x -> do
     name <- Name.qualified Name.common x
     pure (ExpressionVariable name)
@@ -354,6 +361,8 @@ normalizeExpression = \case
   ExpressionLiteral x -> ExpressionLiteral (fmap normalizeExpression x)
   ExpressionOperator x -> ExpressionOperator (Annotation.None <$ x)
   ExpressionParens x -> ExpressionParens (normalizeExpression x)
+  ExpressionTyped x y ->
+    ExpressionTyped (normalizeExpression x) (Type.normalize y)
   ExpressionVariable x -> ExpressionVariable (Annotation.None <$ x)
   ExpressionWhere x y ->
     ExpressionWhere (normalizeExpression x) (fmap normalizeWhereDeclaration y)
@@ -389,6 +398,8 @@ staticExpression = \case
     Variations.multiLine (docFromLiteral (pure . staticExpression) x)
   ExpressionOperator x -> Name.docFromQualified Name.docFromValueOperator x
   ExpressionParens x -> parens (staticExpression x)
+  ExpressionTyped x y ->
+    staticExpression x <+> colon <> colon <+> Variations.multiLine (Type.doc y)
   ExpressionVariable x -> Name.docFromQualified Name.docFromCommon x
   ExpressionWhere x y -> whereDoc
     where
