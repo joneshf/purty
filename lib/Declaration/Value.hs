@@ -238,6 +238,7 @@ data Expression a
   | ExpressionCommented !(Expression a) ![Comment.Comment]
   | ExpressionConstructor !(Name.Qualified Name.Constructor a)
   | ExpressionDo !(NonEmpty (Do a))
+  | ExpressionIf !(Expression a) !(Expression a) !(Expression a)
   | ExpressionInfix !(Expression a) !(Expression a) !(Expression a)
   | ExpressionLet !(NonEmpty (LetBinding a)) !(Expression a)
   | ExpressionLiteral !(Literal (Expression a))
@@ -263,6 +264,13 @@ dynamicExpression = \case
     "do"
       <> line
       <> indent 2 (align $ vsep $ toList $ fmap dynamicDo x)
+  ExpressionIf x y z ->
+    "if"
+      <+> dynamicExpression x
+      <> line
+      <> indent 2 (align $ vsep cases)
+      where
+      cases = ["then" <+> dynamicExpression y, "else" <+> dynamicExpression z]
   ExpressionInfix left (ExpressionOperator op) right ->
     dynamicExpression left
       <+> Name.docFromQualified Name.docFromValueOperator' op
@@ -344,6 +352,8 @@ expression = \case
     case statements' of
       Nothing         -> throwError DoWithoutStatements
       Just statements -> pure (ExpressionDo statements)
+  Language.PureScript.IfThenElse x y z ->
+    ExpressionIf <$> expression x <*> expression y <*> expression z
   Language.PureScript.Let Language.PureScript.FromLet x y -> do
     bindings' <- nonEmpty <$> traverse letBinding x
     expr <- expression y
@@ -386,6 +396,7 @@ labelFromExpression = \case
       label =
         Language.PureScript.Label.Label (Language.PureScript.PSString.mkString x)
   ExpressionDo _ -> Nothing
+  ExpressionIf _ _ _ -> Nothing
   ExpressionInfix _ _ _ -> Nothing
   ExpressionLet _ _ -> Nothing
   ExpressionLiteral _ -> Nothing
@@ -408,6 +419,11 @@ normalizeExpression = \case
   ExpressionCommented x y -> ExpressionCommented (normalizeExpression x) y
   ExpressionConstructor x -> ExpressionConstructor (Annotation.None <$ x)
   ExpressionDo x -> ExpressionDo (fmap normalizeDo x)
+  ExpressionIf x y z ->
+    ExpressionIf
+      (normalizeExpression x)
+      (normalizeExpression y)
+      (normalizeExpression z)
   ExpressionInfix x y z ->
     ExpressionInfix
       (normalizeExpression x)
@@ -441,6 +457,13 @@ staticExpression = \case
     "do"
       <> line
       <> indent 2 (align $ vsep $ toList $ fmap staticDo x)
+  ExpressionIf x y z ->
+    "if"
+      <+> staticExpression x
+      <> line
+      <> indent 2 (align $ vsep cases)
+      where
+      cases = ["then" <+> staticExpression y, "else" <+> staticExpression z]
   ExpressionInfix left (ExpressionOperator op) right ->
     staticExpression left
       <+> Name.docFromQualified Name.docFromValueOperator' op
