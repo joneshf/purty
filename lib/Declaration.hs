@@ -73,9 +73,15 @@ fromPureScript ::
      , Error Declaration.DataType.WrongNewtypeConstructors
      , Error Declaration.Fixity.NegativePrecedence
      , Error Declaration.Value.BinaryBinderWithoutOperator
+     , Error Declaration.Value.DoLetWithoutBindings
+     , Error Declaration.Value.DoWithoutStatements
      , Error Declaration.Value.InvalidExpressions
+     , Error Declaration.Value.InvalidLetBinding
+     , Error Declaration.Value.InvalidWhereDeclaration
+     , Error Declaration.Value.LetWithoutBindings
      , Error Declaration.Value.NoExpressions
      , Error Declaration.Value.NotImplemented
+     , Error Declaration.Value.WhereWithoutDeclarations
      , Error Kind.InferredKind
      , Error Name.InvalidCommon
      , Error Name.Missing
@@ -159,10 +165,9 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
         where
         doc = Declaration.Type.doc declaration
     DeclarationValue declaration ->
-      group (flatAlt (Variations.multiLine doc) $ Variations.singleLine doc)
+      Declaration.Value.dynamic declaration
         <> line
         where
-        doc = Declaration.Value.doc declaration
   static' = \case
     Declarations Nothing -> mempty
     Declarations (Just declarations) ->
@@ -185,5 +190,5 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
     DeclarationType declaration ->
       Variations.multiLine (Declaration.Type.doc declaration)
     DeclarationValue declaration ->
-      Variations.multiLine (Declaration.Value.doc declaration)
+      Declaration.Value.static declaration
         <> line

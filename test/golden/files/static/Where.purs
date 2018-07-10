@@ -1,8 +1,6 @@
 module Where where
 
 foo = x
-    where
-    x = y
-    
-    y = 1
-    
+  where
+  x = y
+  y = 1
