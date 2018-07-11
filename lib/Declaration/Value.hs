@@ -391,7 +391,7 @@ data Expression a
   | ExpressionMinus !(Expression a)
   | ExpressionOperator !(Name.Qualified Name.ValueOperator a)
   | ExpressionParens !(Expression a)
-  | ExpressionProperty !(Expression a) !Language.PureScript.PSString.PSString
+  | ExpressionProperty !(Expression a) !Language.PureScript.Label.Label
   | ExpressionRecordUpdate !(Expression a) !(NonEmpty (RecordUpdate a))
   | ExpressionTyped !(Expression a) !(Type.Type a)
   | ExpressionVariable !(Name.Qualified Name.Common a)
@@ -456,9 +456,7 @@ dynamicExpression = \case
   ExpressionOperator x -> Name.docFromQualified Name.docFromValueOperator x
   ExpressionParens x -> parens (dynamicExpression x)
   ExpressionProperty x y ->
-    dynamicExpression x
-      <> dot
-      <> pretty (Language.PureScript.prettyPrintObjectKey y)
+    dynamicExpression x <> dot <> pretty (Language.PureScript.prettyPrintLabel y)
   ExpressionRecordUpdate x y ->
     dynamicExpression x
       <+> Variations.singleLine (Variations.bracesize docFromRecordUpdate y)
@@ -514,7 +512,7 @@ expression = \case
     ExpressionLambda <$> fmap pure (binder x) <*> expression y
   Language.PureScript.Accessor x y -> do
     expr <- expression y
-    pure (ExpressionProperty expr x)
+    pure (ExpressionProperty expr $ Language.PureScript.Label.Label x)
   Language.PureScript.Ado x y -> do
     statements' <- nonEmpty <$> traverse do' x
     expr <- expression y
@@ -723,9 +721,7 @@ staticExpression = \case
   ExpressionOperator x -> Name.docFromQualified Name.docFromValueOperator x
   ExpressionParens x -> parens (staticExpression x)
   ExpressionProperty x y ->
-    staticExpression x
-      <> dot
-      <> pretty (Language.PureScript.prettyPrintObjectKey y)
+    staticExpression x <> dot <> pretty (Language.PureScript.prettyPrintLabel y)
   ExpressionRecordUpdate x y ->
     staticExpression x
       <+> Variations.multiLine (Variations.bracesize docFromRecordUpdate y)
