@@ -179,6 +179,7 @@ caseAlternative ::
      , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
+     , Error InvalidExpression
      , Error InvalidExpressions
      , Error InvalidLetBinding
      , Error InvalidWhereDeclaration
@@ -243,6 +244,7 @@ partitionCaseAlternatives ::
      , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
+     , Error InvalidExpression
      , Error InvalidExpressions
      , Error InvalidLetBinding
      , Error InvalidWhereDeclaration
@@ -307,6 +309,7 @@ do' ::
      , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
+     , Error InvalidExpression
      , Error InvalidExpressions
      , Error InvalidLetBinding
      , Error InvalidWhereDeclaration
@@ -465,6 +468,7 @@ expression ::
      , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
+     , Error InvalidExpression
      , Error InvalidExpressions
      , Error InvalidLetBinding
      , Error InvalidWhereDeclaration
@@ -546,6 +550,14 @@ expression = \case
   Language.PureScript.UnaryMinus _ x -> fmap ExpressionMinus (expression x)
   Language.PureScript.Var _ x ->
     fmap ExpressionVariable (Name.qualified Name.common x)
+  x@Language.PureScript.DeferredDictionary {} ->
+    throwError (InvalidExpression x)
+  x@Language.PureScript.TypeClassDictionary {} ->
+    throwError (InvalidExpression x)
+  x@Language.PureScript.TypeClassDictionaryAccessor {} ->
+    throwError (InvalidExpression x)
+  x@Language.PureScript.TypeClassDictionaryConstructorApp {} ->
+    throwError (InvalidExpression x)
   x -> throwError (NotImplemented x)
 
 labelFromExpression :: Expression a -> Maybe Language.PureScript.Label.Label
@@ -702,6 +714,7 @@ guard ::
      , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
+     , Error InvalidExpression
      , Error InvalidExpressions
      , Error InvalidLetBinding
      , Error InvalidWhereDeclaration
@@ -762,6 +775,7 @@ guardedExpression ::
      , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
+     , Error InvalidExpression
      , Error InvalidExpressions
      , Error InvalidLetBinding
      , Error InvalidWhereDeclaration
@@ -838,6 +852,7 @@ letBinding ::
      , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
+     , Error InvalidExpression
      , Error InvalidExpressions
      , Error InvalidLetBinding
      , Error InvalidWhereDeclaration
@@ -1005,6 +1020,7 @@ fromPureScript ::
      , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
+     , Error InvalidExpression
      , Error InvalidExpressions
      , Error InvalidLetBinding
      , Error InvalidWhereDeclaration
@@ -1076,6 +1092,7 @@ whereDeclaration ::
      , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
+     , Error InvalidExpression
      , Error InvalidExpressions
      , Error InvalidLetBinding
      , Error InvalidWhereDeclaration
@@ -1117,6 +1134,7 @@ type Errors
      , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
+     , Error InvalidExpression
      , Error InvalidExpressions
      , Error InvalidLetBinding
      , Error InvalidWhereDeclaration
@@ -1209,6 +1227,17 @@ instance Display GuardedExpressionWithoutGuards where
     GuardedExpressionWithoutGuards ->
       "We received a guarded expression that did not have any guards."
         <> " This is probably a problem in the PureScript library."
+
+newtype InvalidExpression
+  = InvalidExpression Language.PureScript.Expr
+
+instance Display InvalidExpression where
+  display = \case
+    InvalidExpression x ->
+      "We received an expression `"
+        <> displayShow x
+        <> "`, but this expression should not be possible in the source file."
+        <> " This is probably a problem in the Purescript library."
 
 data InvalidExpressions
   = InvalidExpressions

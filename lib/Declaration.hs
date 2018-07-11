@@ -79,6 +79,7 @@ fromPureScript ::
      , Error Declaration.Value.CaseWithoutExpressions
      , Error Declaration.Value.DoLetWithoutBindings
      , Error Declaration.Value.DoWithoutStatements
+     , Error Declaration.Value.InvalidExpression
      , Error Declaration.Value.InvalidExpressions
      , Error Declaration.Value.InvalidLetBinding
      , Error Declaration.Value.InvalidWhereDeclaration
