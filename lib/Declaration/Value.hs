@@ -187,6 +187,7 @@ caseAlternative ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Kind.InferredKind
@@ -252,6 +253,7 @@ partitionCaseAlternatives ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Kind.InferredKind
@@ -317,6 +319,7 @@ do' ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Kind.InferredKind
@@ -389,6 +392,7 @@ data Expression a
   | ExpressionOperator !(Name.Qualified Name.ValueOperator a)
   | ExpressionParens !(Expression a)
   | ExpressionProperty !(Expression a) !Language.PureScript.PSString.PSString
+  | ExpressionRecordUpdate !(Expression a) !(NonEmpty (RecordUpdate a))
   | ExpressionTyped !(Expression a) !(Type.Type a)
   | ExpressionVariable !(Name.Qualified Name.Common a)
   | ExpressionWhere !(Expression a) !(NonEmpty (WhereDeclaration a))
@@ -455,6 +459,9 @@ dynamicExpression = \case
     dynamicExpression x
       <> dot
       <> pretty (Language.PureScript.prettyPrintObjectKey y)
+  ExpressionRecordUpdate x y ->
+    dynamicExpression x
+      <+> Variations.singleLine (Variations.bracesize docFromRecordUpdate y)
   ExpressionTyped x y ->
     staticExpression x <+> colon <> colon <+> Variations.singleLine (Type.doc y)
   ExpressionVariable x -> Name.docFromQualified Name.docFromCommon x
@@ -483,6 +490,7 @@ expression ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Kind.InferredKind
@@ -548,6 +556,16 @@ expression = \case
       Just declarations -> pure (ExpressionWhere expr declarations)
   Language.PureScript.Literal _ x ->
     fmap ExpressionLiteral (literal expression x)
+  Language.PureScript.ObjectUpdate x y -> do
+    expr <- expression x
+    updates' <- nonEmpty <$> traverse recordUpdate y
+    updates <-
+      maybe (throwError $ RecordUpdateWithoutUpdates $ Just x) pure updates'
+    pure (ExpressionRecordUpdate expr updates)
+  Language.PureScript.ObjectUpdateNested x y -> do
+    expr <- expression x
+    updates <- recordUpdateNested y
+    pure (ExpressionRecordUpdate expr updates)
   Language.PureScript.Op _ x ->
     fmap ExpressionOperator (Name.qualified (pure . Name.valueOperator) x)
   Language.PureScript.Parens x -> fmap ExpressionParens (expression x)
@@ -570,7 +588,6 @@ expression = \case
     throwError (InvalidExpression x)
   x@Language.PureScript.TypeClassDictionaryConstructorApp {} ->
     throwError (InvalidExpression x)
-  x -> throwError (NotImplemented x)
 
 labelFromExpression :: Expression a -> Maybe Language.PureScript.Label.Label
 labelFromExpression = \case
@@ -595,6 +612,7 @@ labelFromExpression = \case
   ExpressionOperator {} -> Nothing
   ExpressionParens x -> labelFromExpression x
   ExpressionProperty {} -> Nothing
+  ExpressionRecordUpdate {} -> Nothing
   ExpressionTyped {} -> Nothing
   ExpressionVariable (Name.Qualified (Just _) _) -> Nothing
   ExpressionVariable (Name.Qualified Nothing (Name.Common _ x)) -> Just label
@@ -639,6 +657,10 @@ normalizeExpression = \case
   ExpressionOperator x -> ExpressionOperator (Annotation.None <$ x)
   ExpressionParens x -> ExpressionParens (normalizeExpression x)
   ExpressionProperty x y -> ExpressionProperty (normalizeExpression x) y
+  ExpressionRecordUpdate x y ->
+    ExpressionRecordUpdate
+      (normalizeExpression x)
+      (fmap normalizeRecordUpdate y)
   ExpressionTyped x y ->
     ExpressionTyped (normalizeExpression x) (Type.normalize y)
   ExpressionVariable x -> ExpressionVariable (Annotation.None <$ x)
@@ -704,6 +726,9 @@ staticExpression = \case
     staticExpression x
       <> dot
       <> pretty (Language.PureScript.prettyPrintObjectKey y)
+  ExpressionRecordUpdate x y ->
+    staticExpression x
+      <+> Variations.multiLine (Variations.bracesize docFromRecordUpdate y)
   ExpressionTyped x y ->
     staticExpression x <+> colon <> colon <+> Variations.multiLine (Type.doc y)
   ExpressionVariable x -> Name.docFromQualified Name.docFromCommon x
@@ -742,6 +767,7 @@ guard ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Kind.InferredKind
@@ -803,6 +829,7 @@ guardedExpression ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Kind.InferredKind
@@ -880,6 +907,7 @@ letBinding ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Kind.InferredKind
@@ -1004,6 +1032,166 @@ recordPair ::
 recordPair f = \case
   (x, y) -> fmap (RecordPair $ Language.PureScript.Label.Label x) (f y)
 
+data RecordUpdate a
+  = RecordUpdate !Language.PureScript.Label.Label !(Expression a)
+  | RecordUpdateNest
+      !Language.PureScript.Label.Label
+      !(NonEmpty (RecordUpdate a))
+  deriving (Functor, Show)
+
+docFromRecordUpdate ::
+  RecordUpdate Annotation.Normalized -> Variations.Variations (Doc a)
+docFromRecordUpdate = \case
+  RecordUpdate x y ->
+    Variations.Variations { Variations.multiLine, Variations.singleLine }
+      where
+      multiLine =
+        pretty (Language.PureScript.prettyPrintLabel x)
+          <+> equals
+          <+> staticExpression y
+      singleLine =
+        pretty (Language.PureScript.prettyPrintLabel x)
+          <+> equals
+          <+> dynamicExpression y
+  RecordUpdateNest x y ->
+    Variations.Variations { Variations.multiLine, Variations.singleLine }
+      where
+      multiLine =
+        pretty (Language.PureScript.prettyPrintLabel x)
+          <+> Variations.multiLine (Variations.bracesize docFromRecordUpdate y)
+      singleLine =
+        pretty (Language.PureScript.prettyPrintLabel x)
+          <+> Variations.singleLine (Variations.bracesize docFromRecordUpdate y)
+
+normalizeRecordUpdate :: RecordUpdate a -> RecordUpdate Annotation.Normalized
+normalizeRecordUpdate = \case
+  RecordUpdate x y -> RecordUpdate x (normalizeExpression y)
+  RecordUpdateNest x y -> RecordUpdateNest x (fmap normalizeRecordUpdate y)
+
+recordUpdate ::
+  ( Members
+    '[ Error BinaryBinderWithoutOperator
+     , Error CaseAlternativeWithoutBinders
+     , Error CaseAlternativeWithoutExpressions
+     , Error CaseWithoutAlternatives
+     , Error CaseWithoutExpressions
+     , Error DoLetWithoutBindings
+     , Error DoWithoutStatements
+     , Error InvalidExpression
+     , Error InvalidExpressions
+     , Error InvalidLetBinding
+     , Error InvalidWhereDeclaration
+     , Error LetWithoutBindings
+     , Error NoExpressions
+     , Error NotImplemented
+     , Error RecordUpdateWithoutUpdates
+     , Error UnguardedExpression
+     , Error WhereWithoutDeclarations
+     , Error Kind.InferredKind
+     , Error Name.InvalidCommon
+     , Error Name.Missing
+     , Error Type.InferredConstraintData
+     , Error Type.InferredForallWithSkolem
+     , Error Type.InferredSkolem
+     , Error Type.InferredType
+     , Error Type.InfixTypeNotTypeOp
+     , Error Type.PrettyPrintForAll
+     , Error Type.PrettyPrintFunction
+     , Error Type.PrettyPrintObject
+     ]
+    e
+  ) =>
+  (Language.PureScript.PSString.PSString, Language.PureScript.Expr) ->
+  Eff e (RecordUpdate Annotation.Unannotated)
+recordUpdate = \case
+  (x, y) ->
+    fmap (RecordUpdate $ Language.PureScript.Label.Label x) (expression y)
+
+recordUpdateNested ::
+  ( Members
+    '[ Error BinaryBinderWithoutOperator
+     , Error CaseAlternativeWithoutBinders
+     , Error CaseAlternativeWithoutExpressions
+     , Error CaseWithoutAlternatives
+     , Error CaseWithoutExpressions
+     , Error DoLetWithoutBindings
+     , Error DoWithoutStatements
+     , Error InvalidExpression
+     , Error InvalidExpressions
+     , Error InvalidLetBinding
+     , Error InvalidWhereDeclaration
+     , Error LetWithoutBindings
+     , Error NoExpressions
+     , Error NotImplemented
+     , Error RecordUpdateWithoutUpdates
+     , Error UnguardedExpression
+     , Error WhereWithoutDeclarations
+     , Error Kind.InferredKind
+     , Error Name.InvalidCommon
+     , Error Name.Missing
+     , Error Type.InferredConstraintData
+     , Error Type.InferredForallWithSkolem
+     , Error Type.InferredSkolem
+     , Error Type.InferredType
+     , Error Type.InfixTypeNotTypeOp
+     , Error Type.PrettyPrintForAll
+     , Error Type.PrettyPrintFunction
+     , Error Type.PrettyPrintObject
+     ]
+    e
+  ) =>
+  Language.PureScript.PathTree Language.PureScript.Expr ->
+  Eff e (NonEmpty (RecordUpdate Annotation.Unannotated))
+recordUpdateNested = \case
+  Language.PureScript.PathTree (Language.PureScript.AssocList x) -> do
+    updates <- nonEmpty <$> traverse recordUpdateNode x
+    maybe (throwError (RecordUpdateWithoutUpdates Nothing)) pure updates
+
+recordUpdateNode ::
+  ( Members
+    '[ Error BinaryBinderWithoutOperator
+     , Error CaseAlternativeWithoutBinders
+     , Error CaseAlternativeWithoutExpressions
+     , Error CaseWithoutAlternatives
+     , Error CaseWithoutExpressions
+     , Error DoLetWithoutBindings
+     , Error DoWithoutStatements
+     , Error InvalidExpression
+     , Error InvalidExpressions
+     , Error InvalidLetBinding
+     , Error InvalidWhereDeclaration
+     , Error LetWithoutBindings
+     , Error NoExpressions
+     , Error NotImplemented
+     , Error RecordUpdateWithoutUpdates
+     , Error UnguardedExpression
+     , Error WhereWithoutDeclarations
+     , Error Kind.InferredKind
+     , Error Name.InvalidCommon
+     , Error Name.Missing
+     , Error Type.InferredConstraintData
+     , Error Type.InferredForallWithSkolem
+     , Error Type.InferredSkolem
+     , Error Type.InferredType
+     , Error Type.InfixTypeNotTypeOp
+     , Error Type.PrettyPrintForAll
+     , Error Type.PrettyPrintFunction
+     , Error Type.PrettyPrintObject
+     ]
+    e
+  ) =>
+  ( Language.PureScript.PSString.PSString
+  , Language.PureScript.PathNode Language.PureScript.Expr
+  ) ->
+  Eff e (RecordUpdate Annotation.Unannotated)
+recordUpdateNode = \case
+  (x, Language.PureScript.Branch y) ->
+    fmap
+      (RecordUpdateNest $ Language.PureScript.Label.Label x)
+      (recordUpdateNested y)
+  (x, Language.PureScript.Leaf y) ->
+    fmap (RecordUpdate $ Language.PureScript.Label.Label x) (expression y)
+
 data Value a
   = ValueExpression
       !(Name.Common a)
@@ -1048,6 +1236,7 @@ fromPureScript ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Name.InvalidCommon
@@ -1120,6 +1309,7 @@ whereDeclaration ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Kind.InferredKind
@@ -1162,6 +1352,7 @@ type Errors
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      ]
@@ -1333,6 +1524,18 @@ instance Display NotImplemented where
       "We haven't implemented this type of expression yet `"
         <> displayShow x
         <> "`."
+
+newtype RecordUpdateWithoutUpdates
+  = RecordUpdateWithoutUpdates (Maybe Language.PureScript.Expr)
+
+instance Display RecordUpdateWithoutUpdates where
+  display = \case
+    RecordUpdateWithoutUpdates (Just x) ->
+      "We received a record update expression for the expression `"
+        <> displayShow x
+        <> "`, but it did not have any updates."
+    RecordUpdateWithoutUpdates Nothing ->
+      "We received a record update expression, but it did not have any updates."
 
 newtype UnguardedExpression
   = UnguardedExpression Language.PureScript.Expr

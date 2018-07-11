@@ -33,7 +33,7 @@ bracesize :: (a -> Variations (Doc b)) -> NonEmpty a -> Variations (Doc b)
 bracesize f xs =
   Variations
     { multiLine = align (braces (space <> intercalateMap1 (line <> comma <> space) (multiLine . f) xs <> line))
-    , singleLine = braces (intercalateMap1 (comma <> space) (singleLine . f) xs)
+    , singleLine = braces (space <> intercalateMap1 (comma <> space) (singleLine . f) xs <> space)
     }
 
 bracketesize :: (a -> Variations (Doc b)) -> NonEmpty a -> Variations (Doc b)
