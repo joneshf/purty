@@ -378,6 +378,7 @@ data Expression a
   | ExpressionInfix !(Expression a) !(Expression a) !(Expression a)
   | ExpressionLet !(NonEmpty (LetBinding a)) !(Expression a)
   | ExpressionLiteral !(Literal (Expression a))
+  | ExpressionMinus !(Expression a)
   | ExpressionOperator !(Name.Qualified Name.ValueOperator a)
   | ExpressionParens !(Expression a)
   | ExpressionTyped !(Expression a) !(Type.Type a)
@@ -434,6 +435,7 @@ dynamicExpression = \case
     where
     Variations.Variations { Variations.multiLine, Variations.singleLine } =
       docFromLiteral (pure . dynamicExpression) x
+  ExpressionMinus x -> "-" <> dynamicExpression x
   ExpressionOperator x -> Name.docFromQualified Name.docFromValueOperator x
   ExpressionParens x -> parens (dynamicExpression x)
   ExpressionTyped x y ->
@@ -533,6 +535,7 @@ expression = \case
     expr <- expression x
     type' <- Type.fromPureScript y
     pure (ExpressionTyped expr type')
+  Language.PureScript.UnaryMinus _ x -> fmap ExpressionMinus (expression x)
   Language.PureScript.Var _ x ->
     fmap ExpressionVariable (Name.qualified Name.common x)
   x -> throwError (NotImplemented x)
@@ -554,6 +557,7 @@ labelFromExpression = \case
   ExpressionInfix {} -> Nothing
   ExpressionLet {} -> Nothing
   ExpressionLiteral {} -> Nothing
+  ExpressionMinus {} -> Nothing
   ExpressionOperator {} -> Nothing
   ExpressionParens x -> labelFromExpression x
   ExpressionTyped {} -> Nothing
@@ -591,6 +595,7 @@ normalizeExpression = \case
   ExpressionLiteral x ->
     ExpressionLiteral
       (normalizeLiteral labelFromExpression normalizeExpression x)
+  ExpressionMinus x -> ExpressionMinus (normalizeExpression x)
   ExpressionOperator x -> ExpressionOperator (Annotation.None <$ x)
   ExpressionParens x -> ExpressionParens (normalizeExpression x)
   ExpressionTyped x y ->
@@ -646,6 +651,7 @@ staticExpression = \case
       ]
   ExpressionLiteral x ->
     Variations.multiLine (docFromLiteral (pure . staticExpression) x)
+  ExpressionMinus x -> "-" <> staticExpression x
   ExpressionOperator x -> Name.docFromQualified Name.docFromValueOperator x
   ExpressionParens x -> parens (staticExpression x)
   ExpressionTyped x y ->

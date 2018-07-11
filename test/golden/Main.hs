@@ -143,6 +143,7 @@ dynamic =
     , golden Dynamic "typeclass" [relfile|test/golden/files/dynamic/TypeClass.purs|]
     , golden Dynamic "type synonym" [relfile|test/golden/files/dynamic/TypeSynonym.purs|]
     , golden Dynamic "type synonym newline" [relfile|test/golden/files/dynamic/TypeSynonymNewline.purs|]
+    , golden Dynamic "unary minus" [relfile|test/golden/files/dynamic/UnaryMinus.purs|]
     , golden Dynamic "where" [relfile|test/golden/files/dynamic/Where.purs|]
     ]
 
@@ -176,5 +177,6 @@ static =
     , golden Static "typeclass" [relfile|test/golden/files/static/TypeClass.purs|]
     , golden Static "type synonym" [relfile|test/golden/files/static/TypeSynonym.purs|]
     , golden Static "type synonym newline" [relfile|test/golden/files/static/TypeSynonymNewline.purs|]
+    , golden Static "unary minus" [relfile|test/golden/files/static/UnaryMinus.purs|]
     , golden Static "where" [relfile|test/golden/files/static/Where.purs|]
     ]
