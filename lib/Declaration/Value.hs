@@ -1,13 +1,13 @@
 module Declaration.Value where
 
-import "rio" RIO
+import "rio" RIO hiding (guard)
 
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
-    ( Doc
+    (pipe, comma,  Doc
     , align
     , colon
     , equals
@@ -110,7 +110,7 @@ docFromBinder = \case
   BinderAs x y -> Name.docFromCommon x <> "@" <> docFromBinder y
   BinderBinary x y z ->
     docFromBinder x
-      <+> Name.docFromQualified Name.docFromValueOperator y
+      <+> Name.docFromQualified Name.docFromValueOperator' y
       <+> docFromBinder z
   BinderCommented x y -> foldMap Comment.doc y <> docFromBinder x
   BinderConstructor x Nothing -> Name.docFromQualified Name.docFromConstructor x
@@ -160,6 +160,69 @@ normalizeBinder = \case
   BinderVariable x -> BinderVariable (Annotation.None <$ x)
   BinderWildcard -> BinderWildcard
 
+data CaseAlternative a
+  = CaseAlternative !(NonEmpty (Binder a)) !(NonEmpty (GuardedExpression a))
+  deriving (Functor, Show)
+
+caseAlternative ::
+  ( Members
+    '[ Error BinaryBinderWithoutOperator
+     , Error CaseAlternativeWithoutBinders
+     , Error CaseAlternativeWithoutExpressions
+     , Error CaseWithoutAlternatives
+     , Error CaseWithoutExpressions
+     , Error DoLetWithoutBindings
+     , Error DoWithoutStatements
+     , Error InvalidExpressions
+     , Error InvalidLetBinding
+     , Error InvalidWhereDeclaration
+     , Error LetWithoutBindings
+     , Error NoExpressions
+     , Error NotImplemented
+     , Error WhereWithoutDeclarations
+     , Error Kind.InferredKind
+     , Error Name.InvalidCommon
+     , Error Name.Missing
+     , Error Type.InferredConstraintData
+     , Error Type.InferredForallWithSkolem
+     , Error Type.InferredSkolem
+     , Error Type.InferredType
+     , Error Type.InfixTypeNotTypeOp
+     , Error Type.PrettyPrintForAll
+     , Error Type.PrettyPrintFunction
+     , Error Type.PrettyPrintObject
+     ]
+    e
+  ) =>
+  Language.PureScript.CaseAlternative ->
+  Eff e (CaseAlternative Annotation.Unannotated)
+caseAlternative = \case
+  Language.PureScript.CaseAlternative x y -> do
+    binders' <- nonEmpty <$> traverse binder x
+    binders <- maybe (throwError CaseAlternativeWithoutBinders) pure binders'
+    exprs' <- nonEmpty <$> traverse guardedExpression y
+    exprs <- maybe (throwError CaseAlternativeWithoutExpressions) pure exprs'
+    pure (CaseAlternative binders exprs)
+
+dynamicCaseAlternative :: CaseAlternative Annotation.Normalized -> Doc a
+dynamicCaseAlternative = \case
+  CaseAlternative x y ->
+    intercalateMap1 (comma <> space) docFromBinder x
+      <> align (intercalateMap1 line dynamicGuardedExpression y)
+
+normalizeCaseAlternative ::
+  CaseAlternative a ->
+  CaseAlternative Annotation.Normalized
+normalizeCaseAlternative = \case
+  CaseAlternative x y ->
+    CaseAlternative (fmap normalizeBinder x) (fmap normalizeGuardedExpression y)
+
+staticCaseAlternative :: CaseAlternative Annotation.Normalized -> Doc a
+staticCaseAlternative = \case
+  CaseAlternative x y ->
+    intercalateMap1 (comma <> space) docFromBinder x
+      <> align (intercalateMap1 line staticGuardedExpression y)
+
 data Do a
   = DoBind !(Binder a) !(Expression a)
   | DoCommented ![Comment.Comment] !(Do a)
@@ -170,6 +233,10 @@ data Do a
 do' ::
   ( Members
     '[ Error BinaryBinderWithoutOperator
+     , Error CaseAlternativeWithoutBinders
+     , Error CaseAlternativeWithoutExpressions
+     , Error CaseWithoutAlternatives
+     , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
      , Error InvalidExpressions
@@ -235,6 +302,7 @@ staticDo = \case
 data Expression a
   = ExpressionAdo !(NonEmpty (Do a)) !(Expression a)
   | ExpressionApplication !(Expression a) !(Expression a)
+  | ExpressionCase !(NonEmpty (Expression a)) !(NonEmpty (CaseAlternative a))
   | ExpressionCommented !(Expression a) ![Comment.Comment]
   | ExpressionConstructor !(Name.Qualified Name.Constructor a)
   | ExpressionDo !(NonEmpty (Do a))
@@ -258,6 +326,10 @@ dynamicExpression = \case
       where
       expressionDoc = line <> "in" <+> dynamicExpression y
   ExpressionApplication x y -> dynamicExpression x <+> dynamicExpression y
+  ExpressionCase x y ->
+    "case" <+> intercalateMap1 (comma <> space) dynamicExpression x <+> "of"
+      <> line
+      <> indent 2 (align $ intercalateMap1 line dynamicCaseAlternative y)
   ExpressionCommented x y -> foldMap Comment.doc y <> dynamicExpression x
   ExpressionConstructor x -> Name.docFromQualified Name.docFromConstructor x
   ExpressionDo x ->
@@ -309,6 +381,10 @@ dynamicExpression = \case
 expression ::
   ( Members
     '[ Error BinaryBinderWithoutOperator
+     , Error CaseAlternativeWithoutBinders
+     , Error CaseAlternativeWithoutExpressions
+     , Error CaseWithoutAlternatives
+     , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
      , Error InvalidExpressions
@@ -345,6 +421,12 @@ expression = \case
     ExpressionApplication <$> expression x <*> expression y
   Language.PureScript.BinaryNoParens x y z -> do
     ExpressionInfix <$> expression y <*> expression x <*> expression z
+  Language.PureScript.Case x y -> do
+    exprs' <- nonEmpty <$> traverse expression x
+    exprs <- maybe (throwError CaseWithoutExpressions) pure exprs'
+    alts' <- nonEmpty <$> traverse caseAlternative y
+    alts <- maybe (throwError CaseWithoutAlternatives) pure alts'
+    pure (ExpressionCase exprs alts)
   Language.PureScript.Constructor _ x ->
     fmap ExpressionConstructor (Name.qualified (pure . Name.constructor) x)
   Language.PureScript.Do x -> do
@@ -388,6 +470,7 @@ labelFromExpression :: Expression a -> Maybe Language.PureScript.Label.Label
 labelFromExpression = \case
   ExpressionAdo _ _ -> Nothing
   ExpressionApplication _ _ -> Nothing
+  ExpressionCase _ _ -> Nothing
   ExpressionCommented _ _ -> Nothing
   ExpressionConstructor (Name.Qualified (Just _) _) -> Nothing
   ExpressionConstructor (Name.Qualified Nothing (Name.Constructor (Name.Proper _ x))) ->
@@ -416,6 +499,8 @@ normalizeExpression = \case
     ExpressionAdo (fmap normalizeDo x) (normalizeExpression y)
   ExpressionApplication x y ->
     ExpressionApplication (normalizeExpression x) (normalizeExpression y)
+  ExpressionCase x y ->
+    ExpressionCase (fmap normalizeExpression x) (fmap normalizeCaseAlternative y)
   ExpressionCommented x y -> ExpressionCommented (normalizeExpression x) y
   ExpressionConstructor x -> ExpressionConstructor (Annotation.None <$ x)
   ExpressionDo x -> ExpressionDo (fmap normalizeDo x)
@@ -451,6 +536,10 @@ staticExpression = \case
       where
       expressionDoc = line <> "in" <+> staticExpression y
   ExpressionApplication x y -> staticExpression x <+> staticExpression y
+  ExpressionCase x y ->
+    "case" <+> intercalateMap1 (comma <> space) staticExpression x <+> "of"
+      <> line
+      <> indent 2 (align $ intercalateMap1 line staticCaseAlternative y)
   ExpressionCommented x y -> foldMap Comment.doc y <> staticExpression x
   ExpressionConstructor x -> Name.docFromQualified Name.docFromConstructor x
   ExpressionDo x ->
@@ -497,6 +586,132 @@ staticExpression = \case
         <> line
         <> indent 2 (align $ vsep $ "where" : toList whereDeclarations)
 
+data Guard a
+  = GuardBinder !(Binder a) !(Expression a)
+  | GuardExpression !(Expression a)
+  deriving (Functor, Show)
+
+dynamicGuard :: Guard Annotation.Normalized -> Doc a
+dynamicGuard = \case
+  GuardBinder x y -> docFromBinder x <+> "<-" <+> dynamicExpression y
+  GuardExpression x -> dynamicExpression x
+
+guard ::
+  ( Members
+    '[ Error BinaryBinderWithoutOperator
+     , Error CaseAlternativeWithoutBinders
+     , Error CaseAlternativeWithoutExpressions
+     , Error CaseWithoutAlternatives
+     , Error CaseWithoutExpressions
+     , Error DoLetWithoutBindings
+     , Error DoWithoutStatements
+     , Error InvalidExpressions
+     , Error InvalidLetBinding
+     , Error InvalidWhereDeclaration
+     , Error LetWithoutBindings
+     , Error NoExpressions
+     , Error NotImplemented
+     , Error WhereWithoutDeclarations
+     , Error Kind.InferredKind
+     , Error Name.InvalidCommon
+     , Error Name.Missing
+     , Error Type.InferredConstraintData
+     , Error Type.InferredForallWithSkolem
+     , Error Type.InferredSkolem
+     , Error Type.InferredType
+     , Error Type.InfixTypeNotTypeOp
+     , Error Type.PrettyPrintForAll
+     , Error Type.PrettyPrintFunction
+     , Error Type.PrettyPrintObject
+     ]
+    e
+  ) =>
+  Language.PureScript.Guard ->
+  Eff e (Guard Annotation.Unannotated)
+guard = \case
+  Language.PureScript.ConditionGuard x -> fmap GuardExpression (expression x)
+  Language.PureScript.PatternGuard x y ->
+    GuardBinder <$> (binder x) <*> (expression y)
+
+normalizeGuard :: Guard a -> Guard Annotation.Normalized
+normalizeGuard = \case
+  GuardBinder x y -> GuardBinder (normalizeBinder x) (normalizeExpression y)
+  GuardExpression x -> GuardExpression (normalizeExpression x)
+
+staticGuard :: Guard Annotation.Normalized -> Doc a
+staticGuard = \case
+  GuardBinder x y -> docFromBinder x <+> "<-" <+> staticExpression y
+  GuardExpression x -> staticExpression x
+
+data GuardedExpression a
+  = GuardedExpression !(Maybe (NonEmpty (Guard a))) !(Expression a)
+  deriving (Functor, Show)
+
+dynamicGuardedExpression :: GuardedExpression Annotation.Normalized -> Doc a
+dynamicGuardedExpression = \case
+  GuardedExpression (Just x) y ->
+    space
+      <> pipe
+      <+> intercalateMap1 (comma <> space) dynamicGuard x
+      <+> "->"
+      <+> dynamicExpression y
+  GuardedExpression Nothing y -> space <> "->" <+> dynamicExpression y
+
+guardedExpression ::
+  ( Members
+    '[ Error BinaryBinderWithoutOperator
+     , Error CaseAlternativeWithoutBinders
+     , Error CaseAlternativeWithoutExpressions
+     , Error CaseWithoutAlternatives
+     , Error CaseWithoutExpressions
+     , Error DoLetWithoutBindings
+     , Error DoWithoutStatements
+     , Error InvalidExpressions
+     , Error InvalidLetBinding
+     , Error InvalidWhereDeclaration
+     , Error LetWithoutBindings
+     , Error NoExpressions
+     , Error NotImplemented
+     , Error WhereWithoutDeclarations
+     , Error Kind.InferredKind
+     , Error Name.InvalidCommon
+     , Error Name.Missing
+     , Error Type.InferredConstraintData
+     , Error Type.InferredForallWithSkolem
+     , Error Type.InferredSkolem
+     , Error Type.InferredType
+     , Error Type.InfixTypeNotTypeOp
+     , Error Type.PrettyPrintForAll
+     , Error Type.PrettyPrintFunction
+     , Error Type.PrettyPrintObject
+     ]
+    e
+  ) =>
+  Language.PureScript.GuardedExpr ->
+  Eff e (GuardedExpression Annotation.Unannotated)
+guardedExpression = \case
+  Language.PureScript.GuardedExpr x y -> do
+    guards <- nonEmpty <$> traverse guard x
+    expr <- expression y
+    pure (GuardedExpression guards expr)
+
+normalizeGuardedExpression ::
+  GuardedExpression a ->
+  GuardedExpression Annotation.Normalized
+normalizeGuardedExpression = \case
+  GuardedExpression x y ->
+    GuardedExpression ((fmap . fmap) normalizeGuard x) (normalizeExpression y)
+
+staticGuardedExpression :: GuardedExpression Annotation.Normalized -> Doc a
+staticGuardedExpression = \case
+  GuardedExpression (Just x) y ->
+    space
+      <> pipe
+      <+> intercalateMap1 (comma <> space) staticGuard x
+      <+> "->"
+      <+> staticExpression y
+  GuardedExpression Nothing y -> space <> "->" <+> staticExpression y
+
 data LetBinding a
   = LetBindingType !(Declaration.Type.Type a)
   | LetBindingValue !(Value a)
@@ -520,6 +735,10 @@ normalizeLetBinding = \case
 letBinding ::
   ( Members
     '[ Error BinaryBinderWithoutOperator
+     , Error CaseAlternativeWithoutBinders
+     , Error CaseAlternativeWithoutExpressions
+     , Error CaseWithoutAlternatives
+     , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
      , Error InvalidExpressions
@@ -682,6 +901,10 @@ dynamic, static :: Value Annotation.Normalized -> Doc a
 fromPureScript ::
   ( Members
     '[ Error BinaryBinderWithoutOperator
+     , Error CaseAlternativeWithoutBinders
+     , Error CaseAlternativeWithoutExpressions
+     , Error CaseWithoutAlternatives
+     , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
      , Error InvalidExpressions
@@ -748,6 +971,10 @@ normalizeWhereDeclaration = \case
 whereDeclaration ::
   ( Members
     '[ Error BinaryBinderWithoutOperator
+     , Error CaseAlternativeWithoutBinders
+     , Error CaseAlternativeWithoutExpressions
+     , Error CaseWithoutAlternatives
+     , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
      , Error InvalidExpressions
@@ -784,6 +1011,10 @@ whereDeclaration = \case
 
 type Errors
   = '[ Error BinaryBinderWithoutOperator
+     , Error CaseAlternativeWithoutBinders
+     , Error CaseAlternativeWithoutExpressions
+     , Error CaseWithoutAlternatives
+     , Error CaseWithoutExpressions
      , Error DoLetWithoutBindings
      , Error DoWithoutStatements
      , Error InvalidExpressions
@@ -815,6 +1046,42 @@ instance Display BinaryBinderWithoutOperator where
         <> " If there is an operator nested within, we should handle that case."
         <> " Otherwise, this is probably a problem in the PureScript library."
 
+data CaseAlternativeWithoutBinders
+  = CaseAlternativeWithoutBinders
+
+instance Display CaseAlternativeWithoutBinders where
+  display = \case
+    CaseAlternativeWithoutBinders ->
+      "We received a case alternative that did not have any binders."
+        <> " This is probably a problem in the PureScript library."
+
+data CaseAlternativeWithoutExpressions
+  = CaseAlternativeWithoutExpressions
+
+instance Display CaseAlternativeWithoutExpressions where
+  display = \case
+    CaseAlternativeWithoutExpressions ->
+      "We received a case alternative that did not have any expressions."
+        <> " This is probably a problem in the PureScript library."
+
+data CaseWithoutAlternatives
+  = CaseWithoutAlternatives
+
+instance Display CaseWithoutAlternatives where
+  display = \case
+    CaseWithoutAlternatives ->
+      "We received a case that did not have any case alternatives."
+        <> " This is probably a problem in the PureScript library."
+
+data CaseWithoutExpressions
+  = CaseWithoutExpressions
+
+instance Display CaseWithoutExpressions where
+  display = \case
+    CaseWithoutExpressions ->
+      "We received a case that did not have any case expressions."
+        <> " This is probably a problem in the PureScript library."
+
 data DoLetWithoutBindings
   = DoLetWithoutBindings
 
@@ -831,6 +1098,15 @@ instance Display DoWithoutStatements where
   display = \case
     DoWithoutStatements ->
       "We received a do expression without any statements."
+        <> " This is probably a problem in the PureScript library."
+
+data GuardedExpressionWithoutGuards
+  = GuardedExpressionWithoutGuards
+
+instance Display GuardedExpressionWithoutGuards where
+  display = \case
+    GuardedExpressionWithoutGuards ->
+      "We received a guarded expression that did not have any guards."
         <> " This is probably a problem in the PureScript library."
 
 data InvalidExpressions

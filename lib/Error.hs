@@ -70,6 +70,10 @@ declarationValue x =
     `handleError` go
     `handleError` go
     `handleError` go
+    `handleError` go
+    `handleError` go
+    `handleError` go
+    `handleError` go
   where
   go err = do
     Log.error "Problem converting a value"

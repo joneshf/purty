@@ -73,6 +73,10 @@ fromPureScript ::
      , Error Declaration.DataType.WrongNewtypeConstructors
      , Error Declaration.Fixity.NegativePrecedence
      , Error Declaration.Value.BinaryBinderWithoutOperator
+     , Error Declaration.Value.CaseAlternativeWithoutBinders
+     , Error Declaration.Value.CaseAlternativeWithoutExpressions
+     , Error Declaration.Value.CaseWithoutAlternatives
+     , Error Declaration.Value.CaseWithoutExpressions
      , Error Declaration.Value.DoLetWithoutBindings
      , Error Declaration.Value.DoWithoutStatements
      , Error Declaration.Value.InvalidExpressions
