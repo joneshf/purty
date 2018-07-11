@@ -378,6 +378,7 @@ data Expression a
   | ExpressionCommented !(Expression a) ![Comment.Comment]
   | ExpressionConstructor !(Name.Qualified Name.Constructor a)
   | ExpressionDo !(NonEmpty (Do a))
+  | ExpressionHole !Text
   | ExpressionIf !(Expression a) !(Expression a) !(Expression a)
   | ExpressionInfix !(Expression a) !(Expression a) !(Expression a)
   | ExpressionLambda !(NonEmpty (Binder a)) !(Expression a)
@@ -411,6 +412,7 @@ dynamicExpression = \case
     "do"
       <> line
       <> indent 2 (align $ vsep $ toList $ fmap dynamicDo x)
+  ExpressionHole x -> "?" <> pretty x
   ExpressionIf x y z ->
     "if"
       <+> dynamicExpression x
@@ -520,6 +522,7 @@ expression = \case
     case statements' of
       Nothing         -> throwError DoWithoutStatements
       Just statements -> pure (ExpressionDo statements)
+  Language.PureScript.Hole x -> pure (ExpressionHole x)
   Language.PureScript.IfThenElse x y z ->
     ExpressionIf <$> expression x <*> expression y <*> expression z
   Language.PureScript.Let Language.PureScript.FromLet x y -> do
@@ -573,6 +576,7 @@ labelFromExpression = \case
       label =
         Language.PureScript.Label.Label (Language.PureScript.PSString.mkString x)
   ExpressionDo {} -> Nothing
+  ExpressionHole {} -> Nothing
   ExpressionIf {} -> Nothing
   ExpressionInfix {} -> Nothing
   ExpressionLambda {} -> Nothing
@@ -601,6 +605,7 @@ normalizeExpression = \case
   ExpressionCommented x y -> ExpressionCommented (normalizeExpression x) y
   ExpressionConstructor x -> ExpressionConstructor (Annotation.None <$ x)
   ExpressionDo x -> ExpressionDo (fmap normalizeDo x)
+  ExpressionHole x -> ExpressionHole x
   ExpressionIf x y z ->
     ExpressionIf
       (normalizeExpression x)
@@ -649,6 +654,7 @@ staticExpression = \case
     "do"
       <> line
       <> indent 2 (align $ vsep $ toList $ fmap staticDo x)
+  ExpressionHole x -> "?" <> pretty x
   ExpressionIf x y z ->
     "if"
       <+> staticExpression x
