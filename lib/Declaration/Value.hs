@@ -381,6 +381,7 @@ data Expression a
   | ExpressionTyped !(Expression a) !(Type.Type a)
   | ExpressionVariable !(Name.Qualified Name.Common a)
   | ExpressionWhere !(Expression a) !(NonEmpty (WhereDeclaration a))
+  | ExpressionWildcard
   deriving (Functor, Show)
 
 dynamicExpression :: Expression Annotation.Normalized -> Doc a
@@ -443,6 +444,7 @@ dynamicExpression = \case
       dynamicExpression x
         <> line
         <> indent 2 (align $ vsep $ "where" : toList whereDeclarations)
+  ExpressionWildcard -> "_"
 
 expression ::
   ( Members
@@ -484,6 +486,7 @@ expression = \case
     case statements' of
       Nothing         -> throwError DoWithoutStatements
       Just statements -> pure (ExpressionAdo statements expr)
+  Language.PureScript.AnonymousArgument -> pure ExpressionWildcard
   Language.PureScript.App x y ->
     ExpressionApplication <$> expression x <*> expression y
   Language.PureScript.BinaryNoParens x y z -> do
@@ -559,6 +562,7 @@ labelFromExpression = \case
     label =
       Language.PureScript.Label.Label (Language.PureScript.PSString.mkString x)
   ExpressionWhere _ _ -> Nothing
+  ExpressionWildcard -> Nothing
 
 normalizeExpression :: Expression a -> Expression Annotation.Normalized
 normalizeExpression = \case
@@ -593,6 +597,7 @@ normalizeExpression = \case
   ExpressionVariable x -> ExpressionVariable (Annotation.None <$ x)
   ExpressionWhere x y ->
     ExpressionWhere (normalizeExpression x) (fmap normalizeWhereDeclaration y)
+  ExpressionWildcard -> ExpressionWildcard
 
 staticExpression :: Expression Annotation.Normalized -> Doc a
 staticExpression = \case
@@ -652,6 +657,7 @@ staticExpression = \case
       staticExpression x
         <> line
         <> indent 2 (align $ vsep $ "where" : toList whereDeclarations)
+  ExpressionWildcard -> "_"
 
 data Guard a
   = GuardBinder !(Binder a) !(Expression a)
