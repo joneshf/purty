@@ -172,7 +172,6 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
     DeclarationValue declaration ->
       Declaration.Value.dynamic declaration
         <> line
-        where
   static' = \case
     Declarations Nothing -> mempty
     Declarations (Just declarations) ->

@@ -7,9 +7,10 @@ import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
-    (pipe, comma,  Doc
+    ( Doc
     , align
     , colon
+    , comma
     , equals
     , flatAlt
     , group
@@ -18,6 +19,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , lbracket
     , line
     , parens
+    , pipe
     , pretty
     , rbrace
     , rbracket
@@ -128,14 +130,14 @@ docFromBinder = \case
 
 labelFromBinder :: Binder a -> Maybe Language.PureScript.Label.Label
 labelFromBinder = \case
-  BinderAs _ _ -> Nothing
-  BinderBinary _ _ _ -> Nothing
-  BinderCommented _ _ -> Nothing
-  BinderConstructor _ _ -> Nothing
-  BinderLiteral _ -> Nothing
-  BinderOperator _ -> Nothing
+  BinderAs {} -> Nothing
+  BinderBinary {} -> Nothing
+  BinderCommented {} -> Nothing
+  BinderConstructor {} -> Nothing
+  BinderLiteral {} -> Nothing
+  BinderOperator {} -> Nothing
   BinderParens x -> labelFromBinder x
-  BinderTyped _ _ -> Nothing
+  BinderTyped {} -> Nothing
   BinderVariable (Name.Common _ x) -> Just label
     where
     label =
@@ -206,7 +208,7 @@ caseAlternative = \case
     binders <- maybe (throwError CaseAlternativeWithoutBinders) pure binders'
     exprs' <- partitionCaseAlternatives y
     case exprs' of
-      Left expr -> pure (CaseAlternativeUnguarded binders expr)
+      Left expr   -> pure (CaseAlternativeUnguarded binders expr)
       Right exprs -> pure (CaseAlternativeGuarded binders exprs)
 
 dynamicCaseAlternative :: CaseAlternative Annotation.Normalized -> Doc a
@@ -275,7 +277,7 @@ partitionCaseAlternatives = \case
     exprs' <- nonEmpty <$> traverse guardedExpression x
     case exprs' of
       Just exprs -> pure (Right exprs)
-      Nothing -> throwError CaseAlternativeWithoutExpressions
+      Nothing    -> throwError CaseAlternativeWithoutExpressions
 
 staticCaseAlternative :: CaseAlternative Annotation.Normalized -> Doc a
 staticCaseAlternative = \case
@@ -489,7 +491,7 @@ expression = \case
   Language.PureScript.AnonymousArgument -> pure ExpressionWildcard
   Language.PureScript.App x y ->
     ExpressionApplication <$> expression x <*> expression y
-  Language.PureScript.BinaryNoParens x y z -> do
+  Language.PureScript.BinaryNoParens x y z ->
     ExpressionInfix <$> expression y <*> expression x <*> expression z
   Language.PureScript.Case x y -> do
     exprs' <- nonEmpty <$> traverse expression x
@@ -531,37 +533,36 @@ expression = \case
     expr <- expression x
     type' <- Type.fromPureScript y
     pure (ExpressionTyped expr type')
-  Language.PureScript.Var _ x -> do
-    name <- Name.qualified Name.common x
-    pure (ExpressionVariable name)
+  Language.PureScript.Var _ x ->
+    fmap ExpressionVariable (Name.qualified Name.common x)
   x -> throwError (NotImplemented x)
 
 labelFromExpression :: Expression a -> Maybe Language.PureScript.Label.Label
 labelFromExpression = \case
-  ExpressionAdo _ _ -> Nothing
-  ExpressionApplication _ _ -> Nothing
-  ExpressionCase _ _ -> Nothing
-  ExpressionCommented _ _ -> Nothing
+  ExpressionAdo {} -> Nothing
+  ExpressionApplication {} -> Nothing
+  ExpressionCase {} -> Nothing
+  ExpressionCommented {} -> Nothing
   ExpressionConstructor (Name.Qualified (Just _) _) -> Nothing
   ExpressionConstructor (Name.Qualified Nothing (Name.Constructor (Name.Proper _ x))) ->
     Just label
       where
       label =
         Language.PureScript.Label.Label (Language.PureScript.PSString.mkString x)
-  ExpressionDo _ -> Nothing
-  ExpressionIf _ _ _ -> Nothing
-  ExpressionInfix _ _ _ -> Nothing
-  ExpressionLet _ _ -> Nothing
-  ExpressionLiteral _ -> Nothing
-  ExpressionOperator _ -> Nothing
+  ExpressionDo {} -> Nothing
+  ExpressionIf {} -> Nothing
+  ExpressionInfix {} -> Nothing
+  ExpressionLet {} -> Nothing
+  ExpressionLiteral {} -> Nothing
+  ExpressionOperator {} -> Nothing
   ExpressionParens x -> labelFromExpression x
-  ExpressionTyped _ _ -> Nothing
+  ExpressionTyped {} -> Nothing
   ExpressionVariable (Name.Qualified (Just _) _) -> Nothing
   ExpressionVariable (Name.Qualified Nothing (Name.Common _ x)) -> Just label
     where
     label =
       Language.PureScript.Label.Label (Language.PureScript.PSString.mkString x)
-  ExpressionWhere _ _ -> Nothing
+  ExpressionWhere {} -> Nothing
   ExpressionWildcard -> Nothing
 
 normalizeExpression :: Expression a -> Expression Annotation.Normalized
@@ -705,7 +706,7 @@ guard ::
 guard = \case
   Language.PureScript.ConditionGuard x -> fmap GuardExpression (expression x)
   Language.PureScript.PatternGuard x y ->
-    GuardBinder <$> (binder x) <*> (expression y)
+    GuardBinder <$> binder x <*> expression y
 
 normalizeGuard :: Guard a -> Guard Annotation.Normalized
 normalizeGuard = \case
@@ -767,7 +768,7 @@ guardedExpression = \case
     guards' <- nonEmpty <$> traverse guard x
     expr <- expression y
     case guards' of
-      Nothing -> throwError (UnguardedExpression y)
+      Nothing     -> throwError (UnguardedExpression y)
       Just guards -> pure (GuardedExpression guards expr)
 
 normalizeGuardedExpression ::
