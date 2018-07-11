@@ -161,7 +161,10 @@ normalizeBinder = \case
   BinderWildcard -> BinderWildcard
 
 data CaseAlternative a
-  = CaseAlternative !(NonEmpty (Binder a)) !(NonEmpty (GuardedExpression a))
+  = CaseAlternativeGuarded
+      !(NonEmpty (Binder a))
+      !(NonEmpty (GuardedExpression a))
+  | CaseAlternativeUnguarded !(NonEmpty (Binder a)) !(Expression a)
   deriving (Functor, Show)
 
 caseAlternative ::
@@ -179,6 +182,7 @@ caseAlternative ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Kind.InferredKind
      , Error Name.InvalidCommon
@@ -200,28 +204,89 @@ caseAlternative = \case
   Language.PureScript.CaseAlternative x y -> do
     binders' <- nonEmpty <$> traverse binder x
     binders <- maybe (throwError CaseAlternativeWithoutBinders) pure binders'
-    exprs' <- nonEmpty <$> traverse guardedExpression y
-    exprs <- maybe (throwError CaseAlternativeWithoutExpressions) pure exprs'
-    pure (CaseAlternative binders exprs)
+    exprs' <- partitionCaseAlternatives y
+    case exprs' of
+      Left expr -> pure (CaseAlternativeUnguarded binders expr)
+      Right exprs -> pure (CaseAlternativeGuarded binders exprs)
 
 dynamicCaseAlternative :: CaseAlternative Annotation.Normalized -> Doc a
 dynamicCaseAlternative = \case
-  CaseAlternative x y ->
+  CaseAlternativeGuarded x y ->
     intercalateMap1 (comma <> space) docFromBinder x
-      <> align (intercalateMap1 line dynamicGuardedExpression y)
+      <> line
+      <> indent 2 (align $ intercalateMap1 line dynamicGuardedExpression y)
+  CaseAlternativeUnguarded x y ->
+    intercalateMap1 (comma <> space) docFromBinder x
+      <+> "->"
+      <+> dynamicExpression y
 
 normalizeCaseAlternative ::
   CaseAlternative a ->
   CaseAlternative Annotation.Normalized
 normalizeCaseAlternative = \case
-  CaseAlternative x y ->
-    CaseAlternative (fmap normalizeBinder x) (fmap normalizeGuardedExpression y)
+  CaseAlternativeGuarded x y ->
+    CaseAlternativeGuarded
+      (fmap normalizeBinder x)
+      (fmap normalizeGuardedExpression y)
+  CaseAlternativeUnguarded x y ->
+    CaseAlternativeUnguarded (fmap normalizeBinder x) (normalizeExpression y)
+
+partitionCaseAlternatives ::
+  ( Members
+    '[ Error BinaryBinderWithoutOperator
+     , Error CaseAlternativeWithoutBinders
+     , Error CaseAlternativeWithoutExpressions
+     , Error CaseWithoutAlternatives
+     , Error CaseWithoutExpressions
+     , Error DoLetWithoutBindings
+     , Error DoWithoutStatements
+     , Error InvalidExpressions
+     , Error InvalidLetBinding
+     , Error InvalidWhereDeclaration
+     , Error LetWithoutBindings
+     , Error NoExpressions
+     , Error NotImplemented
+     , Error UnguardedExpression
+     , Error WhereWithoutDeclarations
+     , Error Kind.InferredKind
+     , Error Name.InvalidCommon
+     , Error Name.Missing
+     , Error Type.InferredConstraintData
+     , Error Type.InferredForallWithSkolem
+     , Error Type.InferredSkolem
+     , Error Type.InferredType
+     , Error Type.InfixTypeNotTypeOp
+     , Error Type.PrettyPrintForAll
+     , Error Type.PrettyPrintFunction
+     , Error Type.PrettyPrintObject
+     ]
+    e
+  ) =>
+  [Language.PureScript.GuardedExpr] ->
+  Eff
+    e
+    ( Either
+      (Expression Annotation.Unannotated)
+      (NonEmpty (GuardedExpression Annotation.Unannotated))
+    )
+partitionCaseAlternatives = \case
+  [Language.PureScript.GuardedExpr [] x] -> fmap Left (expression x)
+  x -> do
+    exprs' <- nonEmpty <$> traverse guardedExpression x
+    case exprs' of
+      Just exprs -> pure (Right exprs)
+      Nothing -> throwError CaseAlternativeWithoutExpressions
 
 staticCaseAlternative :: CaseAlternative Annotation.Normalized -> Doc a
 staticCaseAlternative = \case
-  CaseAlternative x y ->
+  CaseAlternativeGuarded x y ->
     intercalateMap1 (comma <> space) docFromBinder x
-      <> align (intercalateMap1 line staticGuardedExpression y)
+      <> line
+      <> indent 2 (align $ intercalateMap1 line staticGuardedExpression y)
+  CaseAlternativeUnguarded x y ->
+    intercalateMap1 (comma <> space) docFromBinder x
+      <+> "->"
+      <+> staticExpression y
 
 data Do a
   = DoBind !(Binder a) !(Expression a)
@@ -245,6 +310,7 @@ do' ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Kind.InferredKind
      , Error Name.InvalidCommon
@@ -393,6 +459,7 @@ expression ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Kind.InferredKind
      , Error Name.InvalidCommon
@@ -611,6 +678,7 @@ guard ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Kind.InferredKind
      , Error Name.InvalidCommon
@@ -644,18 +712,16 @@ staticGuard = \case
   GuardExpression x -> staticExpression x
 
 data GuardedExpression a
-  = GuardedExpression !(Maybe (NonEmpty (Guard a))) !(Expression a)
+  = GuardedExpression !(NonEmpty (Guard a)) !(Expression a)
   deriving (Functor, Show)
 
 dynamicGuardedExpression :: GuardedExpression Annotation.Normalized -> Doc a
 dynamicGuardedExpression = \case
-  GuardedExpression (Just x) y ->
-    space
-      <> pipe
+  GuardedExpression x y ->
+    pipe
       <+> intercalateMap1 (comma <> space) dynamicGuard x
       <+> "->"
       <+> dynamicExpression y
-  GuardedExpression Nothing y -> space <> "->" <+> dynamicExpression y
 
 guardedExpression ::
   ( Members
@@ -672,6 +738,7 @@ guardedExpression ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Kind.InferredKind
      , Error Name.InvalidCommon
@@ -691,26 +758,26 @@ guardedExpression ::
   Eff e (GuardedExpression Annotation.Unannotated)
 guardedExpression = \case
   Language.PureScript.GuardedExpr x y -> do
-    guards <- nonEmpty <$> traverse guard x
+    guards' <- nonEmpty <$> traverse guard x
     expr <- expression y
-    pure (GuardedExpression guards expr)
+    case guards' of
+      Nothing -> throwError (UnguardedExpression y)
+      Just guards -> pure (GuardedExpression guards expr)
 
 normalizeGuardedExpression ::
   GuardedExpression a ->
   GuardedExpression Annotation.Normalized
 normalizeGuardedExpression = \case
   GuardedExpression x y ->
-    GuardedExpression ((fmap . fmap) normalizeGuard x) (normalizeExpression y)
+    GuardedExpression (fmap normalizeGuard x) (normalizeExpression y)
 
 staticGuardedExpression :: GuardedExpression Annotation.Normalized -> Doc a
 staticGuardedExpression = \case
-  GuardedExpression (Just x) y ->
-    space
-      <> pipe
+  GuardedExpression x y ->
+    pipe
       <+> intercalateMap1 (comma <> space) staticGuard x
       <+> "->"
       <+> staticExpression y
-  GuardedExpression Nothing y -> space <> "->" <+> staticExpression y
 
 data LetBinding a
   = LetBindingType !(Declaration.Type.Type a)
@@ -747,6 +814,7 @@ letBinding ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Kind.InferredKind
      , Error Name.InvalidCommon
@@ -913,6 +981,7 @@ fromPureScript ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Name.InvalidCommon
      , Error Name.Missing
@@ -983,6 +1052,7 @@ whereDeclaration ::
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      , Error Kind.InferredKind
      , Error Name.InvalidCommon
@@ -1023,6 +1093,7 @@ type Errors
      , Error LetWithoutBindings
      , Error NoExpressions
      , Error NotImplemented
+     , Error UnguardedExpression
      , Error WhereWithoutDeclarations
      ]
 
@@ -1182,6 +1253,17 @@ instance Display NotImplemented where
       "We haven't implemented this type of expression yet `"
         <> displayShow x
         <> "`."
+
+newtype UnguardedExpression
+  = UnguardedExpression Language.PureScript.Expr
+
+instance Display UnguardedExpression where
+  display = \case
+    UnguardedExpression x ->
+      "We recieved an unguarded expression `"
+        <> displayShow x
+        <> "` instead of a guarded expression."
+        <> " This could be a problem in our logic or in the PureScript library."
 
 newtype WhereWithoutDeclarations
   = WhereWithoutDeclarations Language.PureScript.Expr
