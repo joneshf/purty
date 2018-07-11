@@ -9,6 +9,7 @@ import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
     , align
+    , backslash
     , colon
     , comma
     , equals
@@ -376,6 +377,7 @@ data Expression a
   | ExpressionDo !(NonEmpty (Do a))
   | ExpressionIf !(Expression a) !(Expression a) !(Expression a)
   | ExpressionInfix !(Expression a) !(Expression a) !(Expression a)
+  | ExpressionLambda !(NonEmpty (Binder a)) !(Expression a)
   | ExpressionLet !(NonEmpty (LetBinding a)) !(Expression a)
   | ExpressionLiteral !(Literal (Expression a))
   | ExpressionMinus !(Expression a)
@@ -426,6 +428,10 @@ dynamicExpression = \case
     dynamicExpression left
       <+> "`" <> dynamicExpression op <> "`"
       <+> dynamicExpression right
+  ExpressionLambda x y ->
+    backslash <> intercalateMap1 space docFromBinder x <+> "->"
+      <> line
+      <> indent 2 (dynamicExpression y)
   ExpressionLet x y ->
     align $ vsep
       [ "let" <+> align (vsep $ toList $ fmap dynamicLetBinding x)
@@ -484,6 +490,8 @@ expression ::
   Language.PureScript.Expr ->
   Eff e (Expression Annotation.Unannotated)
 expression = \case
+  Language.PureScript.Abs x y ->
+    ExpressionLambda <$> fmap pure (binder x) <*> expression y
   Language.PureScript.Ado x y -> do
     statements' <- nonEmpty <$> traverse do' x
     expr <- expression y
@@ -555,6 +563,7 @@ labelFromExpression = \case
   ExpressionDo {} -> Nothing
   ExpressionIf {} -> Nothing
   ExpressionInfix {} -> Nothing
+  ExpressionLambda {} -> Nothing
   ExpressionLet {} -> Nothing
   ExpressionLiteral {} -> Nothing
   ExpressionMinus {} -> Nothing
@@ -590,6 +599,10 @@ normalizeExpression = \case
       (normalizeExpression x)
       (normalizeExpression y)
       (normalizeExpression z)
+  ExpressionLambda x (ExpressionLambda y z) ->
+    normalizeExpression (ExpressionLambda (x <> y) z)
+  ExpressionLambda x y ->
+    ExpressionLambda (fmap normalizeBinder x) (normalizeExpression y)
   ExpressionLet x y ->
     ExpressionLet (fmap normalizeLetBinding x) (normalizeExpression y)
   ExpressionLiteral x ->
@@ -644,6 +657,10 @@ staticExpression = \case
     staticExpression left
       <+> "`" <> staticExpression op <> "`"
       <+> staticExpression right
+  ExpressionLambda x y ->
+    backslash <> intercalateMap1 space docFromBinder x <+> "->"
+      <> line
+      <> indent 2 (staticExpression y)
   ExpressionLet x y ->
     align $ vsep
       [ "let" <+> align (vsep $ toList $ fmap staticLetBinding x)
