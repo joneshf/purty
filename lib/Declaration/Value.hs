@@ -220,7 +220,7 @@ dynamicCaseAlternative = \case
   CaseAlternativeGuarded x y ->
     intercalateMap1 (comma <> space) docFromBinder x
       <> line
-      <> indent 2 (align $ intercalateMap1 line dynamicGuardedExpression y)
+      <> indent 2 (align $ intercalateMap1 line (dynamicGuardedExpression "->") y)
   CaseAlternativeUnguarded x y ->
     intercalateMap1 (comma <> space) docFromBinder x
       <+> "->"
@@ -290,7 +290,7 @@ staticCaseAlternative = \case
   CaseAlternativeGuarded x y ->
     intercalateMap1 (comma <> space) docFromBinder x
       <> line
-      <> indent 2 (align $ intercalateMap1 line staticGuardedExpression y)
+      <> indent 2 (align $ intercalateMap1 line (staticGuardedExpression "->") y)
   CaseAlternativeUnguarded x y ->
     intercalateMap1 (comma <> space) docFromBinder x
       <+> "->"
@@ -805,12 +805,15 @@ data GuardedExpression a
   = GuardedExpression !(NonEmpty (Guard a)) !(Expression a)
   deriving (Functor, Show)
 
-dynamicGuardedExpression :: GuardedExpression Annotation.Normalized -> Doc a
-dynamicGuardedExpression = \case
+dynamicGuardedExpression ::
+  Doc a ->
+  GuardedExpression Annotation.Normalized ->
+  Doc a
+dynamicGuardedExpression separator = \case
   GuardedExpression x y ->
     pipe
       <+> intercalateMap1 (comma <> space) dynamicGuard x
-      <+> "->"
+      <+> separator
       <+> dynamicExpression y
 
 guardedExpression ::
@@ -863,12 +866,15 @@ normalizeGuardedExpression = \case
   GuardedExpression x y ->
     GuardedExpression (fmap normalizeGuard x) (normalizeExpression y)
 
-staticGuardedExpression :: GuardedExpression Annotation.Normalized -> Doc a
-staticGuardedExpression = \case
+staticGuardedExpression ::
+  Doc a ->
+  GuardedExpression Annotation.Normalized ->
+  Doc a
+staticGuardedExpression separator = \case
   GuardedExpression x y ->
     pipe
       <+> intercalateMap1 (comma <> space) staticGuard x
-      <+> "->"
+      <+> separator
       <+> staticExpression y
 
 data LetBinding a
@@ -1193,7 +1199,11 @@ recordUpdateNode = \case
     fmap (RecordUpdate $ Language.PureScript.Label.Label x) (expression y)
 
 data Value a
-  = ValueExpression
+  = ValueExpressionGuarded
+      !(Name.Common a)
+      !(Maybe (NonEmpty (Binder a)))
+      !(NonEmpty (GuardedExpression a))
+  | ValueExpressionUnguarded
       !(Name.Common a)
       !(Maybe (NonEmpty (Binder a)))
       !(Expression a)
@@ -1204,21 +1214,27 @@ dynamic, static :: Value Annotation.Normalized -> Doc a
   where
   bindersDoc binders = space <> intercalateMap1 space docFromBinder binders
   dynamic' = \case
-    ValueExpression x y z -> doc
-      where
-      doc =
-        Name.docFromCommon x
-          <> foldMap bindersDoc y
-          <+> equals
-          <+> dynamicExpression z
+    ValueExpressionGuarded x y z ->
+      Name.docFromCommon x
+        <> foldMap bindersDoc y
+        <> line
+        <> indent 2 (align $ intercalateMap1 line (dynamicGuardedExpression equals) z)
+    ValueExpressionUnguarded x y z ->
+      Name.docFromCommon x
+        <> foldMap bindersDoc y
+        <+> equals
+        <+> dynamicExpression z
   static' = \case
-    ValueExpression x y z -> doc
-      where
-      doc =
-        Name.docFromCommon x
-          <> foldMap bindersDoc y
-          <+> equals
-          <+> staticExpression z
+    ValueExpressionGuarded x y z ->
+      Name.docFromCommon x
+        <> foldMap bindersDoc y
+        <> line
+        <> indent 2 (align $ intercalateMap1 line (staticGuardedExpression equals) z)
+    ValueExpressionUnguarded x y z ->
+      Name.docFromCommon x
+        <> foldMap bindersDoc y
+        <+> equals
+        <+> staticExpression z
 
 fromPureScript ::
   ( Members
@@ -1264,14 +1280,23 @@ fromPureScript = \case
     name <- Name.common name'
     binders <- nonEmpty <$> traverse binder binders'
     expr <- expression expr'
-    pure (ValueExpression name binders expr)
-  Language.PureScript.ValueDeclarationData _ name _ _ exprs ->
-    throwError (InvalidExpressions name exprs)
+    pure (ValueExpressionUnguarded name binders expr)
+  Language.PureScript.ValueDeclarationData _ name' _ binders' exprs'' -> do
+    name <- Name.common name'
+    binders <- nonEmpty <$> traverse binder binders'
+    exprs' <- nonEmpty <$> traverse guardedExpression exprs''
+    exprs <- maybe (throwError (NoExpressions name')) pure exprs'
+    pure (ValueExpressionGuarded name binders exprs)
 
 normalize :: Value a -> Value Annotation.Normalized
 normalize = \case
-  ValueExpression name binders expr ->
-    ValueExpression
+  ValueExpressionGuarded name binders expr ->
+    ValueExpressionGuarded
+      (Annotation.None <$ name)
+      ((fmap . fmap) normalizeBinder binders)
+      (fmap normalizeGuardedExpression expr)
+  ValueExpressionUnguarded name binders expr ->
+    ValueExpressionUnguarded
       (Annotation.None <$ name)
       ((fmap . fmap) normalizeBinder binders)
       (normalizeExpression expr)
