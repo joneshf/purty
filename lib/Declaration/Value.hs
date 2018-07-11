@@ -12,6 +12,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , backslash
     , colon
     , comma
+    , dot
     , equals
     , flatAlt
     , group
@@ -387,6 +388,7 @@ data Expression a
   | ExpressionMinus !(Expression a)
   | ExpressionOperator !(Name.Qualified Name.ValueOperator a)
   | ExpressionParens !(Expression a)
+  | ExpressionProperty !(Expression a) !Language.PureScript.PSString.PSString
   | ExpressionTyped !(Expression a) !(Type.Type a)
   | ExpressionVariable !(Name.Qualified Name.Common a)
   | ExpressionWhere !(Expression a) !(NonEmpty (WhereDeclaration a))
@@ -449,6 +451,10 @@ dynamicExpression = \case
   ExpressionMinus x -> "-" <> dynamicExpression x
   ExpressionOperator x -> Name.docFromQualified Name.docFromValueOperator x
   ExpressionParens x -> parens (dynamicExpression x)
+  ExpressionProperty x y ->
+    dynamicExpression x
+      <> dot
+      <> pretty (Language.PureScript.prettyPrintObjectKey y)
   ExpressionTyped x y ->
     staticExpression x <+> colon <> colon <+> Variations.singleLine (Type.doc y)
   ExpressionVariable x -> Name.docFromQualified Name.docFromCommon x
@@ -498,6 +504,9 @@ expression ::
 expression = \case
   Language.PureScript.Abs x y ->
     ExpressionLambda <$> fmap pure (binder x) <*> expression y
+  Language.PureScript.Accessor x y -> do
+    expr <- expression y
+    pure (ExpressionProperty expr x)
   Language.PureScript.Ado x y -> do
     statements' <- nonEmpty <$> traverse do' x
     expr <- expression y
@@ -585,6 +594,7 @@ labelFromExpression = \case
   ExpressionMinus {} -> Nothing
   ExpressionOperator {} -> Nothing
   ExpressionParens x -> labelFromExpression x
+  ExpressionProperty {} -> Nothing
   ExpressionTyped {} -> Nothing
   ExpressionVariable (Name.Qualified (Just _) _) -> Nothing
   ExpressionVariable (Name.Qualified Nothing (Name.Common _ x)) -> Just label
@@ -628,6 +638,7 @@ normalizeExpression = \case
   ExpressionMinus x -> ExpressionMinus (normalizeExpression x)
   ExpressionOperator x -> ExpressionOperator (Annotation.None <$ x)
   ExpressionParens x -> ExpressionParens (normalizeExpression x)
+  ExpressionProperty x y -> ExpressionProperty (normalizeExpression x) y
   ExpressionTyped x y ->
     ExpressionTyped (normalizeExpression x) (Type.normalize y)
   ExpressionVariable x -> ExpressionVariable (Annotation.None <$ x)
@@ -689,6 +700,10 @@ staticExpression = \case
   ExpressionMinus x -> "-" <> staticExpression x
   ExpressionOperator x -> Name.docFromQualified Name.docFromValueOperator x
   ExpressionParens x -> parens (staticExpression x)
+  ExpressionProperty x y ->
+    staticExpression x
+      <> dot
+      <> pretty (Language.PureScript.prettyPrintObjectKey y)
   ExpressionTyped x y ->
     staticExpression x <+> colon <> colon <+> Variations.multiLine (Type.doc y)
   ExpressionVariable x -> Name.docFromQualified Name.docFromCommon x
