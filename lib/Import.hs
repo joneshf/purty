@@ -160,8 +160,8 @@ fromPureScript = \case
     let explicit = Explicit Annotation.Unannotated name imports alias
     pure (Just $ ImportExplicit explicit)
   Language.PureScript.ImportDeclaration _ name' (Language.PureScript.Hiding imports') alias' -> do
-    name <- Name.module' name'
     imports <- traverse Export.export imports'
+    name <- Name.module' name'
     alias <- Alias <$> traverse Name.module' alias'
     let hiding = Hiding Annotation.Unannotated name imports alias
     pure (Just $ ImportHiding hiding)
