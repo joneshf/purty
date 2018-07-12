@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.0.1
+
+Internal changes to the code base. Feature-wise, everything should be the same.
+
+### Additions
+
+### Changes
+
+* [Cleanup most of the logic](https://gitlab.com/joneshf/purty/merge_requests/64)
+* [Switch over to extensible effects](https://gitlab.com/joneshf/purty/merge_requests/65)
+* [Clean up effects more](https://gitlab.com/joneshf/purty/merge_requests/66)
+
+### Deletions
+
 ## 2.0.0
 
 Lots more bug fixes.
