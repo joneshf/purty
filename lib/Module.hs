@@ -147,12 +147,3 @@ static = \case
       <> line
       <> Import.static imports
       <> Declaration.static declarations
-
--- Errors
-
-newtype NotImplemented
-  = NotImplemented Utf8Builder
-
-instance Display NotImplemented where
-  display = \case
-    NotImplemented x -> "We have not yet implemented: " <> x

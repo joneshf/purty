@@ -88,7 +88,6 @@ fromPureScript ::
      , Error Declaration.Value.InvalidWhereDeclaration
      , Error Declaration.Value.LetWithoutBindings
      , Error Declaration.Value.NoExpressions
-     , Error Declaration.Value.NotImplemented
      , Error Declaration.Value.RecordUpdateWithoutUpdates
      , Error Declaration.Value.UnguardedExpression
      , Error Declaration.Value.WhereWithoutDeclarations
@@ -210,7 +209,6 @@ method ::
      , Error Declaration.Value.InvalidWhereDeclaration
      , Error Declaration.Value.LetWithoutBindings
      , Error Declaration.Value.NoExpressions
-     , Error Declaration.Value.NotImplemented
      , Error Declaration.Value.RecordUpdateWithoutUpdates
      , Error Declaration.Value.UnguardedExpression
      , Error Declaration.Value.WhereWithoutDeclarations

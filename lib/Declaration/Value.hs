@@ -182,7 +182,6 @@ caseAlternative ::
      , Error InvalidWhereDeclaration
      , Error LetWithoutBindings
      , Error NoExpressions
-     , Error NotImplemented
      , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
@@ -248,7 +247,6 @@ partitionCaseAlternatives ::
      , Error InvalidWhereDeclaration
      , Error LetWithoutBindings
      , Error NoExpressions
-     , Error NotImplemented
      , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
@@ -314,7 +312,6 @@ do' ::
      , Error InvalidWhereDeclaration
      , Error LetWithoutBindings
      , Error NoExpressions
-     , Error NotImplemented
      , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
@@ -482,7 +479,6 @@ expression ::
      , Error InvalidWhereDeclaration
      , Error LetWithoutBindings
      , Error NoExpressions
-     , Error NotImplemented
      , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
@@ -751,7 +747,6 @@ guard ::
      , Error InvalidWhereDeclaration
      , Error LetWithoutBindings
      , Error NoExpressions
-     , Error NotImplemented
      , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
@@ -816,7 +811,6 @@ guardedExpression ::
      , Error InvalidWhereDeclaration
      , Error LetWithoutBindings
      , Error NoExpressions
-     , Error NotImplemented
      , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
@@ -897,7 +891,6 @@ letBinding ::
      , Error InvalidWhereDeclaration
      , Error LetWithoutBindings
      , Error NoExpressions
-     , Error NotImplemented
      , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
@@ -1060,7 +1053,6 @@ recordUpdate ::
      , Error InvalidWhereDeclaration
      , Error LetWithoutBindings
      , Error NoExpressions
-     , Error NotImplemented
      , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
@@ -1098,7 +1090,6 @@ recordUpdateNested ::
      , Error InvalidWhereDeclaration
      , Error LetWithoutBindings
      , Error NoExpressions
-     , Error NotImplemented
      , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
@@ -1138,7 +1129,6 @@ recordUpdateNode ::
      , Error InvalidWhereDeclaration
      , Error LetWithoutBindings
      , Error NoExpressions
-     , Error NotImplemented
      , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
@@ -1219,7 +1209,6 @@ fromPureScript ::
      , Error InvalidWhereDeclaration
      , Error LetWithoutBindings
      , Error NoExpressions
-     , Error NotImplemented
      , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
@@ -1301,7 +1290,6 @@ whereDeclaration ::
      , Error InvalidWhereDeclaration
      , Error LetWithoutBindings
      , Error NoExpressions
-     , Error NotImplemented
      , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
@@ -1344,7 +1332,6 @@ type Errors
      , Error InvalidWhereDeclaration
      , Error LetWithoutBindings
      , Error NoExpressions
-     , Error NotImplemented
      , Error RecordUpdateWithoutUpdates
      , Error UnguardedExpression
      , Error WhereWithoutDeclarations
@@ -1507,16 +1494,6 @@ instance Display NoExpressions where
         <> displayShow x
         <> "` that had no expressions."
         <> " This is most likely a problem with the PureScript library."
-
-newtype NotImplemented
-  = NotImplemented Language.PureScript.Expr
-
-instance Display NotImplemented where
-  display = \case
-    NotImplemented x ->
-      "We haven't implemented this type of expression yet `"
-        <> displayShow x
-        <> "`."
 
 newtype RecordUpdateWithoutUpdates
   = RecordUpdateWithoutUpdates (Maybe Language.PureScript.Expr)
