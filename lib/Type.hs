@@ -6,15 +6,21 @@ module Type
   , InferredSkolem
   , InferredType
   , InfixTypeNotTypeOp
+  , Label(Label)
   , PrettyPrintForAll
   , PrettyPrintFunction
   , PrettyPrintObject
-  , Type
+  , Row(Row)
+  , RowPair(RowPair)
+  , RowSurround(RowBraces, RowParens)
+  , Rowpen(Rowpen, Rowsed)
+  , Type(TypeParens, TypeRow, TypeVariable)
   , Variable(Variable)
   , Variables(Variables)
   , constraint
   , doc
   , docFromConstraint
+  , docFromRow
   , docFromVariable
   , docFromVariables
   , fromPureScript
