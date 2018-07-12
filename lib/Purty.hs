@@ -74,14 +74,14 @@ fromAbsFile filePath = do
   Log.debug "Parsed module:"
   Log.inspect m
   ast <- Module.fromPureScript m
-  Log.debug "Converted AST:"
-  Log.inspect ast
   let sorted = Module.sortImports (Module.sortExports ast)
       normalized = Module.normalize sorted
       doc = case formatting of
         Dynamic -> Module.dynamic normalized
         Static  -> Module.static normalized
       stream = layoutSmart layoutOptions doc
+  Log.debug "Converted AST:"
+  Log.inspect ast
   Log.debug "Sorted AST:"
   Log.inspect sorted
   Log.debug "Normalized AST:"
