@@ -234,9 +234,7 @@ imports ::
   ) =>
   [Language.PureScript.Declaration] ->
   Eff e (Imports Annotation.Unannotated)
-imports x' = do
-  x <- wither fromPureScript x'
-  pure (Imports $ fromList x)
+imports x = fmap (Imports . fromList) (wither fromPureScript x)
 
 data Open a
   = Open !a !(Name.Module a)

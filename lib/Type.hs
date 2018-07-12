@@ -58,9 +58,9 @@ import qualified "purescript" Language.PureScript.Label
 
 import qualified "this" Annotation
 import qualified "this" Kind
+import qualified "this" Label
 import qualified "this" List
 import qualified "this" Name
-import qualified "this" Label
 import qualified "this" Variations
 
 data Constraint a

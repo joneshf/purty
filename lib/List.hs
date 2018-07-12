@@ -2,9 +2,9 @@ module List where
 
 import "rio" RIO hiding (mapMaybe, toList)
 
-import "base" GHC.Exts (IsList(Item, fromList, toList))
-import "base" Data.List.NonEmpty (NonEmpty((:|)))
+import "base" Data.List.NonEmpty    (NonEmpty((:|)))
 import "witherable" Data.Witherable (Filterable(mapMaybe))
+import "base" GHC.Exts              (IsList(Item, fromList, toList))
 
 import qualified "base" Data.List.NonEmpty
 

@@ -177,9 +177,8 @@ exports ::
   ) =>
   Maybe [Language.PureScript.DeclarationRef] ->
   Eff e (Exports Annotation.Unannotated)
-exports x' = do
-  x <- traverse fromPureScript x'
-  pure (Exports $ maybe List.Empty List.NonEmpty x)
+exports x =
+  fmap (Exports . maybe List.Empty List.NonEmpty) (traverse fromPureScript x)
 
 data Sorted
   = NoExports

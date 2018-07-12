@@ -8,12 +8,12 @@ module Declaration
 
 import "rio" RIO hiding (Data)
 
-import "witherable" Data.Witherable              (wither)
-import "base" GHC.Exts                           (fromList)
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, flatAlt, group, line)
+import "witherable" Data.Witherable              (wither)
+import "base" GHC.Exts                           (fromList)
 
 import qualified "purescript" Language.PureScript
 
@@ -115,9 +115,7 @@ declarations ::
   ) =>
   [Language.PureScript.Declaration] ->
   Eff e (Declarations Annotation.Unannotated)
-declarations x' = do
-  x <- wither fromPureScript x'
-  pure (Declarations $ fromList x)
+declarations x = fmap (Declarations . fromList) (wither fromPureScript x)
 
 fromPureScript ::
   ( Members
