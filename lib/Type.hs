@@ -6,7 +6,6 @@ module Type
   , InferredSkolem
   , InferredType
   , InfixTypeNotTypeOp
-  , Label(Label)
   , PrettyPrintForAll
   , PrettyPrintFunction
   , PrettyPrintObject
@@ -61,6 +60,7 @@ import qualified "this" Annotation
 import qualified "this" Kind
 import qualified "this" List
 import qualified "this" Name
+import qualified "this" Label
 import qualified "this" Variations
 
 data Constraint a
@@ -115,20 +115,6 @@ docFromForall = \case
 normalizeForall :: Forall -> Forall -> Forall
 normalizeForall x' y' = case (x', y') of
   (Forall x, Forall y) -> Forall (y <> x)
-
--- |
--- We're using the underlying PureScript representation here,
--- as it handles unicode properly for the language.
-newtype Label
-  = Label Language.PureScript.Label.Label
-  deriving (Show)
-
-docFromLabel :: Label -> Doc a
-docFromLabel = \case
-  Label x -> pretty (Language.PureScript.prettyPrintLabel x)
-
-label :: Language.PureScript.Label.Label -> Label
-label = Label
 
 data Row a
   = Row !RowSurround !(List.List (RowPair a)) !(Rowpen a)
@@ -188,13 +174,12 @@ data RowSurround
   deriving (Show)
 
 data RowPair a
-  = RowPair !Label !(Type a)
+  = RowPair !Label.Label !(Type a)
   deriving (Functor, Show)
 
 docFromRowPair :: RowPair Annotation.Normalized -> Doc a
 docFromRowPair = \case
-  RowPair x y ->
-    docFromLabel x <+> colon <> colon <+> Variations.singleLine (doc y)
+  RowPair x y -> Label.doc x <+> colon <> colon <+> Variations.singleLine (doc y)
 
 normalizeRowPair :: RowPair a -> RowPair Annotation.Normalized
 normalizeRowPair = \case
@@ -218,7 +203,7 @@ rowPair ::
   Language.PureScript.Label.Label ->
   Language.PureScript.Type ->
   Eff e (RowPair Annotation.Unannotated)
-rowPair x y = fmap (RowPair $ label x) (fromPureScript y)
+rowPair x y = fmap (RowPair $ Label.fromPureScript x) (fromPureScript y)
 
 data Rowpen a
   = Rowpen !(Type a)

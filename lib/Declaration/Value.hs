@@ -33,13 +33,13 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
 import "base" GHC.Exts                           (IsList(fromList))
 
 import qualified "purescript" Language.PureScript
-import qualified "purescript" Language.PureScript.Label
 import qualified "purescript" Language.PureScript.PSString
 
 import qualified "this" Annotation
 import qualified "this" Comment
 import qualified "this" Declaration.Type
 import qualified "this" Kind
+import qualified "this" Label
 import qualified "this" List
 import qualified "this" Name
 import qualified "this" Type
@@ -131,7 +131,7 @@ docFromBinder = \case
   BinderVariable x -> Name.docFromCommon x
   BinderWildcard -> "_"
 
-labelFromBinder :: Binder a -> Maybe Language.PureScript.Label.Label
+labelFromBinder :: Binder a -> Maybe Label.Label
 labelFromBinder = \case
   BinderAs {} -> Nothing
   BinderBinary {} -> Nothing
@@ -141,10 +141,7 @@ labelFromBinder = \case
   BinderOperator {} -> Nothing
   BinderParens x -> labelFromBinder x
   BinderTyped {} -> Nothing
-  BinderVariable (Name.Common _ x) -> Just label
-    where
-    label =
-      Language.PureScript.Label.Label (Language.PureScript.PSString.mkString x)
+  BinderVariable (Name.Common _ x) -> Just (Label.fromText x)
   BinderWildcard -> Nothing
 
 normalizeBinder :: Binder a -> Binder Annotation.Normalized
@@ -390,7 +387,7 @@ data Expression a
   | ExpressionMinus !(Expression a)
   | ExpressionOperator !(Name.Qualified Name.ValueOperator a)
   | ExpressionParens !(Expression a)
-  | ExpressionProperty !(Expression a) !Language.PureScript.Label.Label
+  | ExpressionProperty !(Expression a) !Label.Label
   | ExpressionRecordUpdate !(Expression a) !(NonEmpty (RecordUpdate a))
   | ExpressionTyped !(Expression a) !(Type.Type a)
   | ExpressionVariable !(Name.Qualified Name.Common a)
@@ -454,8 +451,7 @@ dynamicExpression = \case
   ExpressionMinus x -> "-" <> dynamicExpression x
   ExpressionOperator x -> Name.docFromQualified Name.docFromValueOperator x
   ExpressionParens x -> parens (dynamicExpression x)
-  ExpressionProperty x y ->
-    dynamicExpression x <> dot <> pretty (Language.PureScript.prettyPrintLabel y)
+  ExpressionProperty x y -> dynamicExpression x <> dot <> Label.doc y
   ExpressionRecordUpdate x y ->
     dynamicExpression x
       <+> Variations.singleLine (Variations.bracesize docFromRecordUpdate y)
@@ -511,7 +507,7 @@ expression = \case
     ExpressionLambda <$> fmap pure (binder x) <*> expression y
   Language.PureScript.Accessor x y -> do
     expr <- expression y
-    pure (ExpressionProperty expr $ Language.PureScript.Label.Label x)
+    pure (ExpressionProperty expr $ Label.fromPSString x)
   Language.PureScript.Ado x y -> do
     statements' <- nonEmpty <$> traverse do' x
     expr <- expression y
@@ -586,7 +582,7 @@ expression = \case
   x@Language.PureScript.TypeClassDictionaryConstructorApp {} ->
     throwError (InvalidExpression x)
 
-labelFromExpression :: Expression a -> Maybe Language.PureScript.Label.Label
+labelFromExpression :: Expression a -> Maybe Label.Label
 labelFromExpression = \case
   ExpressionAdo {} -> Nothing
   ExpressionApplication {} -> Nothing
@@ -594,10 +590,7 @@ labelFromExpression = \case
   ExpressionCommented {} -> Nothing
   ExpressionConstructor (Name.Qualified (Just _) _) -> Nothing
   ExpressionConstructor (Name.Qualified Nothing (Name.Constructor (Name.Proper _ x))) ->
-    Just label
-      where
-      label =
-        Language.PureScript.Label.Label (Language.PureScript.PSString.mkString x)
+    Just (Label.fromText x)
   ExpressionDo {} -> Nothing
   ExpressionHole {} -> Nothing
   ExpressionIf {} -> Nothing
@@ -612,10 +605,8 @@ labelFromExpression = \case
   ExpressionRecordUpdate {} -> Nothing
   ExpressionTyped {} -> Nothing
   ExpressionVariable (Name.Qualified (Just _) _) -> Nothing
-  ExpressionVariable (Name.Qualified Nothing (Name.Common _ x)) -> Just label
-    where
-    label =
-      Language.PureScript.Label.Label (Language.PureScript.PSString.mkString x)
+  ExpressionVariable (Name.Qualified Nothing (Name.Common _ x)) ->
+    Just (Label.fromText x)
   ExpressionWhere {} -> Nothing
   ExpressionWildcard -> Nothing
 
@@ -719,8 +710,7 @@ staticExpression = \case
   ExpressionMinus x -> "-" <> staticExpression x
   ExpressionOperator x -> Name.docFromQualified Name.docFromValueOperator x
   ExpressionParens x -> parens (staticExpression x)
-  ExpressionProperty x y ->
-    staticExpression x <> dot <> pretty (Language.PureScript.prettyPrintLabel y)
+  ExpressionProperty x y -> staticExpression x <> dot <> Label.doc y
   ExpressionRecordUpdate x y ->
     staticExpression x
       <+> Variations.multiLine (Variations.bracesize docFromRecordUpdate y)
@@ -977,7 +967,7 @@ literal f = \case
   Language.PureScript.StringLiteral x -> pure (LiteralString x)
 
 normalizeLiteral ::
-  (f a -> Maybe Language.PureScript.Label.Label) ->
+  (f a -> Maybe Label.Label) ->
   (f a -> f Annotation.Normalized) ->
   Literal (f a) ->
   Literal (f Annotation.Normalized)
@@ -991,8 +981,8 @@ normalizeLiteral f g = \case
   LiteralString x -> LiteralString x
 
 data RecordPair a
-  = RecordPair !Language.PureScript.Label.Label !a
-  | RecordPun !Language.PureScript.Label.Label
+  = RecordPair !Label.Label !a
+  | RecordPun !Label.Label
   deriving (Functor, Show)
 
 docFromRecordPair ::
@@ -1003,18 +993,12 @@ docFromRecordPair f = \case
   RecordPair x y ->
     Variations.Variations { Variations.multiLine, Variations.singleLine }
       where
-      multiLine =
-        pretty (Language.PureScript.prettyPrintLabel x)
-          <> colon
-          <+> Variations.multiLine (f y)
-      singleLine =
-        pretty (Language.PureScript.prettyPrintLabel x)
-          <> colon
-          <+> Variations.singleLine (f y)
-  RecordPun x -> pure (pretty $ Language.PureScript.prettyPrintLabel x)
+      multiLine = Label.doc x <> colon <+> Variations.multiLine (f y)
+      singleLine = Label.doc x <> colon <+> Variations.singleLine (f y)
+  RecordPun x -> pure (Label.doc x)
 
 normalizeRecordPair ::
-  (f a -> Maybe Language.PureScript.Label.Label) ->
+  (f a -> Maybe Label.Label) ->
   (f a -> f Annotation.Normalized) ->
   RecordPair (f a) ->
   RecordPair (f Annotation.Normalized)
@@ -1031,13 +1015,11 @@ recordPair ::
   (Language.PureScript.PSString.PSString, a) ->
   Eff e (RecordPair b)
 recordPair f = \case
-  (x, y) -> fmap (RecordPair $ Language.PureScript.Label.Label x) (f y)
+  (x, y) -> fmap (RecordPair $ Label.fromPSString x) (f y)
 
 data RecordUpdate a
-  = RecordUpdate !Language.PureScript.Label.Label !(Expression a)
-  | RecordUpdateNest
-      !Language.PureScript.Label.Label
-      !(NonEmpty (RecordUpdate a))
+  = RecordUpdate !Label.Label !(Expression a)
+  | RecordUpdateNest !Label.Label !(NonEmpty (RecordUpdate a))
   deriving (Functor, Show)
 
 docFromRecordUpdate ::
@@ -1046,22 +1028,16 @@ docFromRecordUpdate = \case
   RecordUpdate x y ->
     Variations.Variations { Variations.multiLine, Variations.singleLine }
       where
-      multiLine =
-        pretty (Language.PureScript.prettyPrintLabel x)
-          <+> equals
-          <+> staticExpression y
-      singleLine =
-        pretty (Language.PureScript.prettyPrintLabel x)
-          <+> equals
-          <+> dynamicExpression y
+      multiLine = Label.doc x <+> equals <+> staticExpression y
+      singleLine = Label.doc x <+> equals <+> dynamicExpression y
   RecordUpdateNest x y ->
     Variations.Variations { Variations.multiLine, Variations.singleLine }
       where
       multiLine =
-        pretty (Language.PureScript.prettyPrintLabel x)
+        Label.doc x
           <+> Variations.multiLine (Variations.bracesize docFromRecordUpdate y)
       singleLine =
-        pretty (Language.PureScript.prettyPrintLabel x)
+        Label.doc x
           <+> Variations.singleLine (Variations.bracesize docFromRecordUpdate y)
 
 normalizeRecordUpdate :: RecordUpdate a -> RecordUpdate Annotation.Normalized
@@ -1105,8 +1081,7 @@ recordUpdate ::
   (Language.PureScript.PSString.PSString, Language.PureScript.Expr) ->
   Eff e (RecordUpdate Annotation.Unannotated)
 recordUpdate = \case
-  (x, y) ->
-    fmap (RecordUpdate $ Language.PureScript.Label.Label x) (expression y)
+  (x, y) -> fmap (RecordUpdate $ Label.fromPSString x) (expression y)
 
 recordUpdateNested ::
   ( Members
@@ -1187,11 +1162,9 @@ recordUpdateNode ::
   Eff e (RecordUpdate Annotation.Unannotated)
 recordUpdateNode = \case
   (x, Language.PureScript.Branch y) ->
-    fmap
-      (RecordUpdateNest $ Language.PureScript.Label.Label x)
-      (recordUpdateNested y)
+    fmap (RecordUpdateNest $ Label.fromPSString x) (recordUpdateNested y)
   (x, Language.PureScript.Leaf y) ->
-    fmap (RecordUpdate $ Language.PureScript.Label.Label x) (expression y)
+    fmap (RecordUpdate $ Label.fromPSString x) (expression y)
 
 data Value a
   = ValueExpressionGuarded

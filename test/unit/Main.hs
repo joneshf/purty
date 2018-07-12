@@ -135,15 +135,15 @@ openRecord2 :: Type.Row a
 openRecord2 =
   Type.Row
     Type.RowBraces
-    [Type.RowPair (Type.Label "a") (Type.TypeVariable $ Type.Variable "b")]
+    [Type.RowPair "a" (Type.TypeVariable $ Type.Variable "b")]
     (Type.Rowpen $ Type.TypeVariable $ Type.Variable "r")
 
 openRecord3 :: Type.Row a
 openRecord3 =
   Type.Row
     Type.RowBraces
-    [ Type.RowPair (Type.Label "a") (Type.TypeVariable $ Type.Variable "b")
-    , Type.RowPair (Type.Label "c") (Type.TypeVariable $ Type.Variable "d")
+    [ Type.RowPair "a" (Type.TypeVariable $ Type.Variable "b")
+    , Type.RowPair "c" (Type.TypeVariable $ Type.Variable "d")
     ]
     (Type.Rowpen $ Type.TypeVariable $ Type.Variable "r")
 
@@ -151,15 +151,15 @@ openRow1 :: Type.Row a
 openRow1 =
   Type.Row
     Type.RowParens
-    [Type.RowPair (Type.Label "a") (Type.TypeVariable $ Type.Variable "b")]
+    [Type.RowPair "a" (Type.TypeVariable $ Type.Variable "b")]
     (Type.Rowpen $ Type.TypeVariable $ Type.Variable "r")
 
 openRow2 :: Type.Row a
 openRow2 =
   Type.Row
     Type.RowParens
-    [ Type.RowPair (Type.Label "a") (Type.TypeVariable $ Type.Variable "b")
-    , Type.RowPair (Type.Label "c") (Type.TypeVariable $ Type.Variable "d")
+    [ Type.RowPair "a" (Type.TypeVariable $ Type.Variable "b")
+    , Type.RowPair "c" (Type.TypeVariable $ Type.Variable "d")
     ]
     (Type.Rowpen $ Type.TypeVariable $ Type.Variable "r")
 
