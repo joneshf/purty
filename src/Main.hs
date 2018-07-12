@@ -41,6 +41,7 @@ main = do
       $ Error.kind
       $ Error.export
       $ Error.declarationValue
+      $ Error.declarationInstance
       $ Error.declarationFixity
       $ Error.declarationDataType
       $ Error.declarationClass

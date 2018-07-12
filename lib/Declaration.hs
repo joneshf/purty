@@ -21,6 +21,7 @@ import qualified "this" Declaration.Class
 import qualified "this" Declaration.DataType
 import qualified "this" Declaration.Fixity
 import qualified "this" Declaration.Foreign
+import qualified "this" Declaration.Instance
 import qualified "this" Declaration.Synonym
 import qualified "this" Declaration.Type
 import qualified "this" Declaration.Value
@@ -38,6 +39,7 @@ data Declaration a
   | DeclarationForeignData !(Declaration.Foreign.Data a)
   | DeclarationForeignKind !(Declaration.Foreign.Kind a)
   | DeclarationForeignValue !(Declaration.Foreign.Value a)
+  | DeclarationInstance !(Declaration.Instance.Instance a)
   | DeclarationNewtype !(Declaration.DataType.Newtype a)
   | DeclarationSynonym !(Declaration.Synonym.Synonym a)
   | DeclarationType !(Declaration.Type.Type a)
@@ -60,6 +62,7 @@ normalizeDeclaration = \case
     DeclarationForeignKind (Declaration.Foreign.normalizeKind x)
   DeclarationForeignValue x ->
     DeclarationForeignValue (Declaration.Foreign.normalizeValue x)
+  DeclarationInstance x -> DeclarationInstance (Declaration.Instance.normalize x)
   DeclarationNewtype x ->
     DeclarationNewtype (Declaration.DataType.normalizeNewtype x)
   DeclarationSynonym x -> DeclarationSynonym (Declaration.Synonym.normalize x)
@@ -72,6 +75,11 @@ fromPureScript ::
      , Error Declaration.Class.MissingTypeVariable
      , Error Declaration.DataType.WrongNewtypeConstructors
      , Error Declaration.Fixity.NegativePrecedence
+     , Error Declaration.Instance.DerivedInChain
+     , Error Declaration.Instance.DerivedNewtypeInChain
+     , Error Declaration.Instance.Desugared
+     , Error Declaration.Instance.InvalidMethod
+     , Error Declaration.Instance.NegativeChainIndex
      , Error Declaration.Value.BinaryBinderWithoutOperator
      , Error Declaration.Value.CaseAlternativeWithoutBinders
      , Error Declaration.Value.CaseAlternativeWithoutExpressions
@@ -125,7 +133,8 @@ fromPureScript = \case
     Just . DeclarationClass <$> Declaration.Class.fromPureScript constraints name variables funDeps methods
   Language.PureScript.TypeDeclaration declaration ->
     Just . DeclarationType <$> Declaration.Type.fromPureScript declaration
-  Language.PureScript.TypeInstanceDeclaration {} -> pure Nothing
+  Language.PureScript.TypeInstanceDeclaration _ _ index instanceName constraints className types body ->
+    Just . DeclarationInstance <$> Declaration.Instance.fromPureScript index instanceName constraints className types body
   Language.PureScript.TypeSynonymDeclaration _ name variables type' ->
     Just . DeclarationSynonym <$> Declaration.Synonym.fromPureScript name variables type'
   Language.PureScript.ValueDeclaration declaration ->
@@ -164,6 +173,9 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
     DeclarationForeignKind kind -> Declaration.Foreign.docFromKind kind
     DeclarationForeignValue value ->
       Variations.singleLine (Declaration.Foreign.docFromValue value)
+    DeclarationInstance declaration ->
+      Declaration.Instance.dynamic declaration
+        <> line
     DeclarationNewtype newtype' -> Declaration.DataType.docFromNewtype newtype'
     DeclarationSynonym synonym ->
       Variations.singleLine (Declaration.Synonym.doc synonym)
@@ -190,6 +202,9 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
     DeclarationForeignKind kind -> Declaration.Foreign.docFromKind kind
     DeclarationForeignValue value ->
       Variations.multiLine (Declaration.Foreign.docFromValue value)
+    DeclarationInstance declaration ->
+      Declaration.Instance.static declaration
+        <> line
     DeclarationNewtype newtype' -> Declaration.DataType.docFromNewtype newtype'
     DeclarationSynonym synonym ->
       Variations.multiLine (Declaration.Synonym.doc synonym)

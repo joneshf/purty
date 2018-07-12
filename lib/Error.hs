@@ -10,6 +10,7 @@ import "parsec" Text.Parsec                     (ParseError)
 import qualified "this" Declaration.Class
 import qualified "this" Declaration.DataType
 import qualified "this" Declaration.Fixity
+import qualified "this" Declaration.Instance
 import qualified "this" Declaration.Value
 import qualified "this" Exit
 import qualified "this" Export
@@ -52,6 +53,22 @@ declarationFixity x =
   where
   go err = do
     Log.error "Problem converting a fixity"
+    Log.error (display err)
+    Exit.failure
+
+declarationInstance ::
+  (Members '[Exit.Exit, Log.Log] e) =>
+  Eff (Declaration.Instance.Errors :++: e) a ->
+  Eff e a
+declarationInstance x =
+  x `handleError` go
+    `handleError` go
+    `handleError` go
+    `handleError` go
+    `handleError` go
+  where
+  go err = do
+    Log.error "Problem converting a instance"
     Log.error (display err)
     Exit.failure
 
