@@ -30,6 +30,7 @@ import qualified "purescript" Language.PureScript
 import "this" Variations (Variations(Variations, multiLine, singleLine))
 
 import qualified "this" Annotation
+import qualified "this" List
 import qualified "this" Log
 import qualified "this" Name
 import qualified "this" Variations
@@ -159,10 +160,26 @@ export = \case
     pure (ExportValueOperator $ Name.valueOperator op)
 
 newtype Exports a
-  = Exports (Maybe (NonEmpty (Export a)))
+  = Exports (List.List (Export a))
   deriving (Show)
 
 instance (Log.Inspect a) => Log.Inspect (Exports a)
+
+exports ::
+  ( Members
+    '[ Error EmptyExplicitExports
+     , Error InstanceExported
+     , Error InvalidExport
+     , Error Name.Missing
+     , Error ReExportExported
+     ]
+    e
+  ) =>
+  Maybe [Language.PureScript.DeclarationRef] ->
+  Eff e (Exports Annotation.Unannotated)
+exports x' = do
+  x <- traverse fromPureScript x'
+  pure (Exports $ maybe List.Empty List.NonEmpty x)
 
 data Sorted
   = NoExports
@@ -190,8 +207,8 @@ dynamic, static :: Sorted -> Doc b
         doc =
           foldMap
             Variations.singleLine
-            (intersperse (pure (comma <> space)) exports)
-        exports = exportsDoc (insertExport ms cs ks tOs ts vOs vs export')
+            (intersperse (pure (comma <> space)) exports')
+        exports' = exportsDoc (insertExport ms cs ks tOs ts vOs vs export')
   static' = \case
     NoExports -> mempty
     Sorted export' ms cs ks tOs ts vOs vs ->
@@ -200,8 +217,8 @@ dynamic, static :: Sorted -> Doc b
         doc =
           foldMap
             Variations.multiLine
-            (intersperse (pure (line <> comma <> space)) exports)
-        exports = exportsDoc (insertExport ms cs ks tOs ts vOs vs export')
+            (intersperse (pure (line <> comma <> space)) exports')
+        exports' = exportsDoc (insertExport ms cs ks tOs ts vOs vs export')
   exportsDoc (ms, cs, ks, tOs, ts, vOs, vs) =
     fmap (docFromExport . ExportModule) ms
       <> fmap (docFromExport . ExportClass) cs
@@ -294,8 +311,8 @@ sortConstructors = \case
 
 sort :: Exports a -> Sorted
 sort = \case
-  Exports Nothing -> NoExports
-  Exports (Just exports) ->
+  Exports List.Empty -> NoExports
+  Exports (List.NonEmpty exports') ->
     Sorted headExport ms cs ks tOs ts vOs vs
     where
     go :: Export a -> Export Annotation.Sorted
@@ -309,7 +326,7 @@ sort = \case
       ExportTypeOperator x -> ExportTypeOperator (Annotation.Sorted <$ x)
       ExportValue x -> ExportValue (Annotation.Sorted <$ x)
       ExportValueOperator x -> ExportValueOperator (Annotation.Sorted <$ x)
-    headExport :| tailExports = sortBy compareExport (fmap go exports)
+    headExport :| tailExports = sortBy compareExport (fmap go exports')
     (ms, cs, ks, tOs, ts, vOs, vs) =
       foldl' partition ([], [], [], [], [], [], []) (reverse tailExports)
     partition acc@(ms', cs', ks', tOs', ts', vOs', vs') = \case

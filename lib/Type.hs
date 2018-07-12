@@ -35,11 +35,7 @@ import "rio" RIO hiding (Data)
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.Bitraversable                 (bitraverse)
-import "base" Data.List.NonEmpty
-    ( NonEmpty((:|))
-    , nonEmpty
-    , (<|)
-    )
+import "base" Data.List.NonEmpty                 (NonEmpty((:|)), (<|))
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
@@ -55,6 +51,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , space
     , (<+>)
     )
+import "base" GHC.Exts                           (IsList(fromList))
 import "purescript" Language.PureScript.PSString (PSString)
 
 import qualified "purescript" Language.PureScript
@@ -62,11 +59,12 @@ import qualified "purescript" Language.PureScript.Label
 
 import qualified "this" Annotation
 import qualified "this" Kind
+import qualified "this" List
 import qualified "this" Name
 import qualified "this" Variations
 
 data Constraint a
-  = Constraint !(Name.Qualified Name.Class a) !(Maybe (NonEmpty (Type a)))
+  = Constraint !(Name.Qualified Name.Class a) !(List.List (Type a))
   deriving (Functor, Show)
 
 constraint ::
@@ -91,22 +89,20 @@ constraint = \case
     throwError (InferredConstraintData x y z)
   Language.PureScript.Constraint x' y' Nothing -> do
     x <- Name.qualified (pure . Name.class') x'
-    y <- nonEmpty <$> traverse fromPureScript y'
+    y <- fromList <$> traverse fromPureScript y'
     pure (Constraint x y)
 
 docFromConstraint ::
   Constraint Annotation.Normalized ->
   Variations.Variations (Doc b)
 docFromConstraint = pure . \case
-  Constraint x Nothing -> Name.docFromQualified Name.docFromClass x
-  Constraint x (Just y) ->
+  Constraint x y' ->
     Name.docFromQualified Name.docFromClass x
-      <+> intercalateMap1 space (Variations.singleLine . doc) y
+      <> List.list' (\y -> space <> intercalateMap1 space (Variations.singleLine . doc) y) y'
 
 normalizeConstraint :: Constraint a -> Constraint Annotation.Normalized
 normalizeConstraint = \case
-  Constraint x y ->
-    Constraint (Annotation.None <$ x) ((fmap . fmap) normalize y)
+  Constraint x y -> Constraint (Annotation.None <$ x) (fmap normalize y)
 
 newtype Forall
   = Forall (NonEmpty Variable)
@@ -135,7 +131,7 @@ label :: Language.PureScript.Label.Label -> Label
 label = Label
 
 data Row a
-  = Row !RowSurround !(Maybe (NonEmpty (RowPair a))) !(Rowpen a)
+  = Row !RowSurround !(List.List (RowPair a)) !(Rowpen a)
   deriving (Functor, Show)
 
 docFromRow :: Row Annotation.Normalized -> Doc a
@@ -145,13 +141,12 @@ docFromRow = \case
     surround = case x of
       RowBraces -> braces
       RowParens -> parens
-    pairs = foldMap (intercalateMap1 (comma <> space) docFromRowPair) y
+    pairs = List.list' (intercalateMap1 (comma <> space) docFromRowPair) y
     rowpen = docFromRowpen z
 
 normalizeRow :: Row a -> Row Annotation.Normalized
 normalizeRow = \case
-  Row surround y z ->
-    Row surround ((fmap . fmap) normalizeRowPair y) (normalizeRowpen z)
+  Row surround y z -> Row surround (fmap normalizeRowPair y) (normalizeRowpen z)
 
 row ::
   ( Members
@@ -293,7 +288,7 @@ normalizeTypeApplication x' y' = case (x', y') of
           (Name.TypeConstructor (Name.Proper _ "Record"))
       )
     , y
-    ) -> TypeRow (normalizeRow $ Row RowBraces Nothing $ Rowpen y)
+    ) -> TypeRow (normalizeRow $ Row RowBraces List.Empty $ Rowpen y)
   (_, _) -> TypeApplication (normalize x') (normalize y')
 
 doc :: Type Annotation.Normalized -> Variations.Variations (Doc b)
@@ -421,10 +416,10 @@ fromPureScript = \case
   Language.PureScript.ConstrainedType x y ->
     TypeConstrained <$> constraint x <*> fromPureScript y
   Language.PureScript.Skolem w x y z -> throwError (InferredSkolem w x y z)
-  Language.PureScript.REmpty -> pure (TypeRow $ Row RowParens Nothing Rowsed)
+  Language.PureScript.REmpty -> pure (TypeRow $ Row RowParens List.Empty Rowsed)
   Language.PureScript.RCons x y z -> do
     (pairs, rowpen) <- row x y z
-    pure (TypeRow $ Row RowParens (Just pairs) rowpen)
+    pure (TypeRow $ Row RowParens (List.NonEmpty pairs) rowpen)
   Language.PureScript.KindedType x y ->
     TypeKinded <$> fromPureScript x <*> Kind.fromPureScript y
   Language.PureScript.PrettyPrintFunction x y ->
@@ -449,13 +444,13 @@ docFromVariable = \case
   Variable x -> pretty x
 
 newtype Variables a
-  = Variables (Maybe (NonEmpty (Variable, Maybe (Kind.Kind a))))
+  = Variables (List.List (Variable, Maybe (Kind.Kind a)))
   deriving (Functor, Show)
 
 docFromVariables :: Variables Annotation.Normalized -> Doc b
 docFromVariables = \case
-  Variables Nothing -> mempty
-  Variables (Just x) -> space <> intercalateMap1 space go x
+  Variables List.Empty -> mempty
+  Variables (List.NonEmpty x) -> space <> intercalateMap1 space go x
     where
     go = \case
       (variable, Nothing) -> docFromVariable variable
@@ -469,8 +464,7 @@ docFromVariables = \case
 
 normalizeVariables :: Variables a -> Variables Annotation.Normalized
 normalizeVariables = \case
-  Variables x ->
-    Variables ((fmap . fmap . fmap . fmap) Kind.normalize x)
+  Variables x -> Variables ((fmap . fmap . fmap) Kind.normalize x)
 
 variables ::
   ( Members
@@ -483,7 +477,7 @@ variables ::
   Eff e (Variables Annotation.Unannotated)
 variables x =
   fmap
-    (Variables . nonEmpty)
+    (Variables . fromList)
     (traverse (bitraverse (pure . Variable) (traverse Kind.fromPureScript)) x)
 
 data Wildcard

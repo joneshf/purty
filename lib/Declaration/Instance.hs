@@ -4,7 +4,6 @@ import "rio" RIO
 
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
-import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
@@ -17,6 +16,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , space
     , (<+>)
     )
+import "base" GHC.Exts                           (IsList(fromList))
 
 import qualified "purescript" Language.PureScript
 
@@ -24,6 +24,7 @@ import qualified "this" Annotation
 import qualified "this" Declaration.Type
 import qualified "this" Declaration.Value
 import qualified "this" Kind
+import qualified "this" List
 import qualified "this" Name
 import qualified "this" Type
 import qualified "this" Variations
@@ -32,9 +33,9 @@ data Instance a
   = Instance
       !(Type a)
       !(Name.Common a)
-      !(Maybe (NonEmpty (Type.Constraint a)))
+      !(List.List (Type.Constraint a))
       !(Name.Qualified Name.Class a)
-      !(Maybe (NonEmpty (Type.Type a)))
+      !(List.List (Type.Type a))
   deriving (Functor, Show)
 
 dynamic :: Instance Annotation.Normalized -> Doc a
@@ -45,7 +46,7 @@ dynamic = \case
     TypeExplicitElse methods -> "else instance" <+> doc (methodsDoc methods)
     TypeNewtype              -> "derive newtype instance" <+> doc mempty
     where
-    constraintsDoc = foldMap $ \x ->
+    constraintsDoc = List.list' $ \x ->
       let Variations.Variations {Variations.multiLine, Variations.singleLine} =
             Variations.parenthesize Type.docFromConstraint x
           multi = line <> indent 2 multiLine <+> "=>" <> line <> space
@@ -58,12 +59,12 @@ dynamic = \case
         <+> Name.docFromQualified Name.docFromClass className
         <> typesDoc types
         <> rest
-    methodsDoc = foldMap $ \x ->
+    methodsDoc = List.list' $ \x ->
       space
         <> "where"
         <> line
         <> indent 2 (align $ intercalateMap1 line dynamicMethod x)
-    typesDoc = foldMap $ \x ->
+    typesDoc = List.list' $ \x ->
       space <> intercalateMap1 space (Variations.singleLine . Type.doc) x
 
 fromPureScript ::
@@ -122,9 +123,9 @@ fromPureScript index instanceName' constraints' className' types' body
       throwError DerivedNewtypeInChain
   | otherwise = do
     instanceName <- Name.common instanceName'
-    constraints <- nonEmpty <$> traverse Type.constraint constraints'
+    constraints <- fromList <$> traverse Type.constraint constraints'
     className <- Name.qualified (pure . Name.class') className'
-    types <- nonEmpty <$> traverse Type.fromPureScript types'
+    types <- fromList <$> traverse Type.fromPureScript types'
     case body of
       Language.PureScript.NewtypeInstanceWithDictionary x ->
         throwError (Desugared x)
@@ -133,7 +134,7 @@ fromPureScript index instanceName' constraints' className' types' body
       Language.PureScript.NewtypeInstance ->
         pure (Instance TypeNewtype instanceName constraints className types)
       Language.PureScript.ExplicitInstance x -> do
-        methods <- nonEmpty <$> traverse method x
+        methods <- fromList <$> traverse method x
         let type' = case index of
                       0 -> TypeExplicit methods
                       _ -> TypeExplicitElse methods
@@ -145,9 +146,9 @@ normalize = \case
     Instance
       (normalizeType type')
       (Annotation.None <$ w)
-      ((fmap . fmap) Type.normalizeConstraint x)
+      (fmap Type.normalizeConstraint x)
       (Annotation.None <$ y)
-      ((fmap . fmap) Type.normalize z)
+      (fmap Type.normalize z)
 
 static :: Instance Annotation.Normalized -> Doc a
 static = \case
@@ -157,7 +158,7 @@ static = \case
     TypeExplicitElse methods -> "else instance" <+> doc (methodsDoc methods)
     TypeNewtype              -> "derive newtype instance" <+> doc mempty
     where
-    constraintsDoc = foldMap $ \x ->
+    constraintsDoc = List.list' $ \x ->
       Variations.multiLine (Variations.parenthesize Type.docFromConstraint x)
         <+> "=>"
         <> line
@@ -172,12 +173,12 @@ static = \case
           <> typesDoc types
           <> rest
           )
-    methodsDoc = foldMap $ \x ->
+    methodsDoc = List.list' $ \x ->
       space
         <> "where"
         <> line
         <> indent 2 (align $ intercalateMap1 line staticMethod x)
-    typesDoc = foldMap $ \x ->
+    typesDoc = List.list' $ \x ->
       space <> intercalateMap1 space (Variations.multiLine . Type.doc) x
 
 data Method a
@@ -248,16 +249,16 @@ staticMethod = \case
 
 data Type a
   = TypeDerived
-  | TypeExplicit !(Maybe (NonEmpty (Method a)))
-  | TypeExplicitElse !(Maybe (NonEmpty (Method a)))
+  | TypeExplicit !(List.List (Method a))
+  | TypeExplicitElse !(List.List (Method a))
   | TypeNewtype
   deriving (Functor, Show)
 
 normalizeType :: Type a -> Type Annotation.Normalized
 normalizeType = \case
   TypeDerived -> TypeDerived
-  TypeExplicit x -> TypeExplicit ((fmap . fmap) normalizeMethod x)
-  TypeExplicitElse x -> TypeExplicitElse ((fmap . fmap) normalizeMethod x)
+  TypeExplicit x -> TypeExplicit (fmap normalizeMethod x)
+  TypeExplicitElse x -> TypeExplicitElse (fmap normalizeMethod x)
   TypeNewtype -> TypeNewtype
 
 -- Errors

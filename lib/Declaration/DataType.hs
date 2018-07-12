@@ -5,7 +5,6 @@ import "rio" RIO hiding (Data)
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.List                          (intersperse)
-import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
@@ -19,17 +18,19 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , space
     , (<+>)
     )
+import "base" GHC.Exts                           (IsList(fromList))
 
 import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
 import qualified "this" Kind
+import qualified "this" List
 import qualified "this" Name
 import qualified "this" Type
 import qualified "this" Variations
 
 data Alternate a
-  = Alternate !a !(Name.Constructor a) !(Maybe (NonEmpty (Type.Type a)))
+  = Alternate !a !(Name.Constructor a) !(List.List (Type.Type a))
   deriving (Functor, Show)
 
 alternate ::
@@ -55,7 +56,7 @@ alternate ::
 alternate = \case
   (x', y') -> do
     let x = Name.constructor x'
-    y <- nonEmpty <$> traverse Type.fromPureScript y'
+    y <- fromList <$> traverse Type.fromPureScript y'
     pure (Alternate Annotation.Unannotated x y)
 
 docFromAlternate :: Alternate Annotation.Normalized -> Doc a
@@ -66,20 +67,17 @@ docFromAlternate = \case
       Annotation.None   -> id
       Annotation.Braces -> braces
       Annotation.Parens -> parens
-    doc = Name.docFromConstructor x <> foldMap go y
+    doc = Name.docFromConstructor x <> List.list' go y
     go types =
       space <> intercalateMap1 space (Variations.singleLine . Type.doc) types
 
 normalizeAlternate :: Alternate a -> Alternate Annotation.Normalized
 normalizeAlternate = \case
   Alternate _ann x y ->
-    Alternate
-      Annotation.None
-      (Annotation.None <$ x)
-      ((fmap . fmap) Type.normalize y)
+    Alternate Annotation.None (Annotation.None <$ x) (fmap Type.normalize y)
 
 data Data a
-  = Data !(Name.Proper a) !(Type.Variables a) !(Maybe (NonEmpty (Alternate a)))
+  = Data !(Name.Proper a) !(Type.Variables a) !(List.List (Alternate a))
   deriving (Functor, Show)
 
 data' ::
@@ -107,13 +105,13 @@ data' ::
   ] ->
   Eff e (Data Annotation.Unannotated)
 data' name variables' constructors = do
-  alternates <- nonEmpty <$> traverse alternate constructors
+  alternates <- fromList <$> traverse alternate constructors
   variables <- Type.variables variables'
   pure (Data (Name.proper name) variables alternates)
 
 docFromData :: Data Annotation.Normalized -> Doc a
 docFromData = \case
-  Data name variables (Just alternates) ->
+  Data name variables (List.NonEmpty alternates) ->
     "data" <+> Name.docFromProper name <> Type.docFromVariables variables
       <> line <> indent 2 (align doc)
       <> line
@@ -121,7 +119,7 @@ docFromData = \case
       doc =
         equals
           <+> intercalateMap1 (line <> pipe <> space) docFromAlternate alternates
-  Data name variables Nothing ->
+  Data name variables List.Empty ->
     "data" <+> Name.docFromProper name <> Type.docFromVariables variables
       <> line
 
@@ -131,7 +129,7 @@ normalizeData = \case
     Data
       (Annotation.None <$ name)
       (Type.normalizeVariables typeVariables)
-      ((fmap . fmap) normalizeAlternate alternates)
+      (fmap normalizeAlternate alternates)
 
 data Newtype a
   = Newtype

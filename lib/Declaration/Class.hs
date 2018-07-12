@@ -4,11 +4,7 @@ import "rio" RIO
 
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
-import "base" Data.List.NonEmpty
-    ( NonEmpty((:|))
-    , nonEmpty
-    , zipWith
-    )
+import "base" Data.List.NonEmpty                 (zipWith)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
@@ -19,25 +15,26 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , space
     , (<+>)
     )
+import "base" GHC.Exts                           (IsList(fromList))
 
-import qualified "base" Data.List.NonEmpty
 import qualified "purescript" Language.PureScript
 import qualified "rio" RIO.HashMap
 
 import qualified "this" Annotation
 import qualified "this" Declaration.Type
 import qualified "this" Kind
+import qualified "this" List
 import qualified "this" Name
 import qualified "this" Type
 import qualified "this" Variations
 
 data Class a
   = Class
-      !(Maybe (NonEmpty (Type.Constraint a)))
+      !(List.List (Type.Constraint a))
       !(Name.Class a)
       !(Type.Variables a)
-      !(Maybe (NonEmpty FunctionalDependency))
-      !(Maybe (NonEmpty (Declaration.Type.Type a)))
+      !(List.List FunctionalDependency)
+      !(List.List (Declaration.Type.Type a))
   deriving (Functor, Show)
 
 doc :: Class Annotation.Normalized -> Variations.Variations (Doc a)
@@ -47,19 +44,19 @@ doc = \case
       where
       multiLine =
         "class"
-          <> foldMap (Variations.multiLine . constraintsDoc) constraints'
+          <> List.list' (Variations.multiLine . constraintsDoc) constraints'
           <+> Name.docFromClass name'
           <> Type.docFromVariables variables'
-          <> foldMap functionalDependenciesDoc funDeps'
-          <> foldMap (Variations.multiLine . methodsDoc) methods'
+          <> List.list' functionalDependenciesDoc funDeps'
+          <> List.list' (Variations.multiLine . methodsDoc) methods'
           <> hardline
       singleLine =
         "class"
-          <> foldMap (Variations.singleLine . constraintsDoc) constraints'
+          <> List.list' (Variations.singleLine . constraintsDoc) constraints'
           <+> Name.docFromClass name'
           <> Type.docFromVariables variables'
-          <> foldMap functionalDependenciesDoc funDeps'
-          <> foldMap (Variations.singleLine . methodsDoc) methods'
+          <> List.list' functionalDependenciesDoc funDeps'
+          <> List.list' (Variations.singleLine . methodsDoc) methods'
           <> hardline
       constraintsDoc constraints =
         fmap
@@ -101,35 +98,33 @@ fromPureScript ::
   [Language.PureScript.Declaration] ->
   Eff e (Class Annotation.Unannotated)
 fromPureScript constraints' name' variables' funDeps' methods' = do
-  constraints <- nonEmpty <$> traverse Type.constraint constraints'
+  constraints <- fromList <$> traverse Type.constraint constraints'
   let name = Name.class' name'
   variables <- Type.variables variables'
-  funDeps <- nonEmpty <$> traverse (functionalDependency variables) funDeps'
-  methods <- nonEmpty <$> traverse type' methods'
+  funDeps <- fromList <$> traverse (functionalDependency variables) funDeps'
+  methods <- fromList <$> traverse type' methods'
   pure (Class constraints name variables funDeps methods)
 
 normalize :: Class a -> Class Annotation.Normalized
 normalize = \case
   Class constraints name variables funDeps methods ->
     Class
-      ((fmap . fmap) Type.normalizeConstraint constraints)
+      (fmap Type.normalizeConstraint constraints)
       (Annotation.None <$ name)
       (Type.normalizeVariables variables)
       funDeps
-      ((fmap . fmap) Declaration.Type.normalize methods)
+      (fmap Declaration.Type.normalize methods)
 
 data FunctionalDependency
-  = FunctionalDependency
-      !(Maybe (NonEmpty Type.Variable))
-      !(Maybe (NonEmpty Type.Variable))
+  = FunctionalDependency !(List.List Type.Variable) !(List.List Type.Variable)
   deriving (Show)
 
 docFromFunctionalDependency :: FunctionalDependency -> Doc a
 docFromFunctionalDependency = \case
   FunctionalDependency x' y' ->
-    foldMap (\x -> intercalateMap1 space Type.docFromVariable x <> space) x'
+    List.list' (\x -> intercalateMap1 space Type.docFromVariable x <> space) x'
       <> "->"
-      <> foldMap (\y -> space <> intercalateMap1 space Type.docFromVariable y) y'
+      <> List.list' (\y -> space <> intercalateMap1 space Type.docFromVariable y) y'
 
 functionalDependency ::
   ( Members
@@ -142,8 +137,8 @@ functionalDependency ::
   Eff e FunctionalDependency
 functionalDependency variables' = \case
   Language.PureScript.FunctionalDependency x y -> do
-    determiners <- nonEmpty <$> traverse findVariable x
-    determined <- nonEmpty <$> traverse findVariable y
+    determiners <- fromList <$> traverse findVariable x
+    determined <- fromList <$> traverse findVariable y
     pure (FunctionalDependency determiners determined)
   where
   findVariable x =
@@ -151,10 +146,9 @@ functionalDependency variables' = \case
       (throwError $ MissingTypeVariable x)
       pure
       (RIO.HashMap.lookup x variables)
-  index = zipWith (\x (y, _) -> (x, y)) (0 :| [1..])
+  index = zipWith (\x (y, _) -> (x, y)) (fromList [1..])
   variables = case variables' of
-    Type.Variables x ->
-      foldMap (RIO.HashMap.fromList . Data.List.NonEmpty.toList . index) x
+    Type.Variables x -> List.list' (RIO.HashMap.fromList . toList . index) x
 
 type' ::
   ( Members

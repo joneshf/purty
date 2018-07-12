@@ -30,6 +30,7 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , vsep
     , (<+>)
     )
+import "base" GHC.Exts                           (IsList(fromList))
 
 import qualified "purescript" Language.PureScript
 import qualified "purescript" Language.PureScript.Label
@@ -39,6 +40,7 @@ import qualified "this" Annotation
 import qualified "this" Comment
 import qualified "this" Declaration.Type
 import qualified "this" Kind
+import qualified "this" List
 import qualified "this" Name
 import qualified "this" Type
 import qualified "this" Variations
@@ -49,7 +51,7 @@ data Binder a
   | BinderCommented !(Binder a) ![Comment.Comment]
   | BinderConstructor
       !(Name.Qualified Name.Constructor a)
-      !(Maybe (NonEmpty (Binder a)))
+      !(List.List (Binder a))
   | BinderLiteral !(Literal (Binder a))
   | BinderOperator !(Name.Qualified Name.ValueOperator a)
   | BinderParens !(Binder a)
@@ -88,7 +90,7 @@ binder = \case
     throwError (BinaryBinderWithoutOperator y x z)
   Language.PureScript.ConstructorBinder _ x y -> do
     name <- Name.qualified (pure . Name.constructor) x
-    binders <- nonEmpty <$> traverse binder y
+    binders <- fromList <$> traverse binder y
     pure (BinderConstructor name binders)
   Language.PureScript.LiteralBinder _ x -> fmap BinderLiteral (literal binder x)
   Language.PureScript.NamedBinder _ x y -> do
@@ -117,10 +119,9 @@ docFromBinder = \case
       <+> Name.docFromQualified Name.docFromValueOperator' y
       <+> docFromBinder z
   BinderCommented x y -> foldMap Comment.doc y <> docFromBinder x
-  BinderConstructor x Nothing -> Name.docFromQualified Name.docFromConstructor x
-  BinderConstructor x (Just y) ->
+  BinderConstructor x y' ->
     Name.docFromQualified Name.docFromConstructor x
-      <+> intercalateMap1 space docFromBinder y
+      <> List.list' (\y -> space <> intercalateMap1 space docFromBinder y) y'
   BinderLiteral x ->
     Variations.singleLine (docFromLiteral (pure . docFromBinder) x)
   BinderOperator x -> Name.docFromQualified Name.docFromValueOperator x
@@ -153,9 +154,7 @@ normalizeBinder = \case
     BinderBinary (normalizeBinder x) (Annotation.None <$ y) (normalizeBinder z)
   BinderCommented x y -> BinderCommented (normalizeBinder x) y
   BinderConstructor x y ->
-    BinderConstructor
-      (Annotation.None <$ x)
-      ((fmap . fmap) normalizeBinder y)
+    BinderConstructor (Annotation.None <$ x) (fmap normalizeBinder y)
   BinderLiteral x ->
     BinderLiteral (normalizeLiteral labelFromBinder normalizeBinder x)
   BinderOperator x -> BinderOperator (Annotation.None <$ x)
@@ -941,12 +940,12 @@ staticLetBinding = \case
   LetBindingValue x -> static x
 
 data Literal a
-  = LiteralArray !(Maybe (NonEmpty a))
+  = LiteralArray !(List.List a)
   | LiteralBoolean !Bool
   | LiteralChar !Char
   | LiteralInt !Integer
   | LiteralNumber !Double
-  | LiteralRecord !(Maybe (NonEmpty (RecordPair a)))
+  | LiteralRecord !(List.List (RecordPair a))
   | LiteralString !Language.PureScript.PSString.PSString
   deriving (Functor, Show)
 
@@ -955,26 +954,26 @@ docFromLiteral ::
   Literal a ->
   Variations.Variations (Doc b)
 docFromLiteral f = \case
-  LiteralArray Nothing -> pure (lbracket <> rbracket)
-  LiteralArray (Just x) -> Variations.bracketesize f x
+  LiteralArray List.Empty -> pure (lbracket <> rbracket)
+  LiteralArray (List.NonEmpty x) -> Variations.bracketesize f x
   LiteralBoolean True -> pure "true"
   LiteralBoolean False -> pure "false"
   LiteralChar x -> pure (viaShow x)
   LiteralInt x -> pure (pretty x)
   LiteralNumber x -> pure (pretty x)
-  LiteralRecord Nothing -> pure (lbrace <> rbrace)
-  LiteralRecord (Just x) -> Variations.bracesize (docFromRecordPair f) x
+  LiteralRecord List.Empty -> pure (lbrace <> rbrace)
+  LiteralRecord (List.NonEmpty x) -> Variations.bracesize (docFromRecordPair f) x
   LiteralString x -> pure (pretty $ Language.PureScript.prettyPrintString x)
 
 literal :: (a -> Eff e b) -> Language.PureScript.Literal a -> Eff e (Literal b)
 literal f = \case
-  Language.PureScript.ArrayLiteral x -> LiteralArray . nonEmpty <$> traverse f x
+  Language.PureScript.ArrayLiteral x -> LiteralArray . fromList <$> traverse f x
   Language.PureScript.BooleanLiteral x -> pure (LiteralBoolean x)
   Language.PureScript.CharLiteral x -> pure (LiteralChar x)
   Language.PureScript.NumericLiteral (Left x) -> pure (LiteralInt x)
   Language.PureScript.NumericLiteral (Right x) -> pure (LiteralNumber x)
   Language.PureScript.ObjectLiteral x ->
-    LiteralRecord . nonEmpty <$> traverse (recordPair f) x
+    LiteralRecord . fromList <$> traverse (recordPair f) x
   Language.PureScript.StringLiteral x -> pure (LiteralString x)
 
 normalizeLiteral ::
@@ -983,12 +982,12 @@ normalizeLiteral ::
   Literal (f a) ->
   Literal (f Annotation.Normalized)
 normalizeLiteral f g = \case
-  LiteralArray x -> LiteralArray ((fmap . fmap) g x)
+  LiteralArray x -> LiteralArray (fmap g x)
   LiteralBoolean x -> LiteralBoolean x
   LiteralChar x -> LiteralChar x
   LiteralInt x -> LiteralInt x
   LiteralNumber x -> LiteralNumber x
-  LiteralRecord x -> LiteralRecord ((fmap . fmap) (normalizeRecordPair f g) x)
+  LiteralRecord x -> LiteralRecord (fmap (normalizeRecordPair f g) x)
   LiteralString x -> LiteralString x
 
 data RecordPair a
@@ -1197,11 +1196,11 @@ recordUpdateNode = \case
 data Value a
   = ValueExpressionGuarded
       !(Name.Common a)
-      !(Maybe (NonEmpty (Binder a)))
+      !(List.List (Binder a))
       !(NonEmpty (GuardedExpression a))
   | ValueExpressionUnguarded
       !(Name.Common a)
-      !(Maybe (NonEmpty (Binder a)))
+      !(List.List (Binder a))
       !(Expression a)
   deriving (Functor, Show)
 
@@ -1212,23 +1211,23 @@ dynamic, static :: Value Annotation.Normalized -> Doc a
   dynamic' = \case
     ValueExpressionGuarded x y z ->
       Name.docFromCommon x
-        <> foldMap bindersDoc y
+        <> List.list' bindersDoc y
         <> line
         <> indent 2 (align $ intercalateMap1 line (dynamicGuardedExpression equals) z)
     ValueExpressionUnguarded x y z ->
       Name.docFromCommon x
-        <> foldMap bindersDoc y
+        <> List.list' bindersDoc y
         <+> equals
         <+> dynamicExpression z
   static' = \case
     ValueExpressionGuarded x y z ->
       Name.docFromCommon x
-        <> foldMap bindersDoc y
+        <> List.list' bindersDoc y
         <> line
         <> indent 2 (align $ intercalateMap1 line (staticGuardedExpression equals) z)
     ValueExpressionUnguarded x y z ->
       Name.docFromCommon x
-        <> foldMap bindersDoc y
+        <> List.list' bindersDoc y
         <+> equals
         <+> staticExpression z
 
@@ -1274,12 +1273,12 @@ fromPureScript = \case
     throwError (NoExpressions name)
   Language.PureScript.ValueDeclarationData _ name' _ binders' [Language.PureScript.GuardedExpr [] expr'] -> do
     name <- Name.common name'
-    binders <- nonEmpty <$> traverse binder binders'
+    binders <- fromList <$> traverse binder binders'
     expr <- expression expr'
     pure (ValueExpressionUnguarded name binders expr)
   Language.PureScript.ValueDeclarationData _ name' _ binders' exprs'' -> do
     name <- Name.common name'
-    binders <- nonEmpty <$> traverse binder binders'
+    binders <- fromList <$> traverse binder binders'
     exprs' <- nonEmpty <$> traverse guardedExpression exprs''
     exprs <- maybe (throwError (NoExpressions name')) pure exprs'
     pure (ValueExpressionGuarded name binders exprs)
@@ -1289,12 +1288,12 @@ normalize = \case
   ValueExpressionGuarded name binders expr ->
     ValueExpressionGuarded
       (Annotation.None <$ name)
-      ((fmap . fmap) normalizeBinder binders)
+      (fmap normalizeBinder binders)
       (fmap normalizeGuardedExpression expr)
   ValueExpressionUnguarded name binders expr ->
     ValueExpressionUnguarded
       (Annotation.None <$ name)
-      ((fmap . fmap) normalizeBinder binders)
+      (fmap normalizeBinder binders)
       (normalizeExpression expr)
 
 data WhereDeclaration a

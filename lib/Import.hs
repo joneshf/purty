@@ -1,10 +1,9 @@
 module Import where
 
-import "rio" RIO
+import "rio" RIO hiding (mapMaybe)
 
 import "freer-simple" Control.Monad.Freer        (Eff, Member)
 import "freer-simple" Control.Monad.Freer.Error  (Error)
-import "base" Data.List                          (sortOn)
 import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
@@ -17,6 +16,8 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
     , space
     , (<+>)
     )
+import "witherable" Data.Witherable              (mapMaybe, wither)
+import "base" GHC.Exts                           (fromList)
 
 import qualified "purescript" Language.PureScript
 
@@ -24,6 +25,7 @@ import "this" Export (Export)
 
 import qualified "this" Annotation
 import qualified "this" Export
+import qualified "this" List
 import qualified "this" Log
 import qualified "this" Name
 import qualified "this" Variations
@@ -44,21 +46,21 @@ dynamicExplicit = \case
       <> line
   where
   go = \case
-    Explicit _ann name imports' (Alias alias') ->
+    Explicit _ann name imports'' (Alias alias') ->
       "import" <+> Name.docFromModule name
-        <> imports
+        <> imports'
         <> foldMap (\alias -> space <> "as" <+> Name.docFromModule alias) alias'
       where
-      imports =
+      imports' =
         group (flatAlt (line <> indent 2 multiLine) (space <> singleLine))
       Variations.Variations { Variations.multiLine, Variations.singleLine } =
         maybe
           (pure $ parens mempty)
           (Variations.parenthesize Export.docFromExport)
-          (nonEmpty imports')
+          (nonEmpty imports'')
 
-sortExplicit :: [Explicit a] -> [Explicit Annotation.Sorted]
-sortExplicit = fmap (Annotation.Sorted <$) . sortOn go
+sortExplicit :: List.List (Explicit a) -> List.List (Explicit Annotation.Sorted)
+sortExplicit = fmap (Annotation.Sorted <$) . List.sortWith go
   where
   go = \case
     Explicit _ann name _exports _alias -> void name
@@ -71,17 +73,17 @@ staticExplicit = \case
       <> line
   where
   go = \case
-    Explicit _ann name imports' (Alias alias') ->
+    Explicit _ann name imports'' (Alias alias') ->
       "import" <+> Name.docFromModule name
         <> line
-        <> indent 2 imports
+        <> indent 2 imports'
         <> foldMap (\alias -> space <> "as" <+> Name.docFromModule alias) alias'
       where
-      imports =
+      imports' =
         maybe
           (parens line)
           (Variations.multiLine . Variations.parenthesize Export.docFromExport)
-          (nonEmpty imports')
+          (nonEmpty imports'')
 
 data Hiding a
   = Hiding !a !(Name.Module a) ![Export a] !(Alias a)
@@ -95,23 +97,23 @@ dynamicHiding = \case
       <> line
   where
   go = \case
-    Hiding _ann name imports' (Alias alias') ->
+    Hiding _ann name imports'' (Alias alias') ->
       "import"
         <+> Name.docFromModule name
         <+> "hiding"
-        <> imports
+        <> imports'
         <> foldMap (\alias -> space <> "as" <+> Name.docFromModule alias) alias'
       where
-      imports =
+      imports' =
         group (flatAlt (line <> indent 2 multiLine) (space <> singleLine))
       Variations.Variations { Variations.multiLine, Variations.singleLine } =
         maybe
           (pure $ parens mempty)
           (Variations.parenthesize Export.docFromExport)
-          (nonEmpty imports')
+          (nonEmpty imports'')
 
-sortHiding :: [Hiding a] -> [Hiding Annotation.Sorted]
-sortHiding = fmap (Annotation.Sorted <$) . sortOn go
+sortHiding :: List.List (Hiding a) -> List.List (Hiding Annotation.Sorted)
+sortHiding = fmap (Annotation.Sorted <$) . List.sortWith go
   where
   go = \case
     Hiding _ann name _exports _alias -> void name
@@ -124,18 +126,18 @@ staticHiding = \case
       <> line
   where
   go = \case
-    Hiding _ann name imports' (Alias alias') ->
+    Hiding _ann name imports'' (Alias alias') ->
       "import"
         <+> Name.docFromModule name
         <+> "hiding"
-        <> indent 2 imports
+        <> indent 2 imports'
         <> foldMap (\alias -> space <> "as" <+> Name.docFromModule alias) alias'
       where
-      imports =
+      imports' =
         maybe
           (parens line)
           (Variations.multiLine . Variations.parenthesize Export.docFromExport)
-          (nonEmpty imports')
+          (nonEmpty imports'')
 
 data Import a
   = ImportExplicit !(Explicit a)
@@ -153,17 +155,17 @@ fromPureScript ::
   Language.PureScript.Declaration ->
   Eff e (Maybe (Import Annotation.Unannotated))
 fromPureScript = \case
-  Language.PureScript.ImportDeclaration _ name' (Language.PureScript.Explicit imports') alias' -> do
+  Language.PureScript.ImportDeclaration _ name' (Language.PureScript.Explicit imports'') alias' -> do
     name <- Name.module' name'
-    imports <- traverse Export.export imports'
+    imports' <- traverse Export.export imports''
     alias <- Alias <$> traverse Name.module' alias'
-    let explicit = Explicit Annotation.Unannotated name imports alias
+    let explicit = Explicit Annotation.Unannotated name imports' alias
     pure (Just $ ImportExplicit explicit)
-  Language.PureScript.ImportDeclaration _ name' (Language.PureScript.Hiding imports') alias' -> do
-    imports <- traverse Export.export imports'
+  Language.PureScript.ImportDeclaration _ name' (Language.PureScript.Hiding imports'') alias' -> do
+    imports' <- traverse Export.export imports''
     name <- Name.module' name'
     alias <- Alias <$> traverse Name.module' alias'
-    let hiding = Hiding Annotation.Unannotated name imports alias
+    let hiding = Hiding Annotation.Unannotated name imports' alias
     pure (Just $ ImportHiding hiding)
   Language.PureScript.ImportDeclaration _ name' Language.PureScript.Implicit (Just alias') -> do
     name <- Name.module' name'
@@ -190,12 +192,12 @@ fromPureScript = \case
 
 sort :: Imports a -> Sorted
 sort = \case
-  Imports imports ->
+  Imports imports' ->
     Sorted
-      (nonEmpty $ foldMap (sortOpen . mapMaybe open . toList) imports)
-      (nonEmpty $ foldMap (sortHiding . mapMaybe hiding . toList) imports)
-      (nonEmpty $ foldMap (sortExplicit . mapMaybe explicit . toList) imports)
-      (nonEmpty $ foldMap (sortQualified . mapMaybe qualified . toList) imports)
+      (sortOpen $ mapMaybe open imports')
+      (sortHiding $ mapMaybe hiding imports')
+      (sortExplicit $ mapMaybe explicit imports')
+      (sortQualified $ mapMaybe qualified imports')
     where
     explicit = \case
       ImportExplicit x -> Just x
@@ -219,10 +221,22 @@ sort = \case
       ImportQualified x -> Just x
 
 newtype Imports a
-  = Imports (Maybe (NonEmpty (Import a)))
+  = Imports (List.List (Import a))
   deriving (Show)
 
 instance (Log.Inspect a) => Log.Inspect (Imports a)
+
+imports ::
+  ( Member (Error Name.Missing) e
+  , Member (Error Export.InstanceExported) e
+  , Member (Error Export.InvalidExport) e
+  , Member (Error Export.ReExportExported) e
+  ) =>
+  [Language.PureScript.Declaration] ->
+  Eff e (Imports Annotation.Unannotated)
+imports x' = do
+  x <- wither fromPureScript x'
+  pure (Imports $ fromList x)
 
 data Open a
   = Open !a !(Name.Module a)
@@ -239,8 +253,8 @@ dynamicOpen = \case
     Open _ann name ->
       "import" <+> Name.docFromModule name
 
-sortOpen :: [Open a] -> [Open Annotation.Sorted]
-sortOpen = fmap (Annotation.Sorted <$) . sortOn go
+sortOpen :: List.List (Open a) -> List.List (Open Annotation.Sorted)
+sortOpen = fmap (Annotation.Sorted <$) . List.sortWith go
   where
   go = \case
     Open _ann name -> void name
@@ -273,8 +287,10 @@ dynamicQualified = \case
         <+> Name.docFromModule name
         <> foldMap (\alias -> space <> "as" <+> Name.docFromModule alias) alias'
 
-sortQualified :: [Qualified a] -> [Qualified Annotation.Sorted]
-sortQualified = fmap (Annotation.Sorted <$) . sortOn go
+sortQualified ::
+  List.List (Qualified a) ->
+  List.List (Qualified Annotation.Sorted)
+sortQualified = fmap (Annotation.Sorted <$) . List.sortWith go
   where
   go = \case
     Qualified _ann name _alias -> void name
@@ -294,10 +310,10 @@ staticQualified = \case
 
 data Sorted
   = Sorted
-      !(Maybe (NonEmpty (Open Annotation.Sorted)))
-      !(Maybe (NonEmpty (Hiding Annotation.Sorted)))
-      !(Maybe (NonEmpty (Explicit Annotation.Sorted)))
-      !(Maybe (NonEmpty (Qualified Annotation.Sorted)))
+      !(List.List (Open Annotation.Sorted))
+      !(List.List (Hiding Annotation.Sorted))
+      !(List.List (Explicit Annotation.Sorted))
+      !(List.List (Qualified Annotation.Sorted))
   deriving (Show)
 
 instance Log.Inspect Sorted
@@ -305,15 +321,15 @@ instance Log.Inspect Sorted
 dynamic :: Sorted -> Doc b
 dynamic x = case x of
   Sorted open hiding explicit qualified ->
-    foldMap dynamicOpen open
-      <> foldMap dynamicHiding hiding
-      <> foldMap dynamicExplicit explicit
-      <> foldMap dynamicQualified qualified
+    List.list' dynamicOpen open
+      <> List.list' dynamicHiding hiding
+      <> List.list' dynamicExplicit explicit
+      <> List.list' dynamicQualified qualified
 
 static :: Sorted -> Doc b
 static x = case x of
   Sorted open hiding explicit qualified ->
-    foldMap staticOpen open
-      <> foldMap staticHiding hiding
-      <> foldMap staticExplicit explicit
-      <> foldMap staticQualified qualified
+    List.list' staticOpen open
+      <> List.list' staticHiding hiding
+      <> List.list' staticExplicit explicit
+      <> List.list' staticQualified qualified

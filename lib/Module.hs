@@ -12,10 +12,8 @@ import "rio" RIO
 
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
-import "base" Data.List.NonEmpty                 (nonEmpty)
 import "freer-simple" Data.OpenUnion             ((:++:))
 import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, line, (<+>))
-import "witherable" Data.Witherable              (wither)
 import "path" Path                               (Abs, File, Path, fromAbsFile)
 import "parsec" Text.Parsec                      (ParseError)
 
@@ -93,10 +91,9 @@ fromPureScript ::
 fromPureScript = \case
   Language.PureScript.Module _ _ name' decls exports' -> do
     name <- Name.module' name'
-    exports <- Export.Exports <$> traverse Export.fromPureScript exports'
-    imports <- Import.Imports . nonEmpty <$> wither Import.fromPureScript decls
-    declarations <-
-      Declaration.Declarations . nonEmpty <$> wither Declaration.fromPureScript decls
+    exports <- Export.exports exports'
+    imports <- Import.imports decls
+    declarations <- Declaration.declarations decls
     pure (Module Annotation.Unannotated name exports imports declarations)
 
 normalize ::

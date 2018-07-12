@@ -1,16 +1,17 @@
 module Declaration
   ( Declarations(Declarations)
   , dynamic
-  , fromPureScript
+  , declarations
   , normalize
   , static
   ) where
 
 import "rio" RIO hiding (Data)
 
+import "witherable" Data.Witherable              (wither)
+import "base" GHC.Exts                           (fromList)
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error)
-import "base" Data.List.NonEmpty                 (NonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, flatAlt, group, line)
 
@@ -26,6 +27,7 @@ import qualified "this" Declaration.Synonym
 import qualified "this" Declaration.Type
 import qualified "this" Declaration.Value
 import qualified "this" Kind
+import qualified "this" List
 import qualified "this" Log
 import qualified "this" Name
 import qualified "this" Type
@@ -68,6 +70,54 @@ normalizeDeclaration = \case
   DeclarationSynonym x -> DeclarationSynonym (Declaration.Synonym.normalize x)
   DeclarationType x -> DeclarationType (Declaration.Type.normalize x)
   DeclarationValue x -> DeclarationValue (Declaration.Value.normalize x)
+
+declarations ::
+  ( Members
+    '[ Error Declaration.Class.InvalidTypeClassMethod
+     , Error Declaration.Class.MissingTypeVariable
+     , Error Declaration.DataType.WrongNewtypeConstructors
+     , Error Declaration.Fixity.NegativePrecedence
+     , Error Declaration.Instance.DerivedInChain
+     , Error Declaration.Instance.DerivedNewtypeInChain
+     , Error Declaration.Instance.Desugared
+     , Error Declaration.Instance.InvalidMethod
+     , Error Declaration.Instance.NegativeChainIndex
+     , Error Declaration.Value.BinaryBinderWithoutOperator
+     , Error Declaration.Value.CaseAlternativeWithoutBinders
+     , Error Declaration.Value.CaseAlternativeWithoutExpressions
+     , Error Declaration.Value.CaseWithoutAlternatives
+     , Error Declaration.Value.CaseWithoutExpressions
+     , Error Declaration.Value.DoLetWithoutBindings
+     , Error Declaration.Value.DoWithoutStatements
+     , Error Declaration.Value.InvalidExpression
+     , Error Declaration.Value.InvalidExpressions
+     , Error Declaration.Value.InvalidLetBinding
+     , Error Declaration.Value.InvalidWhereDeclaration
+     , Error Declaration.Value.LetWithoutBindings
+     , Error Declaration.Value.NoExpressions
+     , Error Declaration.Value.NotImplemented
+     , Error Declaration.Value.RecordUpdateWithoutUpdates
+     , Error Declaration.Value.UnguardedExpression
+     , Error Declaration.Value.WhereWithoutDeclarations
+     , Error Kind.InferredKind
+     , Error Name.InvalidCommon
+     , Error Name.Missing
+     , Error Type.InferredConstraintData
+     , Error Type.InferredForallWithSkolem
+     , Error Type.InferredSkolem
+     , Error Type.InferredType
+     , Error Type.InfixTypeNotTypeOp
+     , Error Type.PrettyPrintForAll
+     , Error Type.PrettyPrintFunction
+     , Error Type.PrettyPrintObject
+     ]
+    e
+  ) =>
+  [Language.PureScript.Declaration] ->
+  Eff e (Declarations Annotation.Unannotated)
+declarations x' = do
+  x <- wither fromPureScript x'
+  pure (Declarations $ fromList x)
 
 fromPureScript ::
   ( Members
@@ -144,24 +194,24 @@ fromPureScript = \case
   Language.PureScript.ImportDeclaration {} -> pure Nothing
 
 newtype Declarations a
-  = Declarations (Maybe (NonEmpty (Declaration a)))
+  = Declarations (List.List (Declaration a))
   deriving (Show)
 
 instance (Log.Inspect a) => Log.Inspect (Declarations a)
 
 normalize :: Declarations a -> Declarations Annotation.Normalized
 normalize = \case
-  Declarations declarations' ->
-    Declarations ((fmap . fmap) normalizeDeclaration declarations')
+  Declarations declarations'' ->
+    Declarations (fmap normalizeDeclaration declarations'')
 
 dynamic, static :: Declarations Annotation.Normalized -> Doc a
 (dynamic, static) = (dynamic', static')
   where
   dynamic' = \case
-    Declarations Nothing -> mempty
-    Declarations (Just declarations) ->
+    Declarations List.Empty -> mempty
+    Declarations (List.NonEmpty declarations') ->
       line
-        <> intercalateMap1 line dynamicDoc declarations
+        <> intercalateMap1 line dynamicDoc declarations'
   dynamicDoc = \case
     DeclarationClass class' ->
       Variations.singleLine (Declaration.Class.doc class')
@@ -187,10 +237,10 @@ dynamic, static :: Declarations Annotation.Normalized -> Doc a
       Declaration.Value.dynamic declaration
         <> line
   static' = \case
-    Declarations Nothing -> mempty
-    Declarations (Just declarations) ->
+    Declarations List.Empty -> mempty
+    Declarations (List.NonEmpty declarations') ->
       line
-        <> intercalateMap1 line staticDoc declarations
+        <> intercalateMap1 line staticDoc declarations'
   staticDoc = \case
     DeclarationClass class' ->
       Variations.multiLine (Declaration.Class.doc class')

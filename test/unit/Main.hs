@@ -1,8 +1,8 @@
+{-# LANGUAGE OverloadedLists #-}
 module Main where
 
 import "rio" RIO
 
-import "base" Data.List.NonEmpty                             (NonEmpty((:|)))
 import "prettyprinter" Data.Text.Prettyprint.Doc             (Doc, layoutSmart)
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 import "tasty" Test.Tasty
@@ -122,41 +122,45 @@ rowTests =
   ]
 
 emptyRecord :: Type.Row a
-emptyRecord = Type.Row Type.RowBraces Nothing Type.Rowsed
+emptyRecord = Type.Row Type.RowBraces [] Type.Rowsed
 
 openRecord1 :: Type.Row a
 openRecord1 =
   Type.Row
     Type.RowBraces
-    Nothing
+    []
     (Type.Rowpen $ Type.TypeVariable $ Type.Variable "foo")
 
 openRecord2 :: Type.Row a
 openRecord2 =
   Type.Row
     Type.RowBraces
-    (Just $ Type.RowPair (Type.Label "a") (Type.TypeVariable $ Type.Variable "b") :| [])
+    [Type.RowPair (Type.Label "a") (Type.TypeVariable $ Type.Variable "b")]
     (Type.Rowpen $ Type.TypeVariable $ Type.Variable "r")
 
 openRecord3 :: Type.Row a
 openRecord3 =
   Type.Row
     Type.RowBraces
-    (Just $ Type.RowPair (Type.Label "a") (Type.TypeVariable $ Type.Variable "b") :| [Type.RowPair (Type.Label "c") (Type.TypeVariable $ Type.Variable "d")])
+    [ Type.RowPair (Type.Label "a") (Type.TypeVariable $ Type.Variable "b")
+    , Type.RowPair (Type.Label "c") (Type.TypeVariable $ Type.Variable "d")
+    ]
     (Type.Rowpen $ Type.TypeVariable $ Type.Variable "r")
 
 openRow1 :: Type.Row a
 openRow1 =
   Type.Row
     Type.RowParens
-    (Just $ Type.RowPair (Type.Label "a") (Type.TypeVariable $ Type.Variable "b") :| [])
+    [Type.RowPair (Type.Label "a") (Type.TypeVariable $ Type.Variable "b")]
     (Type.Rowpen $ Type.TypeVariable $ Type.Variable "r")
 
 openRow2 :: Type.Row a
 openRow2 =
   Type.Row
     Type.RowParens
-    (Just $ Type.RowPair (Type.Label "a") (Type.TypeVariable $ Type.Variable "b") :| [Type.RowPair (Type.Label "c") (Type.TypeVariable $ Type.Variable "d")])
+    [ Type.RowPair (Type.Label "a") (Type.TypeVariable $ Type.Variable "b")
+    , Type.RowPair (Type.Label "c") (Type.TypeVariable $ Type.Variable "d")
+    ]
     (Type.Rowpen $ Type.TypeVariable $ Type.Variable "r")
 
 renderText :: Doc a -> Text
