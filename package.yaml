@@ -38,6 +38,7 @@ default-extensions:
   - StandaloneDeriving
   - TupleSections
   - TypeFamilies
+  - TypeOperators
   - TypeSynonymInstances
   - ViewPatterns
 executables:
@@ -64,7 +65,6 @@ homepage: https://github.com/joneshf/purty#readme
 library:
   dependencies:
     - base == 4.10.1.0
-    - containers == 0.5.10.2
     - dhall == 1.14.0
     - freer-simple == 1.1.0.0
     - optparse-applicative == 0.14.2.0
@@ -78,6 +78,7 @@ library:
     - semigroupoids == 5.2.2
     - text == 1.2.3.0
     - transformers == 0.5.2.0
+    - witherable == 0.2
   source-dirs: lib
 license: BSD3
 maintainer: jones3.hardy@gmail.com
@@ -102,7 +103,6 @@ tests:
     dependencies:
       - base == 4.10.1.0
       - prettyprinter == 1.2.0.1
-      - purescript == 0.12.0
       - purty
       - rio == 0.1.2.0
       - tasty == 1.0.1.1

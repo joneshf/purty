@@ -17,13 +17,20 @@ import Data.List
   , nil
   )
 import Data.Maybe
-  ( Maybe(Just, Nothing)
+  ( Maybe
+      ( Just
+      , Nothing
+      )
   , maybe
   )
 import Prelude
   ( class EuclideanRing
   , class Semiring
-  , Ordering(EQ, GT, LT)
+  , Ordering
+      ( EQ
+      , GT
+      , LT
+      )
   , Unit
   , Void
   , compose

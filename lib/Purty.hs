@@ -5,6 +5,7 @@ import "rio" RIO hiding (ask)
 import "freer-simple" Control.Monad.Freer                    (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error              (Error)
 import "freer-simple" Control.Monad.Freer.Reader             (Reader, ask)
+import "freer-simple" Data.OpenUnion                         ((:++:))
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( LayoutOptions
     , SimpleDocStream
@@ -24,62 +25,111 @@ import "this" Env
     , defaultConfig
     )
 
-
-import qualified "this" Doc.Dynamic
-import qualified "this" Doc.Static
+import qualified "this" Annotation
+import qualified "this" Declaration.Class
+import qualified "this" Declaration.DataType
+import qualified "this" Declaration.Fixity
+import qualified "this" Declaration.Instance
+import qualified "this" Declaration.Value
+import qualified "this" Exit
+import qualified "this" Export
 import qualified "this" File
+import qualified "this" Kind
 import qualified "this" Log
 import qualified "this" Module
+import qualified "this" Name
 import qualified "this" Output
+import qualified "this" Type
 
 fromAbsFile ::
   ( Members
-    '[ Error ParseError
-     , File.File
-     , Log.Log
-     , Reader Formatting
-     , Reader LayoutOptions
-     ]
+    ( Declaration.Class.Errors
+    :++: Declaration.DataType.Errors
+    :++: Declaration.Fixity.Errors
+    :++: Declaration.Instance.Errors
+    :++: Declaration.Value.Errors
+    :++: Export.Errors
+    :++: Kind.Errors
+    :++: Name.Errors
+    :++: Type.Errors
+    :++: '[ Error ParseError
+          , File.File
+          , Log.Log
+          , Reader Formatting
+          , Reader LayoutOptions
+          ]
+    )
     e
   ) =>
   Path Abs File ->
-  Eff e (SimpleDocStream a)
+  Eff e (SimpleDocStream Annotation.Sorted)
 fromAbsFile filePath = do
   formatting <- ask
-  Log.debug ("Formatting: " <> display formatting)
+  Log.debug "Formatting:"
+  Log.inspect formatting
   layoutOptions <- ask
-  Log.debug ("LayoutOptions: " <> displayShow layoutOptions)
+  Log.debug "LayoutOptions:"
+  Log.inspect layoutOptions
   m <- Module.parse filePath
   Log.debug "Parsed module:"
-  Log.debug (displayShow m)
-  case formatting of
-    Dynamic -> pure (layoutSmart layoutOptions $ Doc.Dynamic.fromModule m)
-    Static  -> pure (layoutSmart layoutOptions $ Doc.Static.fromModule m)
+  Log.inspect m
+  ast <- Module.fromPureScript m
+  let doc = format normalized
+      format = case formatting of
+        Dynamic -> Module.dynamic
+        Static  -> Module.static
+      normalized = Module.normalize sorted
+      sorted = Module.sortImports (Module.sortExports ast)
+      stream = layoutSmart layoutOptions doc
+  Log.debug "Converted AST:"
+  Log.inspect ast
+  Log.debug "Sorted AST:"
+  Log.inspect sorted
+  Log.debug "Normalized AST:"
+  Log.inspect normalized
+  Log.debug "Doc:"
+  Log.inspect doc
+  Log.debug "Stream:"
+  Log.inspect stream
+  pure stream
 
 fromPurtyFilePath ::
   ( Members
-    '[ Error ParseError
-     , File.File
-     , Log.Log
-     , Output.Output
-     , Reader Formatting
-     , Reader LayoutOptions
-     , Reader Output
-     ]
+    ( Declaration.Class.Errors
+    :++: Declaration.DataType.Errors
+    :++: Declaration.Fixity.Errors
+    :++: Declaration.Instance.Errors
+    :++: Declaration.Value.Errors
+    :++: Export.Errors
+    :++: Kind.Errors
+    :++: Name.Errors
+    :++: Type.Errors
+    :++: '[ Error ParseError
+          , File.File
+          , Log.Log
+          , Output.Output
+          , Reader Formatting
+          , Reader LayoutOptions
+          , Reader Output
+          ]
+    )
     e
   ) =>
   PurtyFilePath ->
   Eff e ()
 fromPurtyFilePath filePath = do
   output <- ask
-  Log.debug ("Output: " <> display output)
-  Log.debug ("Converting " <> display filePath <> " to an absolute path")
+  Log.debug "Output:"
+  Log.inspect output
+  Log.debug "Converting the following file path to an absolute path:"
+  Log.inspect filePath
   absPath <- File.absolute filePath
-  Log.debug ("Converted file to absolute: " <> displayShow absPath)
+  Log.debug "Converted file to absolute:"
+  Log.inspect absPath
   Log.debug "Running main `purty` program"
   stream <- Purty.fromAbsFile absPath
   Log.debug "Successfully created stream for rendering"
-  Log.debug (displayShow $ void stream)
+  Log.inspect (void stream)
   case output of
     InPlace -> do
       Log.debug "Replacing file"
@@ -91,15 +141,26 @@ fromPurtyFilePath filePath = do
 program ::
   Args ->
   Eff
-    '[ Reader Formatting
-     , Reader LayoutOptions
-     , Reader Output
-     , Error ParseError
-     , File.File
-     , Log.Log
-     , Output.Output
-     , IO
-     ]
+    ( Declaration.Class.Errors
+    :++: Declaration.DataType.Errors
+    :++: Declaration.Fixity.Errors
+    :++: Declaration.Instance.Errors
+    :++: Declaration.Value.Errors
+    :++: Export.Errors
+    :++: Kind.Errors
+    :++: Name.Errors
+    :++: Type.Errors
+    :++: '[ Error ParseError
+          , Exit.Exit
+          , File.File
+          , Log.Log
+          , Output.Output
+          , Reader Formatting
+          , Reader LayoutOptions
+          , Reader Output
+          , IO
+          ]
+    )
     ()
 program = \case
   Args { filePath } -> Purty.fromPurtyFilePath filePath

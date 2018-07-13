@@ -34,6 +34,7 @@ import "this" Env
 import qualified "rio" RIO.Text.Lazy
 
 import qualified "this" Env
+import qualified "this" Log
 
 data Args
   = Args
@@ -43,21 +44,9 @@ data Args
     , verbosity  :: !Verbosity
     }
   | Defaults
-  deriving (Generic)
+  deriving (Generic, Show)
 
-instance Display Args where
-  display = \case
-    Args { filePath, formatting, verbosity, output } ->
-      "{"
-        <> display filePath
-        <> ", "
-        <> display formatting
-        <> ", "
-        <> display output
-        <> ", "
-        <> display verbosity
-        <> "}"
-    Defaults -> "Defaults"
+instance Log.Inspect Args
 
 args :: Parser Args
 args =

@@ -1,13 +1,10 @@
+{-# LANGUAGE OverloadedLists #-}
 module Main where
 
 import "rio" RIO
 
 import "prettyprinter" Data.Text.Prettyprint.Doc             (Doc, layoutSmart)
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
-import "purescript" Language.PureScript
-    ( Type(ParensInType, RCons, REmpty, TypeApp, TypeVar)
-    , tyRecord
-    )
 import "tasty" Test.Tasty
     ( TestTree
     , defaultMain
@@ -20,8 +17,8 @@ import "tasty-hunit" Test.Tasty.HUnit
 
 import "purty" Env (defaultLayoutOptions)
 
-import qualified "purty" Doc.Dynamic
-import qualified "purty" Doc.Static
+import qualified "purty" Type
+import qualified "purty" Variations
 
 main :: IO ()
 main = defaultMain unitTests
@@ -42,135 +39,129 @@ recordTests =
 
 emptyRecordTests :: [TestTree]
 emptyRecordTests =
-  [ testGroup
-    "Empty record types have the same spacing in both formatters"
-    [ testCase
-      "dynamic"
-      (assertEqual "" "{}" (renderText $ Doc.Dynamic.fromType emptyRecord))
-    , testCase
-      "static"
-      (assertEqual "" "{}" (renderText $ Doc.Static.fromType emptyRecord))
-    ]
+  [ testCase
+    "Empty record types have no spacing"
+    (assertEqual "" "{}" (renderText $ Type.docFromRow emptyRecord))
   , testGroup
     "Empty record types in parens have the same spacing in both formatters"
     [ testCase
-      "dynamic"
-      (assertEqual "" "({})" (renderText $ Doc.Dynamic.fromType $ ParensInType emptyRecord))
+      "single line"
+      (assertEqual "" "({})" (renderText $ Variations.singleLine $ Type.doc $ Type.TypeParens $ Type.TypeRow emptyRecord))
     , testCase
-      "static"
-      (assertEqual "" "({})" (renderText $ Doc.Static.fromType $ ParensInType emptyRecord))
+      "multi line"
+      (assertEqual "" "({})" (renderText $ Variations.multiLine $ Type.doc $ Type.TypeParens $ Type.TypeRow emptyRecord))
     ]
   ]
 
 openRecordTests :: [TestTree]
 openRecordTests =
-  [ testGroup
+  [ testCase
     "Open record types have the same spacing in both formatters"
-    [ testCase
-      "dynamic"
-      (assertEqual "" "{ | foo}" (renderText $ Doc.Dynamic.fromType openRecord))
-    , testCase
-      "static"
-      (assertEqual "" "{ | foo}" (renderText $ Doc.Static.fromType openRecord))
-    ]
+    (assertEqual "" "{ | foo}" (renderText $ Type.docFromRow openRecord1))
   , testGroup
     "Open record types in parens have the same spacing in both formatters"
     [ testCase
-      "dynamic"
-      (assertEqual "" "({ | foo})" (renderText $ Doc.Dynamic.fromType $ ParensInType openRecord))
+      "single line"
+      (assertEqual "" "({ | foo})" (renderText $ Variations.singleLine $ Type.doc $ Type.TypeParens $ Type.TypeRow openRecord1))
     , testCase
-      "static"
-      (assertEqual "" "({ | foo})" (renderText $ Doc.Static.fromType $ ParensInType openRecord))
+      "multi line"
+      (assertEqual "" "({ | foo})" (renderText $ Variations.multiLine $ Type.doc $ Type.TypeParens $ Type.TypeRow openRecord1))
     ]
-  , testGroup
+  , testCase
     "Open record types with one label have the same spacing in both formatters"
-    [ testCase
-      "dynamic"
-      (assertEqual "" "{a :: b | r}" (renderText $ Doc.Dynamic.fromType $ TypeApp tyRecord openRow1))
-    , testCase
-      "static"
-      (assertEqual "" "{a :: b | r}" (renderText $ Doc.Static.fromType $ TypeApp tyRecord openRow1))
-    ]
+    (assertEqual "" "{a :: b | r}" (renderText $ Type.docFromRow openRecord2))
   , testGroup
     "Open record types with one label in parens have the same spacing in both formatters"
     [ testCase
-      "dynamic"
-      (assertEqual "" "({a :: b | r})" (renderText $ Doc.Dynamic.fromType $ ParensInType $ TypeApp tyRecord openRow1))
+      "single line"
+      (assertEqual "" "({a :: b | r})" (renderText $ Variations.singleLine $ Type.doc $ Type.TypeParens $ Type.TypeRow openRecord2))
     , testCase
-      "static"
-      (assertEqual "" "({a :: b | r})" (renderText $ Doc.Static.fromType $ ParensInType $ TypeApp tyRecord openRow1))
+      "multi line"
+      (assertEqual "" "({a :: b | r})" (renderText $ Variations.multiLine $ Type.doc $ Type.TypeParens $ Type.TypeRow openRecord2))
     ]
-  , testGroup
+  , testCase
     "Open record types with multiple labels have the same spacing in both formatters"
-    [ testCase
-      "dynamic"
-      (assertEqual "" "{a :: b, c :: d | r}" (renderText $ Doc.Dynamic.fromType $ TypeApp tyRecord openRow2))
-    , testCase
-      "static"
-      (assertEqual "" "{a :: b, c :: d | r}" (renderText $ Doc.Static.fromType $ TypeApp tyRecord openRow2))
-    ]
+    (assertEqual "" "{a :: b, c :: d | r}" (renderText $ Type.docFromRow openRecord3))
   , testGroup
     "Open record types with multiple labels in parens have the same spacing in both formatters"
     [ testCase
-      "dynamic"
-      (assertEqual "" "({a :: b, c :: d | r})" (renderText $ Doc.Dynamic.fromType $ ParensInType $ TypeApp tyRecord openRow2))
+      "single line"
+      (assertEqual "" "({a :: b, c :: d | r})" (renderText $ Variations.singleLine $ Type.doc $ Type.TypeParens $ Type.TypeRow openRecord3))
     , testCase
-      "static"
-      (assertEqual "" "({a :: b, c :: d | r})" (renderText $ Doc.Static.fromType $ ParensInType $ TypeApp tyRecord openRow2))
+      "multi line"
+      (assertEqual "" "({a :: b, c :: d | r})" (renderText $ Variations.multiLine $ Type.doc $ Type.TypeParens $ Type.TypeRow openRecord3))
     ]
   ]
 
 rowTests :: [TestTree]
 rowTests =
-  [ testGroup
+  [ testCase
     "Open row types with one label have the same spacing in both formatters"
-    [ testCase
-      "dynamic"
-      (assertEqual "" "(a :: b | r)" (renderText $ Doc.Dynamic.fromType openRow1))
-    , testCase
-      "static"
-      (assertEqual "" "(a :: b | r)" (renderText $ Doc.Static.fromType openRow1))
-    ]
+    (assertEqual "" "(a :: b | r)" (renderText $ Type.docFromRow openRow1))
   , testGroup
     "Open row types with one label in parens have the same spacing in both formatters"
     [ testCase
-      "dynamic"
-      (assertEqual "" "((a :: b | r))" (renderText $ Doc.Dynamic.fromType $ ParensInType openRow1))
+      "single line"
+      (assertEqual "" "((a :: b | r))" (renderText $ Variations.singleLine $ Type.doc $ Type.TypeParens $ Type.TypeRow openRow1))
     , testCase
-      "static"
-      (assertEqual "" "((a :: b | r))" (renderText $ Doc.Static.fromType $ ParensInType openRow1))
+      "multi line"
+      (assertEqual "" "((a :: b | r))" (renderText $ Variations.multiLine $ Type.doc $ Type.TypeParens $ Type.TypeRow openRow1))
     ]
-  , testGroup
+  , testCase
     "Open row types with multiple labels have the same spacing in both formatters"
-    [ testCase
-      "dynamic"
-      (assertEqual "" "(a :: b, c :: d | r)" (renderText $ Doc.Dynamic.fromType openRow2))
-    , testCase
-      "static"
-      (assertEqual "" "(a :: b, c :: d | r)" (renderText $ Doc.Static.fromType openRow2))
-    ]
+    (assertEqual "" "(a :: b, c :: d | r)" (renderText $ Type.docFromRow openRow2))
   , testGroup
     "Open row types with multiple labels in parens have the same spacing in both formatters"
     [ testCase
-      "dynamic"
-      (assertEqual "" "((a :: b, c :: d | r))" (renderText $ Doc.Dynamic.fromType $ ParensInType openRow2))
+      "single line"
+      (assertEqual "" "((a :: b, c :: d | r))" (renderText $ Variations.singleLine $ Type.doc $ Type.TypeParens $ Type.TypeRow openRow2))
     , testCase
-      "static"
-      (assertEqual "" "((a :: b, c :: d | r))" (renderText $ Doc.Static.fromType $ ParensInType openRow2))
+      "multi line"
+      (assertEqual "" "((a :: b, c :: d | r))" (renderText $ Variations.multiLine $ Type.doc $ Type.TypeParens $ Type.TypeRow openRow2))
     ]
   ]
 
-emptyRecord :: Language.PureScript.Type
-emptyRecord = TypeApp tyRecord REmpty
+emptyRecord :: Type.Row a
+emptyRecord = Type.Row Type.RowBraces [] Type.Rowsed
 
-openRecord :: Language.PureScript.Type
-openRecord = TypeApp tyRecord (TypeVar "foo")
+openRecord1 :: Type.Row a
+openRecord1 =
+  Type.Row
+    Type.RowBraces
+    []
+    (Type.Rowpen $ Type.TypeVariable $ Type.Variable "foo")
 
-openRow1 :: Language.PureScript.Type
-openRow1 = RCons "a" (TypeVar "b") (TypeVar "r")
+openRecord2 :: Type.Row a
+openRecord2 =
+  Type.Row
+    Type.RowBraces
+    [Type.RowPair "a" (Type.TypeVariable $ Type.Variable "b")]
+    (Type.Rowpen $ Type.TypeVariable $ Type.Variable "r")
 
-openRow2 :: Language.PureScript.Type
-openRow2 = RCons "a" (TypeVar "b") (RCons "c" (TypeVar "d") (TypeVar "r"))
+openRecord3 :: Type.Row a
+openRecord3 =
+  Type.Row
+    Type.RowBraces
+    [ Type.RowPair "a" (Type.TypeVariable $ Type.Variable "b")
+    , Type.RowPair "c" (Type.TypeVariable $ Type.Variable "d")
+    ]
+    (Type.Rowpen $ Type.TypeVariable $ Type.Variable "r")
+
+openRow1 :: Type.Row a
+openRow1 =
+  Type.Row
+    Type.RowParens
+    [Type.RowPair "a" (Type.TypeVariable $ Type.Variable "b")]
+    (Type.Rowpen $ Type.TypeVariable $ Type.Variable "r")
+
+openRow2 :: Type.Row a
+openRow2 =
+  Type.Row
+    Type.RowParens
+    [ Type.RowPair "a" (Type.TypeVariable $ Type.Variable "b")
+    , Type.RowPair "c" (Type.TypeVariable $ Type.Variable "d")
+    ]
+    (Type.Rowpen $ Type.TypeVariable $ Type.Variable "r")
 
 renderText :: Doc a -> Text
 renderText = renderStrict . layoutSmart defaultLayoutOptions

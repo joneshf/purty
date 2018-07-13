@@ -2,12 +2,8 @@ module Main where
 
 import "rio" RIO
 
-import "freer-simple" Control.Monad.Freer
-    ( interpretM
-    , reinterpret
-    , runM
-    )
-import "freer-simple" Control.Monad.Freer.Error   (Error(Error))
+import "freer-simple" Control.Monad.Freer         (interpretM, runM)
+import "freer-simple" Control.Monad.Freer.Error   (handleError)
 import "freer-simple" Control.Monad.Freer.Reader  (runReader)
 import "optparse-applicative" Options.Applicative (execParser)
 
@@ -32,12 +28,21 @@ main = do
   logOptions <- logOptionsHandle stderr (verbosity == Verbose)
   withLogFunc logOptions $ \logFunc ->
     runM
+      $ runReader output
+      $ runReader defaultLayoutOptions
+      $ runReader formatting
       $ interpretM Output.io
       $ interpretM (Log.io logFunc)
       $ interpretM File.io
       $ interpretM Exit.io
-      $ reinterpret (\(Error e) -> Error.parseError e)
-      $ runReader output
-      $ runReader defaultLayoutOptions
-      $ runReader formatting
+      $ flip handleError Error.parseError
+      $ Error.type'
+      $ Error.name
+      $ Error.kind
+      $ Error.export
+      $ Error.declarationValue
+      $ Error.declarationInstance
+      $ Error.declarationFixity
+      $ Error.declarationDataType
+      $ Error.declarationClass
       $ Purty.program cliArgs

@@ -6,11 +6,14 @@ import "rio" RIO hiding (encodeUtf8)
 import "freer-simple" Control.Monad.Freer
     ( Eff
     , interpretM
-    , reinterpret
     , runM
     )
-import "freer-simple" Control.Monad.Freer.Error              (Error(Error))
+import "freer-simple" Control.Monad.Freer.Error
+    ( Error
+    , handleError
+    )
 import "freer-simple" Control.Monad.Freer.Reader             (Reader, runReader)
+import "freer-simple" Data.OpenUnion                         ((:++:))
 import "text" Data.Text.Lazy.Encoding                        (encodeUtf8)
 import "prettyprinter" Data.Text.Prettyprint.Doc             (LayoutOptions)
 import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (renderLazy)
@@ -36,11 +39,20 @@ import "parsec" Text.Parsec                                  (ParseError)
 
 import "purty" Env (Formatting(Dynamic, Static), defaultLayoutOptions)
 
+import qualified "purty" Declaration.Class
+import qualified "purty" Declaration.DataType
+import qualified "purty" Declaration.Fixity
+import qualified "purty" Declaration.Instance
+import qualified "purty" Declaration.Value
 import qualified "purty" Error
 import qualified "purty" Exit
+import qualified "purty" Export
 import qualified "purty" File
+import qualified "purty" Kind
 import qualified "purty" Log
+import qualified "purty" Name
 import qualified "purty" Purty
+import qualified "purty" Type
 
 main :: IO ()
 main = defaultMain goldenTests
@@ -60,19 +72,39 @@ golden formatting testName goldenFile =
         $ interpretM (Log.io logFunc)
         $ interpretM File.io
         $ interpretM Exit.io
-        $ reinterpret (\(Error e) -> Error.parseError e)
+        $ flip handleError Error.parseError
+        $ Error.type'
+        $ Error.name
+        $ Error.kind
+        $ Error.export
+        $ Error.declarationValue
+        $ Error.declarationInstance
+        $ Error.declarationFixity
+        $ Error.declarationDataType
+        $ Error.declarationClass
         $ test absFile
 
 test ::
   Path Abs File ->
   Eff
-    '[ Error ParseError
-     , File.File
-     , Log.Log
-     , Reader Formatting
-     , Reader LayoutOptions
-     , IO
-     ]
+    ( Declaration.Class.Errors
+    :++: Declaration.DataType.Errors
+    :++: Declaration.Fixity.Errors
+    :++: Declaration.Instance.Errors
+    :++: Declaration.Value.Errors
+    :++: Export.Errors
+    :++: Kind.Errors
+    :++: Name.Errors
+    :++: Type.Errors
+    :++: '[ Error ParseError
+          , Exit.Exit
+          , File.File
+          , Log.Log
+          , Reader Formatting
+          , Reader LayoutOptions
+          , IO
+          ]
+    )
     LByteString
 test absFile = encodeUtf8 . renderLazy <$> Purty.fromAbsFile absFile
 
@@ -94,24 +126,32 @@ dynamic =
     , golden Dynamic "data with parameters" [relfile|test/golden/files/dynamic/DataWithParameters.purs|]
     , golden Dynamic "do and if then else" [relfile|test/golden/files/dynamic/DoAndIfThenElse.purs|]
     , golden Dynamic "empty data" [relfile|test/golden/files/dynamic/EmptyData.purs|]
+    , golden Dynamic "exports" [relfile|test/golden/files/dynamic/Exports.purs|]
+    , golden Dynamic "fixity" [relfile|test/golden/files/dynamic/Fixity.purs|]
+    , golden Dynamic "guarded value" [relfile|test/golden/files/dynamic/GuardedValue.purs|]
+    , golden Dynamic "hole" [relfile|test/golden/files/dynamic/Hole.purs|]
     , golden Dynamic "imports" [relfile|test/golden/files/dynamic/Imports.purs|]
     , golden Dynamic "infix expression" [relfile|test/golden/files/dynamic/InfixExpression.purs|]
-    , golden Dynamic "typeclass instance" [relfile|test/golden/files/dynamic/Instance.purs|]
     , golden Dynamic "instance chain" [relfile|test/golden/files/dynamic/InstanceChain.purs|]
+    , golden Dynamic "instance" [relfile|test/golden/files/dynamic/Instance.purs|]
+    , golden Dynamic "lambda" [relfile|test/golden/files/dynamic/Lambda.purs|]
     , golden Dynamic "let" [relfile|test/golden/files/dynamic/Let.purs|]
     , golden Dynamic "long type signature" [relfile|test/golden/files/dynamic/LongTypeSignature.purs|]
-    , golden Dynamic "multi-parameter type class instance head" [relfile|test/golden/files/dynamic/MPTCHead.purs|]
-    , golden Dynamic "open record types" [relfile|test/golden/files/dynamic/Merge.purs|]
     , golden Dynamic "module header" [relfile|test/golden/files/dynamic/ModuleHeader.purs|]
+    , golden Dynamic "multi-parameter type class instance head" [relfile|test/golden/files/dynamic/MPTCHead.purs|]
     , golden Dynamic "newtype record" [relfile|test/golden/files/dynamic/NewtypeRecord.purs|]
+    , golden Dynamic "open record types" [relfile|test/golden/files/dynamic/OpenRecordTypes.purs|]
     , golden Dynamic "operator pattern" [relfile|test/golden/files/dynamic/OperatorPattern.purs|]
     , golden Dynamic "operators" [relfile|test/golden/files/dynamic/Operators.purs|]
     , golden Dynamic "quoted label" [relfile|test/golden/files/dynamic/QuotedLabel.purs|]
+    , golden Dynamic "record property" [relfile|test/golden/files/dynamic/RecordProperty.purs|]
     , golden Dynamic "record puns" [relfile|test/golden/files/dynamic/RecordPuns.purs|]
+    , golden Dynamic "record updates" [relfile|test/golden/files/dynamic/RecordUpdates.purs|]
     , golden Dynamic "sproxy" [relfile|test/golden/files/dynamic/SProxy.purs|]
-    , golden Dynamic "typeclass" [relfile|test/golden/files/dynamic/TypeClass.purs|]
-    , golden Dynamic "type synonym" [relfile|test/golden/files/dynamic/TypeSynonym.purs|]
+    , golden Dynamic "type class" [relfile|test/golden/files/dynamic/TypeClass.purs|]
     , golden Dynamic "type synonym newline" [relfile|test/golden/files/dynamic/TypeSynonymNewline.purs|]
+    , golden Dynamic "type synonym" [relfile|test/golden/files/dynamic/TypeSynonym.purs|]
+    , golden Dynamic "unary minus" [relfile|test/golden/files/dynamic/UnaryMinus.purs|]
     , golden Dynamic "where" [relfile|test/golden/files/dynamic/Where.purs|]
     ]
 
@@ -125,23 +165,31 @@ static =
     , golden Static "data with parameters" [relfile|test/golden/files/static/DataWithParameters.purs|]
     , golden Static "do and if then else" [relfile|test/golden/files/static/DoAndIfThenElse.purs|]
     , golden Static "empty data" [relfile|test/golden/files/static/EmptyData.purs|]
+    , golden Static "exports" [relfile|test/golden/files/static/Exports.purs|]
+    , golden Static "fixity" [relfile|test/golden/files/static/Fixity.purs|]
+    , golden Static "guarded value" [relfile|test/golden/files/static/GuardedValue.purs|]
+    , golden Static "hole" [relfile|test/golden/files/static/Hole.purs|]
     , golden Static "imports" [relfile|test/golden/files/static/Imports.purs|]
-    , golden Static "typeclass instance" [relfile|test/golden/files/static/Instance.purs|]
     , golden Static "infix expression" [relfile|test/golden/files/static/InfixExpression.purs|]
     , golden Static "instance chain" [relfile|test/golden/files/static/InstanceChain.purs|]
+    , golden Static "instance" [relfile|test/golden/files/static/Instance.purs|]
+    , golden Static "lambda" [relfile|test/golden/files/static/Lambda.purs|]
     , golden Static "let" [relfile|test/golden/files/static/Let.purs|]
     , golden Static "long type signature" [relfile|test/golden/files/static/LongTypeSignature.purs|]
-    , golden Static "multi-parameter type class instance head" [relfile|test/golden/files/static/MPTCHead.purs|]
-    , golden Static "open record types" [relfile|test/golden/files/static/Merge.purs|]
     , golden Static "module header" [relfile|test/golden/files/static/ModuleHeader.purs|]
+    , golden Static "multi-parameter type class instance head" [relfile|test/golden/files/static/MPTCHead.purs|]
     , golden Static "newtype record" [relfile|test/golden/files/static/NewtypeRecord.purs|]
+    , golden Static "open record types" [relfile|test/golden/files/static/OpenRecordTypes.purs|]
     , golden Static "operator pattern" [relfile|test/golden/files/static/OperatorPattern.purs|]
     , golden Static "operators" [relfile|test/golden/files/static/Operators.purs|]
     , golden Static "quoted label" [relfile|test/golden/files/static/QuotedLabel.purs|]
+    , golden Static "record property" [relfile|test/golden/files/static/RecordProperty.purs|]
     , golden Static "record puns" [relfile|test/golden/files/static/RecordPuns.purs|]
+    , golden Static "record updates" [relfile|test/golden/files/static/RecordUpdates.purs|]
     , golden Static "sproxy" [relfile|test/golden/files/static/SProxy.purs|]
-    , golden Static "typeclass" [relfile|test/golden/files/static/TypeClass.purs|]
-    , golden Static "type synonym" [relfile|test/golden/files/static/TypeSynonym.purs|]
+    , golden Static "type class" [relfile|test/golden/files/static/TypeClass.purs|]
     , golden Static "type synonym newline" [relfile|test/golden/files/static/TypeSynonymNewline.purs|]
+    , golden Static "type synonym" [relfile|test/golden/files/static/TypeSynonym.purs|]
+    , golden Static "unary minus" [relfile|test/golden/files/static/UnaryMinus.purs|]
     , golden Static "where" [relfile|test/golden/files/static/Where.purs|]
     ]
