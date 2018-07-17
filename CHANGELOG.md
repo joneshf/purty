@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.0.0
+
+Huge changes to the internals. We've got our own AST! Now, we can format things a bit purty-er.
+
+It's already made some things easier and removed some bugs with the formatting. It should make other formatting easier and also will make implementing [interactive formatting](https://gitlab.com/joneshf/purty/issues/39) much easier.
+
+### Additions
+
+### Changes
+
+* [Print nested lambdas with a single lambda expression](https://gitlab.com/joneshf/purty/issues/31)
+* [Make a pretty print AST](https://gitlab.com/joneshf/purty/issues/35)
+* [Remove extra newlines in let bindings](https://gitlab.com/joneshf/purty/issues/49)
+* Fix [Trailing spaces in output](https://gitlab.com/joneshf/purty/issues/54)
+
+### Deletions
+
 ## 2.0.1
 
 Internal changes to the code base. Feature-wise, everything should be the same.
