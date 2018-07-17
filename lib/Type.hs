@@ -338,7 +338,7 @@ doc = \case
         <> colon
         <+> Variations.singleLine (Kind.doc y)
   TypeRow x -> pure (docFromRow x)
-  TypeParens x -> doc (TypeAnnotation Annotation.Parens x)
+  TypeParens x -> pure (parens $ Variations.singleLine $ doc x)
   TypeSymbol x -> pure (docFromSymbol x)
   TypeTypeConstructor x ->
     pure (Name.docFromQualified Name.docFromTypeConstructor x)
@@ -360,7 +360,7 @@ normalize = \case
     TypeInfixOperator (normalize x) (Annotation.None <$ y) (normalize z)
   TypeKinded x y -> TypeKinded (normalize x) (Kind.normalize y)
   TypeRow x -> TypeRow (normalizeRow x)
-  TypeParens x -> TypeAnnotation Annotation.Parens (normalize x)
+  TypeParens x -> TypeParens (normalize x)
   TypeSymbol x -> TypeSymbol x
   TypeTypeConstructor x -> TypeTypeConstructor (Annotation.None <$ x)
   TypeTypeOperator x -> TypeTypeOperator (Annotation.None <$ x)
