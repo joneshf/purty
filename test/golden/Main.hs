@@ -122,6 +122,7 @@ dynamic =
     "dynamic"
     [ golden Dynamic "ado" [relfile|test/golden/files/dynamic/Ado.purs|]
     , golden Dynamic "booleans" [relfile|test/golden/files/dynamic/Booleans.purs|]
+    , golden Dynamic "bound value" [relfile|test/golden/files/dynamic/BoundValue.purs|]
     , golden Dynamic "char" [relfile|test/golden/files/dynamic/Char.purs|]
     , golden Dynamic "comments" [relfile|test/golden/files/dynamic/Comments.purs|]
     , golden Dynamic "data with parameters" [relfile|test/golden/files/dynamic/DataWithParameters.purs|]
@@ -163,6 +164,7 @@ static =
     "static"
     [ golden Static "ado" [relfile|test/golden/files/static/Ado.purs|]
     , golden Static "booleans" [relfile|test/golden/files/static/Booleans.purs|]
+    , golden Static "bound value" [relfile|test/golden/files/static/BoundValue.purs|]
     , golden Static "char" [relfile|test/golden/files/static/Char.purs|]
     , golden Static "comments" [relfile|test/golden/files/static/Comments.purs|]
     , golden Static "data with parameters" [relfile|test/golden/files/static/DataWithParameters.purs|]

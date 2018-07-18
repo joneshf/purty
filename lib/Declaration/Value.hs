@@ -857,12 +857,18 @@ staticGuardedExpression separator = \case
       <+> staticExpression y
 
 data LetBinding a
-  = LetBindingType !(Declaration.Type.Type a)
+  = LetBindingBoundValue !Comment.Comments !(Binder a) !(Expression a)
+  | LetBindingType !(Declaration.Type.Type a)
   | LetBindingValue !(Value a)
   deriving (Functor, Show)
 
 dynamicLetBinding :: LetBinding Annotation.Normalized -> Doc a
 dynamicLetBinding = \case
+  LetBindingBoundValue x y z ->
+    Comment.docFromComments x
+      <> docFromBinder y
+      <+> equals
+      <+> staticExpression z
   LetBindingType x -> group (flatAlt multiLine singleLine)
     where
     Variations.Variations { Variations.multiLine, Variations.singleLine } =
@@ -873,6 +879,8 @@ normalizeLetBinding ::
   LetBinding a ->
   LetBinding Annotation.Normalized
 normalizeLetBinding = \case
+  LetBindingBoundValue x y z ->
+    LetBindingBoundValue x (normalizeBinder y) (normalizeExpression z)
   LetBindingType x -> LetBindingType (Declaration.Type.normalize x)
   LetBindingValue x -> LetBindingValue (normalize x)
 
@@ -911,6 +919,8 @@ letBinding ::
   Language.PureScript.Declaration ->
   Eff e (LetBinding Annotation.Unannotated)
 letBinding = \case
+  Language.PureScript.BoundValueDeclaration (_, x) y z ->
+    LetBindingBoundValue (Comment.comments x) <$> binder y <*> expression z
   Language.PureScript.TypeDeclaration x ->
     fmap LetBindingType (Declaration.Type.fromPureScript x)
   Language.PureScript.ValueDeclaration x ->
@@ -919,6 +929,11 @@ letBinding = \case
 
 staticLetBinding :: LetBinding Annotation.Normalized -> Doc a
 staticLetBinding = \case
+  LetBindingBoundValue x y z ->
+    Comment.docFromComments x
+      <> docFromBinder y
+      <+> equals
+      <+> staticExpression z
   LetBindingType x -> Variations.multiLine (Declaration.Type.doc x)
   LetBindingValue x -> static x
 
@@ -1304,12 +1319,18 @@ valueExpression = \case
   exprs -> fmap ValueExpressionGuarded (traverse guardedExpression exprs)
 
 data WhereDeclaration a
-  = WhereDeclarationType !(Declaration.Type.Type a)
+  = WhereDeclarationBoundValue !Comment.Comments !(Binder a) !(Expression a)
+  | WhereDeclarationType !(Declaration.Type.Type a)
   | WhereDeclarationValue !(Value a)
   deriving (Functor, Show)
 
 docFromWhereDeclaration :: WhereDeclaration Annotation.Normalized -> Doc a
 docFromWhereDeclaration = \case
+  WhereDeclarationBoundValue x y z ->
+    Comment.docFromComments x
+      <> docFromBinder y
+      <+> equals
+      <+> staticExpression z
   WhereDeclarationType x -> Variations.multiLine (Declaration.Type.doc x)
   WhereDeclarationValue x -> static x
 
@@ -1317,6 +1338,8 @@ normalizeWhereDeclaration ::
   WhereDeclaration a ->
   WhereDeclaration Annotation.Normalized
 normalizeWhereDeclaration = \case
+  WhereDeclarationBoundValue x y z ->
+    WhereDeclarationBoundValue x (normalizeBinder y) (normalizeExpression z)
   WhereDeclarationType x -> WhereDeclarationType (Declaration.Type.normalize x)
   WhereDeclarationValue x -> WhereDeclarationValue (normalize x)
 
@@ -1355,6 +1378,8 @@ whereDeclaration ::
   Language.PureScript.Declaration ->
   Eff e (WhereDeclaration Annotation.Unannotated)
 whereDeclaration = \case
+  Language.PureScript.BoundValueDeclaration (_, x) y z ->
+    WhereDeclarationBoundValue (Comment.comments x) <$> binder y <*> expression z
   Language.PureScript.TypeDeclaration x ->
     fmap WhereDeclarationType (Declaration.Type.fromPureScript x)
   Language.PureScript.ValueDeclaration x ->
