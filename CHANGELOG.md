@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.0.1
+
+Those huge changes from 3.0.0 contained a few bugs :).
+
+This is a quick patch release to address them. If there are more, please report them!
+
+### Additions
+
+### Changes
+
+* [Add missing npm file](https://gitlab.com/joneshf/purty/issues/66)
+* [Fix printing of functions in parentheses](https://gitlab.com/joneshf/purty/issues/67)
+* [Support bound value declarations](https://gitlab.com/joneshf/purty/issues/68)
+* [Print top level comments](https://gitlab.com/joneshf/purty/issues/69)
+
+### Deletions
+
 ## 3.0.0
 
 Huge changes to the internals. We've got our own AST! Now, we can format things a bit purty-er.
