@@ -15,10 +15,10 @@ import "prettyprinter" Data.Text.Prettyprint.Doc
 import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
+import qualified "this" Comment
 import qualified "this" Kind
 import qualified "this" Name
 import qualified "this" Type
-import qualified "this" Comment
 import qualified "this" Variations
 
 data Data a

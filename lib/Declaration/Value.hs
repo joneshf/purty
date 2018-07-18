@@ -4,7 +4,7 @@ import "rio" RIO hiding (guard)
 
 import "freer-simple" Control.Monad.Freer        (Eff, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
-import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
+import "base" Data.List.NonEmpty                 (NonEmpty((:|)), nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
@@ -1157,16 +1157,11 @@ recordUpdateNode = \case
     fmap (RecordUpdate $ Label.fromPSString x) (expression y)
 
 data Value a
-  = ValueExpressionGuarded
+  = Value
       !Comment.Comments
       !(Name.Common a)
       !(List.List (Binder a))
-      !(NonEmpty (GuardedExpression a))
-  | ValueExpressionUnguarded
-      !Comment.Comments
-      !(Name.Common a)
-      !(List.List (Binder a))
-      !(Expression a)
+      !(ValueExpression a)
   deriving (Functor, Show)
 
 dynamic, static :: Value Annotation.Normalized -> Doc a
@@ -1174,31 +1169,17 @@ dynamic, static :: Value Annotation.Normalized -> Doc a
   where
   bindersDoc binders = space <> intercalateMap1 space docFromBinder binders
   dynamic' = \case
-    ValueExpressionGuarded w x y z ->
+    Value w x y z ->
       Comment.docFromComments w
         <> Name.docFromCommon x
         <> List.list' bindersDoc y
-        <> line
-        <> indent 2 (align $ intercalateMap1 line (dynamicGuardedExpression equals) z)
-    ValueExpressionUnguarded w x y z ->
-      Comment.docFromComments w
-        <> Name.docFromCommon x
-        <> List.list' bindersDoc y
-        <+> equals
-        <+> dynamicExpression z
+        <> dynamicValueExpression z
   static' = \case
-    ValueExpressionGuarded w x y z ->
+    Value w x y z ->
       Comment.docFromComments w
         <> Name.docFromCommon x
         <> List.list' bindersDoc y
-        <> line
-        <> indent 2 (align $ intercalateMap1 line (staticGuardedExpression equals) z)
-    ValueExpressionUnguarded w x y z ->
-      Comment.docFromComments w
-        <> Name.docFromCommon x
-        <> List.list' bindersDoc y
-        <+> equals
-        <+> staticExpression z
+        <> staticValueExpression z
 
 fromPureScript ::
   ( Members
@@ -1237,36 +1218,90 @@ fromPureScript ::
   Language.PureScript.ValueDeclarationData [Language.PureScript.GuardedExpr] ->
   Eff e (Value Annotation.Unannotated)
 fromPureScript = \case
-  Language.PureScript.ValueDeclarationData _ name _ _ [] ->
-    throwError (NoExpressions name)
-  Language.PureScript.ValueDeclarationData (_, comments') name' _ binders' [Language.PureScript.GuardedExpr [] expr'] -> do
-    let comments = Comment.comments comments'
-    name <- Name.common name'
-    binders <- fromList <$> traverse binder binders'
-    expr <- expression expr'
-    pure (ValueExpressionUnguarded comments name binders expr)
   Language.PureScript.ValueDeclarationData (_, comments') name' _ binders' exprs'' -> do
     let comments = Comment.comments comments'
+        exprs' = nonEmpty exprs''
     name <- Name.common name'
     binders <- fromList <$> traverse binder binders'
-    exprs' <- nonEmpty <$> traverse guardedExpression exprs''
-    exprs <- maybe (throwError (NoExpressions name')) pure exprs'
-    pure (ValueExpressionGuarded comments name binders exprs)
+    exprs <- maybe (throwError (NoExpressions name')) valueExpression exprs'
+    pure (Value comments name binders exprs)
 
 normalize :: Value a -> Value Annotation.Normalized
 normalize = \case
-  ValueExpressionGuarded comments name binders expr ->
-    ValueExpressionGuarded
+  Value comments name binders expr ->
+    Value
       comments
       (Annotation.None <$ name)
       (fmap normalizeBinder binders)
-      (fmap normalizeGuardedExpression expr)
-  ValueExpressionUnguarded comments name binders expr ->
-    ValueExpressionUnguarded
-      comments
-      (Annotation.None <$ name)
-      (fmap normalizeBinder binders)
-      (normalizeExpression expr)
+      (normalizeValueExpression expr)
+
+data ValueExpression a
+  = ValueExpressionGuarded !(NonEmpty (GuardedExpression a))
+  | ValueExpressionUnguarded !(Expression a)
+  deriving (Functor, Show)
+
+dynamicValueExpression :: ValueExpression Annotation.Normalized -> Doc a
+dynamicValueExpression = \case
+  ValueExpressionGuarded x ->
+    line
+      <> indent 2 (align $ intercalateMap1 line (dynamicGuardedExpression equals) x)
+  ValueExpressionUnguarded x -> space <> equals <+> dynamicExpression x
+
+normalizeValueExpression ::
+  ValueExpression a ->
+  ValueExpression Annotation.Normalized
+normalizeValueExpression = \case
+  ValueExpressionGuarded x ->
+    ValueExpressionGuarded (fmap normalizeGuardedExpression x)
+  ValueExpressionUnguarded x -> ValueExpressionUnguarded (normalizeExpression x)
+
+staticValueExpression :: ValueExpression Annotation.Normalized -> Doc a
+staticValueExpression = \case
+  ValueExpressionGuarded x ->
+    line
+      <> indent 2 (align $ intercalateMap1 line (staticGuardedExpression equals) x)
+  ValueExpressionUnguarded x -> space <> equals <+> staticExpression x
+
+valueExpression ::
+  ( Members
+    '[ Error BinaryBinderWithoutOperator
+     , Error CaseAlternativeWithoutBinders
+     , Error CaseAlternativeWithoutExpressions
+     , Error CaseWithoutAlternatives
+     , Error CaseWithoutExpressions
+     , Error DoLetWithoutBindings
+     , Error DoWithoutStatements
+     , Error InvalidExpression
+     , Error InvalidExpressions
+     , Error InvalidLetBinding
+     , Error InvalidWhereDeclaration
+     , Error LetWithoutBindings
+     , Error NoExpressions
+     , Error RecordUpdateWithoutUpdates
+     , Error UnguardedExpression
+     , Error WhereWithoutDeclarations
+     , Error Name.InvalidCommon
+     , Error Name.Missing
+     , Error Kind.InferredKind
+     , Error Name.InvalidCommon
+     , Error Name.Missing
+     , Error Type.InferredConstraintData
+     , Error Type.InferredForallWithSkolem
+     , Error Type.InferredSkolem
+     , Error Type.InferredType
+     , Error Type.InfixTypeNotTypeOp
+     , Error Type.PrettyPrintForAll
+     , Error Type.PrettyPrintFunction
+     , Error Type.PrettyPrintObject
+     ]
+    e
+  ) =>
+  NonEmpty Language.PureScript.GuardedExpr ->
+  Eff e (ValueExpression Annotation.Unannotated)
+valueExpression = \case
+  Language.PureScript.GuardedExpr [] expr :| [] ->
+    fmap ValueExpressionUnguarded (expression expr)
+  exprs -> fmap ValueExpressionGuarded (traverse guardedExpression exprs)
 
 data WhereDeclaration a
   = WhereDeclarationType !(Declaration.Type.Type a)
