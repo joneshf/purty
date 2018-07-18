@@ -1,8 +1,8 @@
 {
   "files": [
     {
-      "includePattern": "purty-3.0.0-linux.tar.gz",
-      "uploadPattern": "purty-3.0.0-linux.tar.gz"
+      "includePattern": "purty-3.0.1-linux.tar.gz",
+      "uploadPattern": "purty-3.0.1-linux.tar.gz"
     }
   ],
   "package": {
@@ -15,7 +15,7 @@
     "vcs_url": "https://gitlab.com/joneshf/purty.git"
   },
   "version": {
-    "name": "3.0.0",
-    "released": "2018-07-16"
+    "name": "3.0.1",
+    "released": "2018-07-18"
   }
 }
