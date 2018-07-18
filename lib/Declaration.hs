@@ -161,28 +161,28 @@ fromPureScript ::
   Eff e (Maybe (Declaration Annotation.Unannotated))
 fromPureScript = \case
   Language.PureScript.BoundValueDeclaration {} -> pure Nothing
-  Language.PureScript.DataDeclaration _ Language.PureScript.Data name variables constructors ->
-    Just . DeclarationData <$> Declaration.DataType.data' name variables constructors
-  Language.PureScript.DataDeclaration _ Language.PureScript.Newtype name variables constructors ->
-    Just . DeclarationNewtype <$> Declaration.DataType.newtype' name variables constructors
-  Language.PureScript.ExternDataDeclaration _ type' kind ->
-    Just . DeclarationForeignData <$> Declaration.Foreign.data' type' kind
-  Language.PureScript.ExternDeclaration _ name type' ->
-    Just . DeclarationForeignValue <$> Declaration.Foreign.value name type'
-  Language.PureScript.ExternKindDeclaration _ name ->
-    pure (Just $ DeclarationForeignKind $ Declaration.Foreign.kind name)
-  Language.PureScript.FixityDeclaration _ (Left fixity) ->
-    Just . DeclarationFixityValue <$> Declaration.Fixity.value fixity
-  Language.PureScript.FixityDeclaration _ (Right fixity) ->
-    Just . DeclarationFixityType <$> Declaration.Fixity.type' fixity
-  Language.PureScript.TypeClassDeclaration _ name variables constraints funDeps methods ->
-    Just . DeclarationClass <$> Declaration.Class.fromPureScript constraints name variables funDeps methods
+  Language.PureScript.DataDeclaration sourceAnn Language.PureScript.Data name variables constructors ->
+    Just . DeclarationData <$> Declaration.DataType.data' sourceAnn name variables constructors
+  Language.PureScript.DataDeclaration sourceAnn Language.PureScript.Newtype name variables constructors ->
+    Just . DeclarationNewtype <$> Declaration.DataType.newtype' sourceAnn name variables constructors
+  Language.PureScript.ExternDataDeclaration sourceAnn type' kind ->
+    Just . DeclarationForeignData <$> Declaration.Foreign.data' sourceAnn type' kind
+  Language.PureScript.ExternDeclaration sourceAnn name type' ->
+    Just . DeclarationForeignValue <$> Declaration.Foreign.value sourceAnn name type'
+  Language.PureScript.ExternKindDeclaration sourceAnn name ->
+    pure (Just $ DeclarationForeignKind $ Declaration.Foreign.kind sourceAnn name)
+  Language.PureScript.FixityDeclaration sourceAnn (Left fixity) ->
+    Just . DeclarationFixityValue <$> Declaration.Fixity.value sourceAnn fixity
+  Language.PureScript.FixityDeclaration sourceAnn (Right fixity) ->
+    Just . DeclarationFixityType <$> Declaration.Fixity.type' sourceAnn fixity
+  Language.PureScript.TypeClassDeclaration sourceAnn name variables constraints funDeps methods ->
+    Just . DeclarationClass <$> Declaration.Class.fromPureScript sourceAnn constraints name variables funDeps methods
   Language.PureScript.TypeDeclaration declaration ->
     Just . DeclarationType <$> Declaration.Type.fromPureScript declaration
-  Language.PureScript.TypeInstanceDeclaration _ _ index instanceName constraints className types body ->
-    Just . DeclarationInstance <$> Declaration.Instance.fromPureScript index instanceName constraints className types body
-  Language.PureScript.TypeSynonymDeclaration _ name variables type' ->
-    Just . DeclarationSynonym <$> Declaration.Synonym.fromPureScript name variables type'
+  Language.PureScript.TypeInstanceDeclaration sourceAnn _ index instanceName constraints className types body ->
+    Just . DeclarationInstance <$> Declaration.Instance.fromPureScript sourceAnn index instanceName constraints className types body
+  Language.PureScript.TypeSynonymDeclaration sourceAnn name variables type' ->
+    Just . DeclarationSynonym <$> Declaration.Synonym.fromPureScript sourceAnn name variables type'
   Language.PureScript.ValueDeclaration declaration ->
     Just . DeclarationValue <$> Declaration.Value.fromPureScript declaration
   Language.PureScript.BindingGroupDeclaration {} -> pure Nothing

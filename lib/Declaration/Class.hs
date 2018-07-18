@@ -21,6 +21,7 @@ import qualified "purescript" Language.PureScript
 import qualified "rio" RIO.HashMap
 
 import qualified "this" Annotation
+import qualified "this" Comment
 import qualified "this" Declaration.Type
 import qualified "this" Kind
 import qualified "this" List
@@ -30,6 +31,7 @@ import qualified "this" Variations
 
 data Class a
   = Class
+      !Comment.Comments
       !(List.List (Type.Constraint a))
       !(Name.Class a)
       !(Type.Variables a)
@@ -39,11 +41,12 @@ data Class a
 
 doc :: Class Annotation.Normalized -> Variations.Variations (Doc a)
 doc = \case
-  Class constraints' name' variables' funDeps' methods' ->
+  Class comments constraints' name' variables' funDeps' methods' ->
     Variations.Variations { Variations.multiLine, Variations.singleLine }
       where
       multiLine =
-        "class"
+        Comment.docFromComments comments
+          <> "class"
           <> List.list' (Variations.multiLine . constraintsDoc) constraints'
           <+> Name.docFromClass name'
           <> Type.docFromVariables variables'
@@ -51,7 +54,8 @@ doc = \case
           <> List.list' (Variations.multiLine . methodsDoc) methods'
           <> hardline
       singleLine =
-        "class"
+        Comment.docFromComments comments
+          <> "class"
           <> List.list' (Variations.singleLine . constraintsDoc) constraints'
           <+> Name.docFromClass name'
           <> Type.docFromVariables variables'
@@ -91,24 +95,27 @@ fromPureScript ::
      ]
     e
   ) =>
+  Language.PureScript.SourceAnn ->
   [Language.PureScript.Constraint] ->
   Language.PureScript.ProperName 'Language.PureScript.ClassName ->
   [(Text, Maybe Language.PureScript.Kind)] ->
   [Language.PureScript.FunctionalDependency] ->
   [Language.PureScript.Declaration] ->
   Eff e (Class Annotation.Unannotated)
-fromPureScript constraints' name' variables' funDeps' methods' = do
+fromPureScript (_, comments') constraints' name' variables' funDeps' methods' = do
+  let comments = Comment.comments comments'
+      name = Name.class' name'
   constraints <- fromList <$> traverse Type.constraint constraints'
-  let name = Name.class' name'
   variables <- Type.variables variables'
   funDeps <- fromList <$> traverse (functionalDependency variables) funDeps'
   methods <- fromList <$> traverse type' methods'
-  pure (Class constraints name variables funDeps methods)
+  pure (Class comments constraints name variables funDeps methods)
 
 normalize :: Class a -> Class Annotation.Normalized
 normalize = \case
-  Class constraints name variables funDeps methods ->
+  Class comments constraints name variables funDeps methods ->
     Class
+      comments
       (fmap Type.normalizeConstraint constraints)
       (Annotation.None <$ name)
       (Type.normalizeVariables variables)

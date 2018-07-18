@@ -20,6 +20,7 @@ import "parsec" Text.Parsec                      (ParseError)
 import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
+import qualified "this" Comment
 import qualified "this" Declaration
 import qualified "this" Declaration.Class
 import qualified "this" Declaration.DataType
@@ -37,6 +38,7 @@ import qualified "this" Type
 data Module exports imports declarations a
   = Module
       !a
+      !Comment.Comments
       !(Name.Module a)
       !exports
       !imports
@@ -59,8 +61,9 @@ dynamic ::
     a ->
   Doc b
 dynamic = \case
-  Module _ann name exports imports declarations ->
-    "module" <+> Name.docFromModule name <> Export.dynamic exports <+> "where"
+  Module _ann comments name exports imports declarations ->
+    Comment.docFromComments comments
+      <> "module" <+> Name.docFromModule name <> Export.dynamic exports <+> "where"
       <> line
       <> Import.dynamic imports
       <> Declaration.dynamic declarations
@@ -89,19 +92,20 @@ fromPureScript ::
       Annotation.Unannotated
     )
 fromPureScript = \case
-  Language.PureScript.Module _ _ name' decls exports' -> do
+  Language.PureScript.Module _ comments' name' decls exports' -> do
+    let comments = Comment.comments comments'
     name <- Name.module' name'
     exports <- Export.exports exports'
     imports <- Import.imports decls
     declarations <- Declaration.declarations decls
-    pure (Module Annotation.Unannotated name exports imports declarations)
+    pure (Module Annotation.Unannotated comments name exports imports declarations)
 
 normalize ::
   Module a b (Declaration.Declarations c) d ->
   Module a b (Declaration.Declarations Annotation.Normalized) d
 normalize = \case
-  Module ann name exports imports declarations ->
-    Module ann name exports imports (Declaration.normalize declarations)
+  Module ann comments name exports imports declarations ->
+    Module ann comments name exports imports (Declaration.normalize declarations)
 
 parse ::
   (Members '[Error ParseError, File.File, Log.Log] e) =>
@@ -127,13 +131,13 @@ parse' absFile contents =
 
 sortExports :: Module (Export.Exports a) b c d -> Module Export.Sorted b c d
 sortExports = \case
-  Module ann name exports imports declarations ->
-    Module ann name (Export.sort exports) imports declarations
+  Module ann comments name exports imports declarations ->
+    Module ann comments name (Export.sort exports) imports declarations
 
 sortImports :: Module a (Import.Imports b) c d -> Module a Import.Sorted c d
 sortImports = \case
-  Module ann name exports imports declarations ->
-    Module ann name exports (Import.sort imports) declarations
+  Module ann comments name exports imports declarations ->
+    Module ann comments name exports (Import.sort imports) declarations
 
 static ::
   Module
@@ -142,8 +146,9 @@ static ::
     (Declaration.Declarations Annotation.Normalized) a ->
   Doc b
 static = \case
-  Module _ann name exports imports declarations ->
-    "module" <+> Name.docFromModule name <> Export.static exports <+> "where"
+  Module _ann comments name exports imports declarations ->
+    Comment.docFromComments comments
+      <> "module" <+> Name.docFromModule name <> Export.static exports <+> "where"
       <> line
       <> Import.static imports
       <> Declaration.static declarations

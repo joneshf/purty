@@ -23,6 +23,7 @@ import "base" GHC.Exts                           (IsList(fromList))
 import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
+import qualified "this" Comment
 import qualified "this" Kind
 import qualified "this" List
 import qualified "this" Name
@@ -77,7 +78,11 @@ normalizeAlternate = \case
     Alternate Annotation.None (Annotation.None <$ x) (fmap Type.normalize y)
 
 data Data a
-  = Data !(Name.Proper a) !(Type.Variables a) !(List.List (Alternate a))
+  = Data
+      !Comment.Comments
+      !(Name.Proper a)
+      !(Type.Variables a)
+      !(List.List (Alternate a))
   deriving (Functor, Show)
 
 data' ::
@@ -96,6 +101,7 @@ data' ::
      ]
     e
   ) =>
+  Language.PureScript.SourceAnn ->
   Language.PureScript.ProperName 'Language.PureScript.TypeName ->
   [(Text, Maybe Language.PureScript.Kind)] ->
   [ ( Language.PureScript.ProperName 'Language.PureScript.ConstructorName
@@ -104,35 +110,40 @@ data' ::
     )
   ] ->
   Eff e (Data Annotation.Unannotated)
-data' name variables' constructors = do
+data' (_, comments') name variables' constructors = do
+  let comments = Comment.comments comments'
   alternates <- fromList <$> traverse alternate constructors
   variables <- Type.variables variables'
-  pure (Data (Name.proper name) variables alternates)
+  pure (Data comments (Name.proper name) variables alternates)
 
 docFromData :: Data Annotation.Normalized -> Doc a
 docFromData = \case
-  Data name variables (List.NonEmpty alternates) ->
-    "data" <+> Name.docFromProper name <> Type.docFromVariables variables
+  Data comments name variables (List.NonEmpty alternates) ->
+    Comment.docFromComments comments
+      <> "data" <+> Name.docFromProper name <> Type.docFromVariables variables
       <> line <> indent 2 (align doc)
       <> line
       where
       doc =
         equals
           <+> intercalateMap1 (line <> pipe <> space) docFromAlternate alternates
-  Data name variables List.Empty ->
-    "data" <+> Name.docFromProper name <> Type.docFromVariables variables
+  Data comments name variables List.Empty ->
+    Comment.docFromComments comments
+      <> "data" <+> Name.docFromProper name <> Type.docFromVariables variables
       <> line
 
 normalizeData :: Data a -> Data Annotation.Normalized
 normalizeData = \case
-  Data name typeVariables alternates ->
+  Data comments name typeVariables alternates ->
     Data
+      comments
       (Annotation.None <$ name)
       (Type.normalizeVariables typeVariables)
       (fmap normalizeAlternate alternates)
 
 data Newtype a
   = Newtype
+    !Comment.Comments
     !(Name.Proper a)
     !(Type.Variables a)
     !(Name.Constructor a)
@@ -141,8 +152,9 @@ data Newtype a
 
 docFromNewtype :: Newtype Annotation.Normalized -> Doc a
 docFromNewtype = \case
-  Newtype name variables constructor type'' ->
-    "newtype" <+> Name.docFromProper name <> Type.docFromVariables variables
+  Newtype comments name variables constructor type'' ->
+    Comment.docFromComments comments
+      <> "newtype" <+> Name.docFromProper name <> Type.docFromVariables variables
       <> line <> indent 2 (equals <+> docConstructor <+> docType)
       <> line
       where
@@ -165,6 +177,7 @@ newtype' ::
      ]
     e
   ) =>
+  Language.PureScript.SourceAnn ->
   Language.PureScript.ProperName 'Language.PureScript.TypeName ->
   [(Text, Maybe Language.PureScript.Kind)] ->
   [ ( Language.PureScript.ProperName 'Language.PureScript.ConstructorName
@@ -173,20 +186,22 @@ newtype' ::
     )
   ] ->
   Eff e (Newtype Annotation.Unannotated)
-newtype' name' variables' = \case
+newtype' (_, comments') name' variables' = \case
   [(constructor', [ty'])] -> do
+    let comments = Comment.comments comments'
     ty <- Type.fromPureScript ty'
     variables <- Type.variables variables'
     let constructor = Name.constructor constructor'
         name = Name.proper name'
-    pure (Newtype name variables constructor ty)
+    pure (Newtype comments name variables constructor ty)
   constructors ->
     throwError (WrongNewtypeConstructors name' constructors)
 
 normalizeNewtype :: Newtype a -> Newtype Annotation.Normalized
 normalizeNewtype = \case
-  Newtype name variables constructor type'' ->
+  Newtype comments name variables constructor type'' ->
     Newtype
+      comments
       (Annotation.None <$ name)
       (Type.normalizeVariables variables)
       (Annotation.None <$ constructor)
