@@ -11,6 +11,7 @@ import "base" GHC.Natural                        (Natural)
 import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
+import qualified "this" Comment
 import qualified "this" Name
 
 data Associativity
@@ -58,6 +59,7 @@ precedence name = \case
 
 data Type a
   = Type
+      !Comment.Comments
       !Associativity
       !Precedence
       !(Name.Qualified Name.Type a)
@@ -66,8 +68,9 @@ data Type a
 
 docFromType :: Type Annotation.Normalized -> Doc b
 docFromType = \case
-  Type w x y z ->
-    docFromAssociativity w
+  Type v w x y z ->
+    Comment.docFromComments v
+      <> docFromAssociativity w
       <+> docFromPrecedence x
       <+> "type"
       <+> Name.docFromQualified Name.docFromType y
@@ -77,7 +80,7 @@ docFromType = \case
 
 normalizeType :: Type a -> Type Annotation.Normalized
 normalizeType = \case
-  Type w x y z -> Type w x (Annotation.None <$ y) (Annotation.None <$ z)
+  Type v w x y z -> Type v w x (Annotation.None <$ y) (Annotation.None <$ z)
 
 type' ::
   ( Members
@@ -87,23 +90,27 @@ type' ::
      ]
     e
   ) =>
+  Language.PureScript.SourceAnn ->
   Language.PureScript.TypeFixity ->
   Eff e (Type Annotation.Unannotated)
-type' = \case
+type' (_, comments') = \case
   Language.PureScript.TypeFixity fixity name' op -> do
     let assoc = associativity fixity
+        comments = Comment.comments comments'
         operator = Name.typeOperator op
     prec <- precedence (fmap Right name') fixity
     name <- Name.qualified (pure . Name.type') name'
-    pure (Type assoc prec name operator)
+    pure (Type comments assoc prec name operator)
 
 data Value a
   = ValueConstructor
+      !Comment.Comments
       !Associativity
       !Precedence
       !(Name.Qualified Name.Constructor a)
       !(Name.ValueOperator a)
   | ValueValue
+      !Comment.Comments
       !Associativity
       !Precedence
       !(Name.Qualified Name.Common a)
@@ -112,15 +119,17 @@ data Value a
 
 docFromValue :: Value Annotation.Normalized -> Doc b
 docFromValue = \case
-  ValueConstructor w x y z ->
-    docFromAssociativity w
+  ValueConstructor v w x y z ->
+    Comment.docFromComments v
+      <> docFromAssociativity w
       <+> docFromPrecedence x
       <+> Name.docFromQualified Name.docFromConstructor y
       <+> "as"
       <+> Name.docFromValueOperator' z
       <> line
-  ValueValue w x y z ->
-    docFromAssociativity w
+  ValueValue v w x y z ->
+    Comment.docFromComments v
+      <> docFromAssociativity w
       <+> docFromPrecedence x
       <+> Name.docFromQualified Name.docFromCommon y
       <+> "as"
@@ -129,10 +138,10 @@ docFromValue = \case
 
 normalizeValue :: Value a -> Value Annotation.Normalized
 normalizeValue = \case
-  ValueConstructor w x y z ->
-    ValueConstructor w x (Annotation.None <$ y) (Annotation.None <$ z)
-  ValueValue w x y z ->
-    ValueValue w x (Annotation.None <$ y) (Annotation.None <$ z)
+  ValueConstructor v w x y z ->
+    ValueConstructor v w x (Annotation.None <$ y) (Annotation.None <$ z)
+  ValueValue v w x y z ->
+    ValueValue v w x (Annotation.None <$ y) (Annotation.None <$ z)
 
 value ::
   ( Members
@@ -142,20 +151,22 @@ value ::
      ]
     e
   ) =>
+  Language.PureScript.SourceAnn ->
   Language.PureScript.ValueFixity ->
   Eff e (Value Annotation.Unannotated)
-value = \case
+value (_, comments') = \case
   Language.PureScript.ValueFixity fixity name op -> do
     let assoc = associativity fixity
+        comments = Comment.comments comments'
         operator = Name.valueOperator op
     prec <- precedence name fixity
     case bimap (<$ name) (<$ name) (Language.PureScript.disqualify name) of
       Left ident -> do
         common <- Name.qualified Name.common ident
-        pure (ValueValue assoc prec common operator)
+        pure (ValueValue comments assoc prec common operator)
       Right constructor' -> do
         constructor <- Name.qualified (pure . Name.constructor) constructor'
-        pure (ValueConstructor assoc prec constructor operator)
+        pure (ValueConstructor comments assoc prec constructor operator)
 
 -- Errors
 

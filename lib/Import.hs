@@ -24,6 +24,7 @@ import qualified "purescript" Language.PureScript
 import "this" Export (Export)
 
 import qualified "this" Annotation
+import qualified "this" Comment
 import qualified "this" Export
 import qualified "this" List
 import qualified "this" Log
@@ -35,7 +36,7 @@ newtype Alias a
   deriving (Eq, Functor, Ord, Show)
 
 data Explicit a
-  = Explicit !a !(Name.Module a) ![Export a] !(Alias a)
+  = Explicit !a !Comment.Comments !(Name.Module a) ![Export a] !(Alias a)
   deriving (Functor, Show)
 
 dynamicExplicit :: NonEmpty (Explicit Annotation.Sorted) -> Doc a
@@ -46,8 +47,9 @@ dynamicExplicit = \case
       <> line
   where
   go = \case
-    Explicit _ann name imports'' (Alias alias') ->
-      "import" <+> Name.docFromModule name
+    Explicit _ann comments name imports'' (Alias alias') ->
+      Comment.docFromComments comments
+        <> "import" <+> Name.docFromModule name
         <> imports'
         <> foldMap (\alias -> space <> "as" <+> Name.docFromModule alias) alias'
       where
@@ -63,7 +65,7 @@ sortExplicit :: List.List (Explicit a) -> List.List (Explicit Annotation.Sorted)
 sortExplicit = fmap (Annotation.Sorted <$) . List.sortWith go
   where
   go = \case
-    Explicit _ann name _exports _alias -> void name
+    Explicit _ann _comments name _exports _alias -> void name
 
 staticExplicit :: NonEmpty (Explicit Annotation.Sorted) -> Doc a
 staticExplicit = \case
@@ -73,8 +75,9 @@ staticExplicit = \case
       <> line
   where
   go = \case
-    Explicit _ann name imports'' (Alias alias') ->
-      "import" <+> Name.docFromModule name
+    Explicit _ann comments name imports'' (Alias alias') ->
+      Comment.docFromComments comments
+        <> "import" <+> Name.docFromModule name
         <> line
         <> indent 2 imports'
         <> foldMap (\alias -> space <> "as" <+> Name.docFromModule alias) alias'
@@ -86,7 +89,7 @@ staticExplicit = \case
           (nonEmpty imports'')
 
 data Hiding a
-  = Hiding !a !(Name.Module a) ![Export a] !(Alias a)
+  = Hiding !a !Comment.Comments !(Name.Module a) ![Export a] !(Alias a)
   deriving (Functor, Show)
 
 dynamicHiding :: NonEmpty (Hiding Annotation.Sorted) -> Doc a
@@ -97,8 +100,9 @@ dynamicHiding = \case
       <> line
   where
   go = \case
-    Hiding _ann name imports'' (Alias alias') ->
-      "import"
+    Hiding _ann comments name imports'' (Alias alias') ->
+      Comment.docFromComments comments
+        <> "import"
         <+> Name.docFromModule name
         <+> "hiding"
         <> imports'
@@ -116,7 +120,7 @@ sortHiding :: List.List (Hiding a) -> List.List (Hiding Annotation.Sorted)
 sortHiding = fmap (Annotation.Sorted <$) . List.sortWith go
   where
   go = \case
-    Hiding _ann name _exports _alias -> void name
+    Hiding _ann _comments name _exports _alias -> void name
 
 staticHiding :: NonEmpty (Hiding Annotation.Sorted) -> Doc a
 staticHiding = \case
@@ -126,8 +130,9 @@ staticHiding = \case
       <> line
   where
   go = \case
-    Hiding _ann name imports'' (Alias alias') ->
-      "import"
+    Hiding _ann comments name imports'' (Alias alias') ->
+      Comment.docFromComments comments
+        <> "import"
         <+> Name.docFromModule name
         <+> "hiding"
         <> indent 2 imports'
@@ -155,26 +160,30 @@ fromPureScript ::
   Language.PureScript.Declaration ->
   Eff e (Maybe (Import Annotation.Unannotated))
 fromPureScript = \case
-  Language.PureScript.ImportDeclaration _ name' (Language.PureScript.Explicit imports'') alias' -> do
+  Language.PureScript.ImportDeclaration (_, comments') name' (Language.PureScript.Explicit imports'') alias' -> do
     name <- Name.module' name'
     imports' <- traverse Export.export imports''
     alias <- Alias <$> traverse Name.module' alias'
-    let explicit = Explicit Annotation.Unannotated name imports' alias
+    let comments = Comment.comments comments'
+        explicit = Explicit Annotation.Unannotated comments name imports' alias
     pure (Just $ ImportExplicit explicit)
-  Language.PureScript.ImportDeclaration _ name' (Language.PureScript.Hiding imports'') alias' -> do
+  Language.PureScript.ImportDeclaration (_, comments') name' (Language.PureScript.Hiding imports'') alias' -> do
     imports' <- traverse Export.export imports''
     name <- Name.module' name'
     alias <- Alias <$> traverse Name.module' alias'
-    let hiding = Hiding Annotation.Unannotated name imports' alias
+    let comments = Comment.comments comments'
+        hiding = Hiding Annotation.Unannotated comments name imports' alias
     pure (Just $ ImportHiding hiding)
-  Language.PureScript.ImportDeclaration _ name' Language.PureScript.Implicit (Just alias') -> do
+  Language.PureScript.ImportDeclaration (_, comments') name' Language.PureScript.Implicit (Just alias') -> do
     name <- Name.module' name'
     alias <- Alias . Just <$> Name.module' alias'
-    let qualified = Qualified Annotation.Unannotated name alias
+    let comments = Comment.comments comments'
+        qualified = Qualified Annotation.Unannotated comments name alias
     pure (Just $ ImportQualified qualified)
-  Language.PureScript.ImportDeclaration _ name' Language.PureScript.Implicit Nothing -> do
+  Language.PureScript.ImportDeclaration (_, comments') name' Language.PureScript.Implicit Nothing -> do
     name <- Name.module' name'
-    let open = Open Annotation.Unannotated name
+    let open = Open Annotation.Unannotated comments name
+        comments = Comment.comments comments'
     pure (Just $ ImportOpen open)
   Language.PureScript.BindingGroupDeclaration {} -> pure Nothing
   Language.PureScript.BoundValueDeclaration {} -> pure Nothing
@@ -237,7 +246,7 @@ imports ::
 imports x = fmap (Imports . fromList) (wither fromPureScript x)
 
 data Open a
-  = Open !a !(Name.Module a)
+  = Open !a !Comment.Comments !(Name.Module a)
   deriving (Functor, Show)
 
 dynamicOpen :: NonEmpty (Open Annotation.Sorted) -> Doc a
@@ -248,14 +257,15 @@ dynamicOpen = \case
       <> line
   where
   go = \case
-    Open _ann name ->
-      "import" <+> Name.docFromModule name
+    Open _ann comments name ->
+      Comment.docFromComments comments
+        <> "import" <+> Name.docFromModule name
 
 sortOpen :: List.List (Open a) -> List.List (Open Annotation.Sorted)
 sortOpen = fmap (Annotation.Sorted <$) . List.sortWith go
   where
   go = \case
-    Open _ann name -> void name
+    Open _ann _comments name -> void name
 
 staticOpen :: NonEmpty (Open Annotation.Sorted) -> Doc a
 staticOpen = \case
@@ -265,11 +275,12 @@ staticOpen = \case
       <> line
   where
   go = \case
-    Open _ann name ->
-      "import" <+> Name.docFromModule name
+    Open _ann comments name ->
+      Comment.docFromComments comments
+        <> "import" <+> Name.docFromModule name
 
 data Qualified a
-  = Qualified !a !(Name.Module a) !(Alias a)
+  = Qualified !a !Comment.Comments !(Name.Module a) !(Alias a)
   deriving (Functor, Show)
 
 dynamicQualified :: NonEmpty (Qualified Annotation.Sorted) -> Doc a
@@ -280,8 +291,9 @@ dynamicQualified = \case
       <> line
   where
   go = \case
-    Qualified _ann name (Alias alias') ->
-      "import"
+    Qualified _ann comments name (Alias alias') ->
+      Comment.docFromComments comments
+        <> "import"
         <+> Name.docFromModule name
         <> foldMap (\alias -> space <> "as" <+> Name.docFromModule alias) alias'
 
@@ -291,7 +303,7 @@ sortQualified ::
 sortQualified = fmap (Annotation.Sorted <$) . List.sortWith go
   where
   go = \case
-    Qualified _ann name _alias -> void name
+    Qualified _ann _comments name _alias -> void name
 
 staticQualified :: NonEmpty (Qualified Annotation.Sorted) -> Doc a
 staticQualified = \case
@@ -301,8 +313,9 @@ staticQualified = \case
       <> line
   where
   go = \case
-    Qualified _ann name (Alias alias') ->
-      "import"
+    Qualified _ann comments name (Alias alias') ->
+      Comment.docFromComments comments
+        <> "import"
         <+> Name.docFromModule name
         <> foldMap (\alias -> space <> "as" <+> Name.docFromModule alias) alias'
 

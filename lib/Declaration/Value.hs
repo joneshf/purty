@@ -1158,10 +1158,12 @@ recordUpdateNode = \case
 
 data Value a
   = ValueExpressionGuarded
+      !Comment.Comments
       !(Name.Common a)
       !(List.List (Binder a))
       !(NonEmpty (GuardedExpression a))
   | ValueExpressionUnguarded
+      !Comment.Comments
       !(Name.Common a)
       !(List.List (Binder a))
       !(Expression a)
@@ -1172,24 +1174,28 @@ dynamic, static :: Value Annotation.Normalized -> Doc a
   where
   bindersDoc binders = space <> intercalateMap1 space docFromBinder binders
   dynamic' = \case
-    ValueExpressionGuarded x y z ->
-      Name.docFromCommon x
+    ValueExpressionGuarded w x y z ->
+      Comment.docFromComments w
+        <> Name.docFromCommon x
         <> List.list' bindersDoc y
         <> line
         <> indent 2 (align $ intercalateMap1 line (dynamicGuardedExpression equals) z)
-    ValueExpressionUnguarded x y z ->
-      Name.docFromCommon x
+    ValueExpressionUnguarded w x y z ->
+      Comment.docFromComments w
+        <> Name.docFromCommon x
         <> List.list' bindersDoc y
         <+> equals
         <+> dynamicExpression z
   static' = \case
-    ValueExpressionGuarded x y z ->
-      Name.docFromCommon x
+    ValueExpressionGuarded w x y z ->
+      Comment.docFromComments w
+        <> Name.docFromCommon x
         <> List.list' bindersDoc y
         <> line
         <> indent 2 (align $ intercalateMap1 line (staticGuardedExpression equals) z)
-    ValueExpressionUnguarded x y z ->
-      Name.docFromCommon x
+    ValueExpressionUnguarded w x y z ->
+      Comment.docFromComments w
+        <> Name.docFromCommon x
         <> List.list' bindersDoc y
         <+> equals
         <+> staticExpression z
@@ -1233,27 +1239,31 @@ fromPureScript ::
 fromPureScript = \case
   Language.PureScript.ValueDeclarationData _ name _ _ [] ->
     throwError (NoExpressions name)
-  Language.PureScript.ValueDeclarationData _ name' _ binders' [Language.PureScript.GuardedExpr [] expr'] -> do
+  Language.PureScript.ValueDeclarationData (_, comments') name' _ binders' [Language.PureScript.GuardedExpr [] expr'] -> do
+    let comments = Comment.comments comments'
     name <- Name.common name'
     binders <- fromList <$> traverse binder binders'
     expr <- expression expr'
-    pure (ValueExpressionUnguarded name binders expr)
-  Language.PureScript.ValueDeclarationData _ name' _ binders' exprs'' -> do
+    pure (ValueExpressionUnguarded comments name binders expr)
+  Language.PureScript.ValueDeclarationData (_, comments') name' _ binders' exprs'' -> do
+    let comments = Comment.comments comments'
     name <- Name.common name'
     binders <- fromList <$> traverse binder binders'
     exprs' <- nonEmpty <$> traverse guardedExpression exprs''
     exprs <- maybe (throwError (NoExpressions name')) pure exprs'
-    pure (ValueExpressionGuarded name binders exprs)
+    pure (ValueExpressionGuarded comments name binders exprs)
 
 normalize :: Value a -> Value Annotation.Normalized
 normalize = \case
-  ValueExpressionGuarded name binders expr ->
+  ValueExpressionGuarded comments name binders expr ->
     ValueExpressionGuarded
+      comments
       (Annotation.None <$ name)
       (fmap normalizeBinder binders)
       (fmap normalizeGuardedExpression expr)
-  ValueExpressionUnguarded name binders expr ->
+  ValueExpressionUnguarded comments name binders expr ->
     ValueExpressionUnguarded
+      comments
       (Annotation.None <$ name)
       (fmap normalizeBinder binders)
       (normalizeExpression expr)

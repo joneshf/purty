@@ -21,6 +21,7 @@ import "base" GHC.Exts                           (IsList(fromList))
 import qualified "purescript" Language.PureScript
 
 import qualified "this" Annotation
+import qualified "this" Comment
 import qualified "this" Declaration.Type
 import qualified "this" Declaration.Value
 import qualified "this" Kind
@@ -31,6 +32,7 @@ import qualified "this" Variations
 
 data Instance a
   = Instance
+      !Comment.Comments
       !(Type a)
       !(Name.Common a)
       !(List.List (Type.Constraint a))
@@ -40,32 +42,35 @@ data Instance a
 
 dynamic :: Instance Annotation.Normalized -> Doc a
 dynamic = \case
-  Instance type' instanceName constraints className types -> case type' of
-    TypeDerived              -> "derive instance" <+> doc mempty
-    TypeExplicit methods     -> "instance" <+> doc (methodsDoc methods)
-    TypeExplicitElse methods -> "else instance" <+> doc (methodsDoc methods)
-    TypeNewtype              -> "derive newtype instance" <+> doc mempty
-    where
-    constraintsDoc = List.list' $ \x ->
-      let Variations.Variations {Variations.multiLine, Variations.singleLine} =
-            Variations.parenthesize Type.docFromConstraint x
-          multi = line <> indent 2 multiLine <+> "=>" <> line <> space
-          single = space <> singleLine <+> "=>"
-      in group (flatAlt multi single)
-    doc rest =
-      Name.docFromCommon instanceName
-        <+> colon <> colon
-        <> constraintsDoc constraints
-        <+> Name.docFromQualified Name.docFromClass className
-        <> typesDoc types
-        <> rest
-    methodsDoc = List.list' $ \x ->
-      space
-        <> "where"
-        <> line
-        <> indent 2 (align $ intercalateMap1 line dynamicMethod x)
-    typesDoc = List.list' $ \x ->
-      space <> intercalateMap1 space (Variations.singleLine . Type.doc) x
+  Instance comments type' instanceName constraints className types ->
+    case type' of
+      TypeDerived              -> doc "derive instance" mempty
+      TypeExplicit methods     -> doc "instance" (methodsDoc methods)
+      TypeExplicitElse methods -> doc "else instance" (methodsDoc methods)
+      TypeNewtype              -> doc "derive newtype instance" mempty
+      where
+      constraintsDoc = List.list' $ \x ->
+        let Variations.Variations {Variations.multiLine, Variations.singleLine} =
+              Variations.parenthesize Type.docFromConstraint x
+            multi = line <> indent 2 multiLine <+> "=>" <> line <> space
+            single = space <> singleLine <+> "=>"
+        in group (flatAlt multi single)
+      doc heading rest =
+        Comment.docFromComments comments
+          <> heading
+          <+> Name.docFromCommon instanceName
+          <+> colon <> colon
+          <> constraintsDoc constraints
+          <+> Name.docFromQualified Name.docFromClass className
+          <> typesDoc types
+          <> rest
+      methodsDoc = List.list' $ \x ->
+        space
+          <> "where"
+          <> line
+          <> indent 2 (align $ intercalateMap1 line dynamicMethod x)
+      typesDoc = List.list' $ \x ->
+        space <> intercalateMap1 space (Variations.singleLine . Type.doc) x
 
 fromPureScript ::
   ( Members
@@ -105,6 +110,7 @@ fromPureScript ::
      ]
     e
   ) =>
+  Language.PureScript.SourceAnn ->
   Integer ->
   Language.PureScript.Ident ->
   [Language.PureScript.Constraint] ->
@@ -113,7 +119,7 @@ fromPureScript ::
   [Language.PureScript.Type] ->
   Language.PureScript.TypeInstanceBody ->
   Eff e (Instance Annotation.Unannotated)
-fromPureScript index instanceName' constraints' className' types' body
+fromPureScript (_, comments') index instanceName' constraints' className' types' body
   | index < 0 = throwError (NegativeChainIndex index instanceName')
   | index /= 0
   , Language.PureScript.DerivedInstance <- body = throwError DerivedInChain
@@ -121,6 +127,7 @@ fromPureScript index instanceName' constraints' className' types' body
   , Language.PureScript.NewtypeInstance <- body =
       throwError DerivedNewtypeInChain
   | otherwise = do
+    let comments = Comment.comments comments'
     instanceName <- Name.common instanceName'
     constraints <- fromList <$> traverse Type.constraint constraints'
     className <- Name.qualified (pure . Name.class') className'
@@ -129,20 +136,21 @@ fromPureScript index instanceName' constraints' className' types' body
       Language.PureScript.NewtypeInstanceWithDictionary x ->
         throwError (Desugared x)
       Language.PureScript.DerivedInstance ->
-        pure (Instance TypeDerived instanceName constraints className types)
+        pure (Instance comments TypeDerived instanceName constraints className types)
       Language.PureScript.NewtypeInstance ->
-        pure (Instance TypeNewtype instanceName constraints className types)
+        pure (Instance comments TypeNewtype instanceName constraints className types)
       Language.PureScript.ExplicitInstance x -> do
         methods <- fromList <$> traverse method x
         let type' = case index of
                       0 -> TypeExplicit methods
                       _ -> TypeExplicitElse methods
-        pure (Instance type' instanceName constraints className types)
+        pure (Instance comments type' instanceName constraints className types)
 
 normalize :: Instance a -> Instance Annotation.Normalized
 normalize = \case
-  Instance type' w x y z ->
+  Instance comments type' w x y z ->
     Instance
+      comments
       (normalizeType type')
       (Annotation.None <$ w)
       (fmap Type.normalizeConstraint x)
@@ -151,34 +159,37 @@ normalize = \case
 
 static :: Instance Annotation.Normalized -> Doc a
 static = \case
-  Instance type' instanceName constraints className types -> case type' of
-    TypeDerived              -> "derive instance" <+> doc mempty
-    TypeExplicit methods     -> "instance" <+> doc (methodsDoc methods)
-    TypeExplicitElse methods -> "else instance" <+> doc (methodsDoc methods)
-    TypeNewtype              -> "derive newtype instance" <+> doc mempty
-    where
-    constraintsDoc = List.list' $ \x ->
-      Variations.multiLine (Variations.parenthesize Type.docFromConstraint x)
-        <+> "=>"
-        <> line
-    doc rest =
-      Name.docFromCommon instanceName
-        <+> colon <> colon
-        <> line
-        <> indent
-          2
-          ( constraintsDoc constraints
-          <> Name.docFromQualified Name.docFromClass className
-          <> typesDoc types
-          <> rest
-          )
-    methodsDoc = List.list' $ \x ->
-      space
-        <> "where"
-        <> line
-        <> indent 2 (align $ intercalateMap1 line staticMethod x)
-    typesDoc = List.list' $ \x ->
-      space <> intercalateMap1 space (Variations.multiLine . Type.doc) x
+  Instance comments type' instanceName constraints className types ->
+    case type' of
+      TypeDerived              -> doc "derive instance" mempty
+      TypeExplicit methods     -> doc "instance" (methodsDoc methods)
+      TypeExplicitElse methods -> doc "else instance" (methodsDoc methods)
+      TypeNewtype              -> doc "derive newtype instance" mempty
+      where
+      constraintsDoc = List.list' $ \x ->
+        Variations.multiLine (Variations.parenthesize Type.docFromConstraint x)
+          <+> "=>"
+          <> line
+      doc heading rest =
+        Comment.docFromComments comments
+          <> heading
+          <+> Name.docFromCommon instanceName
+          <+> colon <> colon
+          <> line
+          <> indent
+            2
+            ( constraintsDoc constraints
+            <> Name.docFromQualified Name.docFromClass className
+            <> typesDoc types
+            <> rest
+            )
+      methodsDoc = List.list' $ \x ->
+        space
+          <> "where"
+          <> line
+          <> indent 2 (align $ intercalateMap1 line staticMethod x)
+      typesDoc = List.list' $ \x ->
+        space <> intercalateMap1 space (Variations.multiLine . Type.doc) x
 
 data Method a
   = MethodType !(Declaration.Type.Type a)
