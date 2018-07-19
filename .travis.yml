@@ -9,6 +9,7 @@ cache:
     - ${HOME}/.local/bin
     - .stack-root
     - .stack-work
+  timeout: 1000
 
 deploy:
   - file: ci/bintray-${TRAVIS_OS_NAME}.json
@@ -23,9 +24,11 @@ deploy:
 
 env:
   global:
-    - CASHER_TIME_OUT=1000
     - PATH=/usr/local/opt/coreutils/libexec/gnubin:${PATH}
     - STACK_ROOT=${TRAVIS_BUILD_DIR}/.stack-root
+
+install:
+  - stack setup
 
 language: c
 
@@ -42,7 +45,6 @@ os:
 sudo: false
 
 script:
-  - stack setup
   - stack build --copy-bins --local-bin-path bin --no-run-tests --test
   - stack build --test
   - test/acceptance.sh --verbose
