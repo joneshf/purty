@@ -1,5 +1,5 @@
 before_deploy:
-  - tar --create --file purty-${TRAVIS_TAG}-${TRAVIS_OS_NAME}.tar.gz --directory bin --gzip purty
+  - ci/bintray/create_tar.sh --file ${TAR_FILE} --version ${TRAVIS_TAG}
 
 before_install:
   - ci/install-stack.sh --os ${TRAVIS_OS_NAME} --verbose
@@ -9,9 +9,10 @@ cache:
     - ${HOME}/.local/bin
     - .stack-root
     - .stack-work
+  timeout: 1000
 
 deploy:
-  - file: ci/bintray-${TRAVIS_OS_NAME}.json
+  - file: ci/bintray.json
     key:
       secure: EaX5OWSCJcAB/yRhEWDDZ9dDM9HXzDnyLdWCeLDKpd82X4xSMP9RXvxOSyXm3xCeZZtt+WwPjcfwBBgeVfcmBfUhhfAVDqlToo+Y6WhUDincaaMC77/f6Yq7LP+Bx6eJelUgpaygbiqH2jR2xzEdVPyDYC/npjcVyR96JUK8k5Oj7GmIbkwr2tzAM8cgDJHY2VwR0PeObLK+t1CEAcaYhb6JJ7yPDCr3vPTl6IgUOqGmkaA/gwO7Fx6wFm+HwSEXVWUfz3NHssHUt6tQHv0AjoDLK84v2DBH1hSqYUEEJqr+5dE26k4G0t2BZJnYkzIgu6YO4qGAvtF8PnH//uKcwiJXwZViheCjnPe/h7Kl/RVGms37jbeCOZWKMro5kZosTWjAlT+P5v1C4650MObU4k0SPFmqiT25GEUDZhsy9sc9jWo+Yo7a31jqcCKcAO9PvUQCvxgChV1sV2Bq3axmnI0O2U/9VsskEQQj0pm8VygqC43gTdquVKNu88+c2OnpoZkXrQK6x/34vA97bFkSl2JWIxefXoJ3wKalcd5vp+HcQvm/TAnaYcHAt7ju2P/KRrY1zTo+mLlIX3DNXWfNxjHHJRIwPRuEohxa1vgwjajKv5dKkwDOrXYhC33AEkq06Sgl2jdV3ZoR6U2MaFGi9QcWAkEvBP5DYbboTvFzrOU=
     on:
@@ -23,9 +24,13 @@ deploy:
 
 env:
   global:
-    - CASHER_TIME_OUT=1000
     - PATH=/usr/local/opt/coreutils/libexec/gnubin:${PATH}
     - STACK_ROOT=${TRAVIS_BUILD_DIR}/.stack-root
+    - TAR_FILE=purty-${TRAVIS_TAG}-${TRAVIS_OS_NAME}.tar.gz
+
+install:
+  - stack setup
+  - stack build dhall-json
 
 language: c
 
@@ -42,7 +47,6 @@ os:
 sudo: false
 
 script:
-  - stack setup
   - stack build --copy-bins --local-bin-path bin --no-run-tests --test
   - stack build --test
   - test/acceptance.sh --verbose
