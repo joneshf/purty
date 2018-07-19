@@ -2,6 +2,7 @@
 
 *.cabal
 /bin
+/ci/bintray.json
 
 # Created by https://www.gitignore.io/api/osx,vim,macos,linux,emacs,haskell,windows,purescript,sublimetext,visualstudiocode
 
