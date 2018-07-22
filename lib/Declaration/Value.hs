@@ -131,7 +131,7 @@ docFromBinder = \case
   BinderVariable x -> Name.docFromCommon x
   BinderWildcard -> "_"
 
-labelFromBinder :: Binder a -> Maybe Label.Label
+labelFromBinder :: Binder Annotation.Normalized -> Maybe Label.Label
 labelFromBinder = \case
   BinderAs {} -> Nothing
   BinderBinary {} -> Nothing
@@ -149,6 +149,7 @@ normalizeBinder = \case
   BinderAs x y -> BinderAs (Annotation.None <$ x) (normalizeBinder y)
   BinderBinary x y z ->
     BinderBinary (normalizeBinder x) (Annotation.None <$ y) (normalizeBinder z)
+  BinderCommented x [] -> normalizeBinder x
   BinderCommented x y -> BinderCommented (normalizeBinder x) y
   BinderConstructor x y ->
     BinderConstructor (Annotation.None <$ x) (fmap normalizeBinder y)
@@ -578,7 +579,7 @@ expression = \case
   x@Language.PureScript.TypeClassDictionaryConstructorApp {} ->
     throwError (InvalidExpression x)
 
-labelFromExpression :: Expression a -> Maybe Label.Label
+labelFromExpression :: Expression Annotation.Normalized -> Maybe Label.Label
 labelFromExpression = \case
   ExpressionAdo {} -> Nothing
   ExpressionApplication {} -> Nothing
@@ -614,6 +615,7 @@ normalizeExpression = \case
     ExpressionApplication (normalizeExpression x) (normalizeExpression y)
   ExpressionCase x y ->
     ExpressionCase (fmap normalizeExpression x) (fmap normalizeCaseAlternative y)
+  ExpressionCommented x [] -> normalizeExpression x
   ExpressionCommented x y -> ExpressionCommented (normalizeExpression x) y
   ExpressionConstructor x -> ExpressionConstructor (Annotation.None <$ x)
   ExpressionDo x -> ExpressionDo (fmap normalizeDo x)
@@ -975,7 +977,7 @@ literal f = \case
   Language.PureScript.StringLiteral x -> pure (LiteralString x)
 
 normalizeLiteral ::
-  (f a -> Maybe Label.Label) ->
+  (f Annotation.Normalized -> Maybe Label.Label) ->
   (f a -> f Annotation.Normalized) ->
   Literal (f a) ->
   Literal (f Annotation.Normalized)
@@ -1006,16 +1008,18 @@ docFromRecordPair f = \case
   RecordPun x -> pure (Label.doc x)
 
 normalizeRecordPair ::
-  (f a -> Maybe Label.Label) ->
+  (f Annotation.Normalized -> Maybe Label.Label) ->
   (f a -> f Annotation.Normalized) ->
   RecordPair (f a) ->
   RecordPair (f Annotation.Normalized)
 normalizeRecordPair f g = \case
-  RecordPair x y -> case f y of
-    Nothing -> RecordPair x (g y)
+  RecordPair x y -> case f normalized of
+    Nothing -> RecordPair x normalized
     Just label
       | label == x -> RecordPun x
-      | otherwise -> RecordPair x (g y)
+      | otherwise -> RecordPair x normalized
+    where
+    normalized = g y
   RecordPun x -> RecordPun x
 
 recordPair ::
