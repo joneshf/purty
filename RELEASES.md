@@ -30,23 +30,16 @@ The rest of the time between freeze and release is dedicated to making release n
 1. Add an entry to the [CHANGELOG.md][] that has the new version and all changes.
     * Separate the changes into additions, [breaking] changes, and deletions.
     * Even if the change is a "bug fix" it fits into one of these categories.
-1. Update the versions in [ci/bintray-linux.json][],  [ci/bintray-osx.json][], [package.json][], [package-lock.json][], and [package.yaml][] with the version being released.
+1. Update the version in [package.yaml][] with the version being released.
 1. Merge all changes into `master`.
 1. Create a tag with the version being released.
     * Do not prefix the version with a `v`.
         The prefix is arbitrary and unnecessary.
         So, we're arbitrarily deciding to _not_ have it.
         For example: if we're on version `2.3.1`, make the tag `2.3.1`.
-    * This will kick off builds of the Linux, OSX, and Windows binaries and upload them to our [Bintray package][].
+    * This will kick off builds of the Linux, OSX, and Windows binaries and publish them to our [Bintray package][].
 1. Copy the entry from the [CHANGELOG.md][] to the release notes on the [Bintray package][].
 1. Download a binary on your machine and test a few files.
-1. If you notice any problems, issue them like normal.
-    * Show stopping issues will turn into patch fixes and be released ASAP.
-    * Normal issues will be prioritized like any other issue and released when it makes sense.
-    * You are not on the hook to fix a problem just because you found it, no matter how severe it is.
-1. Publish the version on Bintray.
-    * Whether there are problems that have been issued or not, we still want to publish the release.
-    * The only exception is if there are show stopping security problems.
 1. Publish the package on npm.
     * We have to download the published versions from Bintray to publish on npm.
     * You should be able to run `npm publish` from a terminal.
@@ -55,12 +48,8 @@ The rest of the time between freeze and release is dedicated to making release n
 
 [Bintray package]: https://bintray.com/joneshf/generic/purty
 [CHANGELOG.md]: ./CHANGELOG.md
-[ci/bintray-linux.json]: ./ci/bintray-linux.json
-[ci/bintray-osx.json]: ./ci/bintray-osx.json
 [create a new version]: https://bintray.com/joneshf/generic/purty/new/version
 [GitLab release process]: https://about.gitlab.com/2015/12/17/gitlab-release-process/
 [GNOME's Time-Based Release Schedule]: https://wiki.gnome.org/ReleasePlanning/TimeBased
-[package.json]: ./package.json
-[package-lock.json]: ./package-lock.json
 [package.yaml]: ./package.yaml
 [Ubuntu's TimeBasedReleases]: https://wiki.ubuntu.com/TimeBasedReleases
