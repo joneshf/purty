@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.0.2
+
+Squashing another boug from 3.0.0 changes.
+
+This one was record puns not being formatted correctly.
+There were also some infrastructure changes.
+
+### Additions
+
+### Changes
+
+* [Automate more stuff in CI](https://gitlab.com/joneshf/purty/issues/65)
+* [Re-add support for record literal puns in expressions](https://gitlab.com/joneshf/purty/issues/72)
+* [Update release documentation](https://gitlab.com/joneshf/purty/merge_requests/76)
+
+### Deletions
+
 ## 3.0.1
 
 Those huge changes from 3.0.0 contained a few bugs :).

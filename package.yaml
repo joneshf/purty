@@ -109,4 +109,4 @@ tests:
       - tasty-hunit == 0.10.0.1
     main: Main.hs
     source-dirs: test/unit
-version: 3.0.1
+version: 3.0.2
