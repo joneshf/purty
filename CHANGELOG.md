@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.0.3
+
+Patch release with CI changes.
+
+### Additions
+
+### Changes
+
+* [Publish Bintray artifact immediately from AppVeyor](https://gitlab.com/joneshf/purty/issues/79)
+
+### Deletions
+
 ## 3.0.2
 
 Squashing another boug from 3.0.0 changes.
