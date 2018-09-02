@@ -69,8 +69,9 @@ doc = \case
       functionalDependenciesDoc funDeps =
         space
           <> pipe
+          <> space
           <> intercalateMap1
-            (space <> comma <> space) docFromFunctionalDependency
+            (comma <> space) docFromFunctionalDependency
             funDeps
       methodsDoc methods =
         fmap
@@ -153,7 +154,7 @@ functionalDependency variables' = \case
       (throwError $ MissingTypeVariable x)
       pure
       (RIO.HashMap.lookup x variables)
-  index = zipWith (\x (y, _) -> (x, y)) (fromList [1..])
+  index = zipWith (\x (y, _) -> (x, y)) (fromList [0..])
   variables = case variables' of
     Type.Variables x -> List.list' (RIO.HashMap.fromList . toList . index) x
 
