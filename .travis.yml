@@ -47,6 +47,6 @@ os:
 sudo: false
 
 script:
-  - stack build --copy-bins --local-bin-path bin --no-run-tests --test
-  - stack build --test
-  - test/acceptance.sh --verbose
+  - "[ dependencies = ${BUILD_TYPE} ] || stack build --copy-bins --local-bin-path bin --no-run-tests --test"
+  - "[ dependencies = ${BUILD_TYPE} ] || stack build --test"
+  - "[ dependencies = ${BUILD_TYPE} ] || test/acceptance.sh --verbose"
