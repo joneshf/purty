@@ -30,11 +30,11 @@ jobs:
     - stage: Test
       name: Golden tests
       install: skip
-      script: $(stack path --dist-dir)/golden/golden
+      script: $(stack path --dist-dir)/build/golden/golden
     - stage: Test
       name: Unit tests
       install: skip
-      script: $(stack path --dist-dir)/unit/unit
+      script: $(stack path --dist-dir)/build/unit/unit
     - stage: Deploy
       install: skip
       script: ci/bintray/create_tar.sh --file ${TAR_FILE} --version ${TRAVIS_TAG}
