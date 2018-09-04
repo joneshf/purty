@@ -14,30 +14,33 @@ env:
 
 jobs:
   include:
-    - stage: Dependencies
+    - &base-job
       install: skip
+      os:
+        - linux
+        - osx
+    - <<: *base-job
       script: |
         ci/install-stack.sh --os ${TRAVIS_OS_NAME} --verbose
         stack setup
         stack build dhall-json
-    - stage: Build
-      install: skip
+      stage: Dependencies
+    - <<: *base-job
       script: stack build --copy-bins --local-bin-path bin --no-run-tests --test
-    - stage: Test
+      stage: Build
+    - <<: *base-job
       name: Acceptance tests
-      install: skip
       script: test/acceptance.sh --verbose
-    - stage: Test
+      stage: Test
+    - <<: *base-job
       name: Golden tests
-      install: skip
       script: $(stack path --dist-dir)/build/golden/golden
-    - stage: Test
+      stage: Test
+    - <<: *base-job
       name: Unit tests
-      install: skip
       script: $(stack path --dist-dir)/build/unit/unit
-    - stage: Deploy
-      install: skip
-      script: ci/bintray/create_tar.sh --file ${TAR_FILE} --version ${TRAVIS_TAG}
+      stage: Test
+    - <<: *base-job
       deploy:
         file: ci/bintray.json
         key:
@@ -48,7 +51,9 @@ jobs:
         provider: bintray
         skip_cleanup: true
         user: joneshf
-
+      name: Deploy to Bintray
+      script: ci/bintray/create_tar.sh --file ${TAR_FILE} --version ${TRAVIS_TAG}
+      stage: Deploy
 
 language: c
 
@@ -58,13 +63,10 @@ notifications:
     urls:
       - secure: e26AJAtbrYJYHk8gBc79rRDq6rgnq11AgU7lXyps9Dt+22FfP7wMZgOFvY0ECyz9qyy0+6p/+Qmi7DUVTOMJl+IHJlUiH1bKxDYEphPro5Npz3Zx8zkJXqNuoPN0QqMxW8ca7z/afHVD2qAiyobxdTaqyj/25M9FYf4zRzSCcnNqrUkMwpNTYKf+mut8cmHgEQovh5cLXU/XSBHq9yQpjhy0uAlmUfchSsUSvykymSW9VR4GxINJMp4HopzhK1CMSzFAUI0vFIYyfO3l9FeEXJh80uU/dGhx8ajEv/a/6f9Nt/BxBW5AHlW4m5a3AT5M2OC38/OXy0rqVo+cMDhNTXWIJ9B6ugkgm2RZkBtNtO1SmtlYCIGE2hTnXCRLMOI8DNFvnrLQNlYJYBaspj2lF0rk1mu4Awf0XYNrIN+iQPSTUpiF3dwMic8M8fcHCzkTXhIwa/lA5vuJiMW8HtCqtSpqcyxsYpngOP/8s1ZVG64IhJwDPz2rYS40TpcE8kuxusysQ7Pi9vGbndpOVr8MQ5ePcD3779yS6nIrvYwb3XqUUSUpuMZ4eOyyZa40vpYt+wzDUi4uODOWwK6v5CPMIhncm3svjEj88UhOF95ee+4FBxABKcHJ3ZRVt7ifweKAx6/Q04VyGYDV6yeoLbPHCKUsDPadpFuIJmaCBhWx7Y4=
 
-os:
-  - linux
-  - osx
-
 stages:
   - Dependencies
   - Build
   - Test
+  - Deploy
 
 sudo: false
