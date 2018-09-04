@@ -57,4 +57,9 @@ os:
   - linux
   - osx
 
+stages:
+  - Dependencies
+  - Build
+  - Test
+
 sudo: false
