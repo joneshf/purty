@@ -32,6 +32,19 @@ install:
   - stack setup
   - stack build dhall-json
 
+jobs:
+  include:
+    - stage: Dependencies
+      script: stack build dhall-json
+    - stage: Build
+      script: stack build --copy-bins --local-bin-path bin --no-run-tests --test
+    - stage: Test
+      name: Haskell tests
+      script: stack build --test
+    - stage: Test
+      name: Acceptance tests
+      script: test/acceptance.sh --verbose
+
 language: c
 
 notifications:
@@ -45,8 +58,3 @@ os:
   - osx
 
 sudo: false
-
-script:
-  - stack build --copy-bins --local-bin-path bin --no-run-tests --test
-  - stack build --test
-  - test/acceptance.sh --verbose
