@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.0.5
+
+Patch release with a bug fix.
+
+### Additions
+
+### Changes
+
+* [ado might not have statements](https://gitlab.com/joneshf/purty/issues/83)
+
+### Deletions
+
 ## 3.0.4
 
 Patch release with bug fixes.
