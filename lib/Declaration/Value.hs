@@ -370,7 +370,7 @@ staticDo = \case
   DoLet x -> "let" <+> align (vsep $ toList $ fmap staticLetBinding x)
 
 data Expression a
-  = ExpressionAdo !(NonEmpty (Do a)) !(Expression a)
+  = ExpressionAdo !(List.List (Do a)) !(Expression a)
   | ExpressionApplication !(Expression a) !(Expression a)
   | ExpressionCase !(NonEmpty (Expression a)) !(NonEmpty (CaseAlternative a))
   | ExpressionCommented !(Expression a) ![Comment.Comment]
@@ -395,12 +395,13 @@ data Expression a
 
 dynamicExpression :: Expression Annotation.Normalized -> Doc a
 dynamicExpression = \case
-  ExpressionAdo x y ->
+  ExpressionAdo x' y ->
     "ado"
       <> line
-      <> indent 2 (align $ vsep (toList $ fmap dynamicDo x) <> expressionDoc)
+      <> indent 2 (align $ doc <> expressionDoc)
       where
-      expressionDoc = line <> "in" <+> dynamicExpression y
+      doc = List.list' (\x -> vsep (toList $ fmap dynamicDo x) <> line) x'
+      expressionDoc = "in" <+> dynamicExpression y
   ExpressionApplication x y -> dynamicExpression x <+> dynamicExpression y
   ExpressionCase x y ->
     "case" <+> intercalateMap1 (comma <> space) dynamicExpression x <+> "of"
@@ -506,11 +507,9 @@ expression = \case
     expr <- expression y
     pure (ExpressionProperty expr $ Label.fromPSString x)
   Language.PureScript.Ado x y -> do
-    statements' <- nonEmpty <$> traverse do' x
+    statements <- fromList <$> traverse do' x
     expr <- expression y
-    case statements' of
-      Nothing         -> throwError DoWithoutStatements
-      Just statements -> pure (ExpressionAdo statements expr)
+    pure (ExpressionAdo statements expr)
   Language.PureScript.AnonymousArgument -> pure ExpressionWildcard
   Language.PureScript.App x y ->
     ExpressionApplication <$> expression x <*> expression y
@@ -656,12 +655,13 @@ normalizeExpression = \case
 
 staticExpression :: Expression Annotation.Normalized -> Doc a
 staticExpression = \case
-  ExpressionAdo x y ->
+  ExpressionAdo x' y ->
     "ado"
       <> line
-      <> indent 2 (align $ vsep (toList $ fmap staticDo x) <> expressionDoc)
+      <> indent 2 (align $ doc <> expressionDoc)
       where
-      expressionDoc = line <> "in" <+> staticExpression y
+      doc = List.list' (\x -> vsep (toList $ fmap staticDo x) <> line) x'
+      expressionDoc = "in" <+> staticExpression y
   ExpressionApplication x y -> staticExpression x <+> staticExpression y
   ExpressionCase x y ->
     "case" <+> intercalateMap1 (comma <> space) staticExpression x <+> "of"
