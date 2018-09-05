@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.0.4
+
+Patch release with bug fixes.
+
+### Additions
+
+### Changes
+
+* [Functional dependency indexes are wrong](https://gitlab.com/joneshf/purty/issues/84)
+* [Allow building just the dependencies only in Travis](https://gitlab.com/joneshf/purty/merge_requests/82)
+
+### Deletions
+
 ## 3.0.3
 
 Patch release with CI changes.
