@@ -66,8 +66,11 @@ main = do
 diff :: FilePath -> FilePath -> [String]
 diff old new = ["diff", "--unified", old, new]
 
+files :: Path Rel Dir
+files = [reldir|test/golden/files|]
+
 golden :: Formatting -> Path Rel File -> TestTree
-golden formatting goldenFile =
+golden formatting originalFile =
   goldenVsStringDiff (toFilePath goldenFile) diff (toFilePath goldenFile) $ do
     absFile <- makeAbsolute originalFile
     (_, logOptions) <- logOptionsMemory
@@ -90,7 +93,10 @@ golden formatting goldenFile =
         $ Error.declarationClass
         $ test absFile
   where
-  originalFile = [reldir|test/golden/files/original|] </> filename goldenFile
+  formattingDir = case formatting of
+    Dynamic -> [reldir|dynamic|]
+    Static  -> [reldir|static|]
+  goldenFile = files </> formattingDir </> filename originalFile
 
 test ::
   Path Abs File ->
@@ -118,20 +124,11 @@ test absFile = encodeUtf8 . renderLazy <$> Purty.fromAbsFile absFile
 
 goldenTests :: IO TestTree
 goldenTests = do
-  tests <- sequenceA [dynamic, static]
-  pure (testGroup "golden" tests)
-
-dynamic :: IO TestTree
-dynamic = do
-  files <- goldenFiles [reldir|test/golden/files/dynamic|]
-  pure (testGroup "dynamic" $ golden Dynamic <$> files)
-
-static :: IO TestTree
-static = do
-  files <- goldenFiles [reldir|test/golden/files/static|]
-  pure (testGroup "static" $ golden Static <$> files)
-
-goldenFiles :: Path Rel Dir -> IO [Path Rel File]
-goldenFiles dir = do
-  paths <- findByExtension [".purs"] (toFilePath dir)
-  traverse parseRelFile paths
+  paths <- findByExtension [".purs"] (toFilePath $ files </> [reldir|original|])
+  originals <- traverse parseRelFile paths
+  pure $
+    testGroup
+      "golden"
+      [ testGroup "dynamic" (golden Dynamic <$> originals)
+      , testGroup "static" (golden Static <$> originals)
+      ]
