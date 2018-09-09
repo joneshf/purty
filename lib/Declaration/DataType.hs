@@ -2,7 +2,7 @@ module Declaration.DataType where
 
 import "rio" RIO hiding (Data)
 
-import "freer-simple" Control.Monad.Freer        (Eff, Members)
+import "freer-simple" Control.Monad.Freer        (Eff, Member)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.List                          (intersperse)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
@@ -35,20 +35,16 @@ data Alternate a
   deriving (Functor, Show)
 
 alternate ::
-  ( Members
-    '[ Error WrongNewtypeConstructors
-     , Error Kind.InferredKind
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error Kind.InferredKind) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   ( Language.PureScript.ProperName 'Language.PureScript.ConstructorName
   , [Language.PureScript.Type]
@@ -86,20 +82,16 @@ data Data a
   deriving (Functor, Show)
 
 data' ::
-  ( Members
-    '[ Error WrongNewtypeConstructors
-     , Error Kind.InferredKind
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error Kind.InferredKind) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   Language.PureScript.SourceAnn ->
   Language.PureScript.ProperName 'Language.PureScript.TypeName ->
@@ -162,20 +154,17 @@ docFromNewtype = \case
       docType = Variations.singleLine (Type.doc type'')
 
 newtype' ::
-  ( Members
-    '[ Error WrongNewtypeConstructors
-     , Error Kind.InferredKind
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error WrongNewtypeConstructors) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   Language.PureScript.SourceAnn ->
   Language.PureScript.ProperName 'Language.PureScript.TypeName ->

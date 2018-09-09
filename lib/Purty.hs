@@ -2,7 +2,11 @@ module Purty where
 
 import "rio" RIO hiding (ask)
 
-import "freer-simple" Control.Monad.Freer                    (Eff, Members)
+import "freer-simple" Control.Monad.Freer
+    ( Eff
+    , Member
+    , Members
+    )
 import "freer-simple" Control.Monad.Freer.Error              (Error)
 import "freer-simple" Control.Monad.Freer.Reader             (Reader, ask)
 import "freer-simple" Data.OpenUnion                         ((:++:))
@@ -42,24 +46,20 @@ import qualified "this" Output
 import qualified "this" Type
 
 fromAbsFile ::
-  ( Members
-    ( Declaration.Class.Errors
-    :++: Declaration.DataType.Errors
-    :++: Declaration.Fixity.Errors
-    :++: Declaration.Instance.Errors
-    :++: Declaration.Value.Errors
-    :++: Export.Errors
-    :++: Kind.Errors
-    :++: Name.Errors
-    :++: Type.Errors
-    :++: '[ Error ParseError
-          , File.File
-          , Log.Log
-          , Reader Formatting
-          , Reader LayoutOptions
-          ]
-    )
-    e
+  ( Members Declaration.Class.Errors e
+  , Members Declaration.DataType.Errors e
+  , Members Declaration.Fixity.Errors e
+  , Members Declaration.Instance.Errors e
+  , Members Declaration.Value.Errors e
+  , Members Export.Errors e
+  , Members Kind.Errors e
+  , Members Name.Errors e
+  , Members Type.Errors e
+  , Member (Error ParseError) e
+  , Member File.File e
+  , Member Log.Log e
+  , Member (Reader Formatting) e
+  , Member (Reader LayoutOptions) e
   ) =>
   Path Abs File ->
   Eff e (SimpleDocStream Annotation.Sorted)
@@ -94,26 +94,22 @@ fromAbsFile filePath = do
   pure stream
 
 fromPurtyFilePath ::
-  ( Members
-    ( Declaration.Class.Errors
-    :++: Declaration.DataType.Errors
-    :++: Declaration.Fixity.Errors
-    :++: Declaration.Instance.Errors
-    :++: Declaration.Value.Errors
-    :++: Export.Errors
-    :++: Kind.Errors
-    :++: Name.Errors
-    :++: Type.Errors
-    :++: '[ Error ParseError
-          , File.File
-          , Log.Log
-          , Output.Output
-          , Reader Formatting
-          , Reader LayoutOptions
-          , Reader Output
-          ]
-    )
-    e
+  ( Members Declaration.Class.Errors e
+  , Members Declaration.DataType.Errors e
+  , Members Declaration.Fixity.Errors e
+  , Members Declaration.Instance.Errors e
+  , Members Declaration.Value.Errors e
+  , Members Export.Errors e
+  , Members Kind.Errors e
+  , Members Name.Errors e
+  , Members Type.Errors e
+  , Member (Error ParseError) e
+  , Member File.File e
+  , Member Log.Log e
+  , Member Output.Output e
+  , Member (Reader Formatting) e
+  , Member (Reader LayoutOptions) e
+  , Member (Reader Output) e
   ) =>
   PurtyFilePath ->
   Eff e ()

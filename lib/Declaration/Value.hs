@@ -2,7 +2,7 @@ module Declaration.Value where
 
 import "rio" RIO hiding (guard)
 
-import "freer-simple" Control.Monad.Freer        (Eff, Members)
+import "freer-simple" Control.Monad.Freer        (Eff, Member)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.List.NonEmpty                 (NonEmpty((:|)), nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
@@ -61,22 +61,19 @@ data Binder a
   deriving (Functor, Show)
 
 binder ::
-  ( Members
-    '[ Error BinaryBinderWithoutOperator
-     , Error NoExpressions
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error BinaryBinderWithoutOperator) e
+  , Member (Error NoExpressions) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   Language.PureScript.Binder ->
   Eff e (Binder Annotation.Unannotated)
@@ -169,36 +166,33 @@ data CaseAlternative a
   deriving (Functor, Show)
 
 caseAlternative ::
-  ( Members
-    '[ Error BinaryBinderWithoutOperator
-     , Error CaseAlternativeWithoutBinders
-     , Error CaseAlternativeWithoutExpressions
-     , Error CaseWithoutAlternatives
-     , Error CaseWithoutExpressions
-     , Error DoLetWithoutBindings
-     , Error DoWithoutStatements
-     , Error InvalidExpression
-     , Error InvalidExpressions
-     , Error InvalidLetBinding
-     , Error InvalidWhereDeclaration
-     , Error LetWithoutBindings
-     , Error NoExpressions
-     , Error RecordUpdateWithoutUpdates
-     , Error UnguardedExpression
-     , Error WhereWithoutDeclarations
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error BinaryBinderWithoutOperator) e
+  , Member (Error CaseAlternativeWithoutBinders) e
+  , Member (Error CaseAlternativeWithoutExpressions) e
+  , Member (Error CaseWithoutAlternatives) e
+  , Member (Error CaseWithoutExpressions) e
+  , Member (Error DoLetWithoutBindings) e
+  , Member (Error DoWithoutStatements) e
+  , Member (Error InvalidExpression) e
+  , Member (Error InvalidExpressions) e
+  , Member (Error InvalidLetBinding) e
+  , Member (Error InvalidWhereDeclaration) e
+  , Member (Error LetWithoutBindings) e
+  , Member (Error NoExpressions) e
+  , Member (Error RecordUpdateWithoutUpdates) e
+  , Member (Error UnguardedExpression) e
+  , Member (Error WhereWithoutDeclarations) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   Language.PureScript.CaseAlternative ->
   Eff e (CaseAlternative Annotation.Unannotated)
@@ -234,36 +228,33 @@ normalizeCaseAlternative = \case
     CaseAlternativeUnguarded (fmap normalizeBinder x) (normalizeExpression y)
 
 partitionCaseAlternatives ::
-  ( Members
-    '[ Error BinaryBinderWithoutOperator
-     , Error CaseAlternativeWithoutBinders
-     , Error CaseAlternativeWithoutExpressions
-     , Error CaseWithoutAlternatives
-     , Error CaseWithoutExpressions
-     , Error DoLetWithoutBindings
-     , Error DoWithoutStatements
-     , Error InvalidExpression
-     , Error InvalidExpressions
-     , Error InvalidLetBinding
-     , Error InvalidWhereDeclaration
-     , Error LetWithoutBindings
-     , Error NoExpressions
-     , Error RecordUpdateWithoutUpdates
-     , Error UnguardedExpression
-     , Error WhereWithoutDeclarations
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error BinaryBinderWithoutOperator) e
+  , Member (Error CaseAlternativeWithoutBinders) e
+  , Member (Error CaseAlternativeWithoutExpressions) e
+  , Member (Error CaseWithoutAlternatives) e
+  , Member (Error CaseWithoutExpressions) e
+  , Member (Error DoLetWithoutBindings) e
+  , Member (Error DoWithoutStatements) e
+  , Member (Error InvalidExpression) e
+  , Member (Error InvalidExpressions) e
+  , Member (Error InvalidLetBinding) e
+  , Member (Error InvalidWhereDeclaration) e
+  , Member (Error LetWithoutBindings) e
+  , Member (Error NoExpressions) e
+  , Member (Error RecordUpdateWithoutUpdates) e
+  , Member (Error UnguardedExpression) e
+  , Member (Error WhereWithoutDeclarations) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   [Language.PureScript.GuardedExpr] ->
   Eff
@@ -299,36 +290,33 @@ data Do a
   deriving (Functor, Show)
 
 do' ::
-  ( Members
-    '[ Error BinaryBinderWithoutOperator
-     , Error CaseAlternativeWithoutBinders
-     , Error CaseAlternativeWithoutExpressions
-     , Error CaseWithoutAlternatives
-     , Error CaseWithoutExpressions
-     , Error DoLetWithoutBindings
-     , Error DoWithoutStatements
-     , Error InvalidExpression
-     , Error InvalidExpressions
-     , Error InvalidLetBinding
-     , Error InvalidWhereDeclaration
-     , Error LetWithoutBindings
-     , Error NoExpressions
-     , Error RecordUpdateWithoutUpdates
-     , Error UnguardedExpression
-     , Error WhereWithoutDeclarations
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error BinaryBinderWithoutOperator) e
+  , Member (Error CaseAlternativeWithoutBinders) e
+  , Member (Error CaseAlternativeWithoutExpressions) e
+  , Member (Error CaseWithoutAlternatives) e
+  , Member (Error CaseWithoutExpressions) e
+  , Member (Error DoLetWithoutBindings) e
+  , Member (Error DoWithoutStatements) e
+  , Member (Error InvalidExpression) e
+  , Member (Error InvalidExpressions) e
+  , Member (Error InvalidLetBinding) e
+  , Member (Error InvalidWhereDeclaration) e
+  , Member (Error LetWithoutBindings) e
+  , Member (Error NoExpressions) e
+  , Member (Error RecordUpdateWithoutUpdates) e
+  , Member (Error UnguardedExpression) e
+  , Member (Error WhereWithoutDeclarations) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   Language.PureScript.DoNotationElement ->
   Eff e (Do Annotation.Unannotated)
@@ -467,36 +455,33 @@ dynamicExpression = \case
   ExpressionWildcard -> "_"
 
 expression ::
-  ( Members
-    '[ Error BinaryBinderWithoutOperator
-     , Error CaseAlternativeWithoutBinders
-     , Error CaseAlternativeWithoutExpressions
-     , Error CaseWithoutAlternatives
-     , Error CaseWithoutExpressions
-     , Error DoLetWithoutBindings
-     , Error DoWithoutStatements
-     , Error InvalidExpression
-     , Error InvalidExpressions
-     , Error InvalidLetBinding
-     , Error InvalidWhereDeclaration
-     , Error LetWithoutBindings
-     , Error NoExpressions
-     , Error RecordUpdateWithoutUpdates
-     , Error UnguardedExpression
-     , Error WhereWithoutDeclarations
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error BinaryBinderWithoutOperator) e
+  , Member (Error CaseAlternativeWithoutBinders) e
+  , Member (Error CaseAlternativeWithoutExpressions) e
+  , Member (Error CaseWithoutAlternatives) e
+  , Member (Error CaseWithoutExpressions) e
+  , Member (Error DoLetWithoutBindings) e
+  , Member (Error DoWithoutStatements) e
+  , Member (Error InvalidExpression) e
+  , Member (Error InvalidExpressions) e
+  , Member (Error InvalidLetBinding) e
+  , Member (Error InvalidWhereDeclaration) e
+  , Member (Error LetWithoutBindings) e
+  , Member (Error NoExpressions) e
+  , Member (Error RecordUpdateWithoutUpdates) e
+  , Member (Error UnguardedExpression) e
+  , Member (Error WhereWithoutDeclarations) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   Language.PureScript.Expr ->
   Eff e (Expression Annotation.Unannotated)
@@ -735,36 +720,33 @@ dynamicGuard = \case
   GuardExpression x -> dynamicExpression x
 
 guard ::
-  ( Members
-    '[ Error BinaryBinderWithoutOperator
-     , Error CaseAlternativeWithoutBinders
-     , Error CaseAlternativeWithoutExpressions
-     , Error CaseWithoutAlternatives
-     , Error CaseWithoutExpressions
-     , Error DoLetWithoutBindings
-     , Error DoWithoutStatements
-     , Error InvalidExpression
-     , Error InvalidExpressions
-     , Error InvalidLetBinding
-     , Error InvalidWhereDeclaration
-     , Error LetWithoutBindings
-     , Error NoExpressions
-     , Error RecordUpdateWithoutUpdates
-     , Error UnguardedExpression
-     , Error WhereWithoutDeclarations
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error BinaryBinderWithoutOperator) e
+  , Member (Error CaseAlternativeWithoutBinders) e
+  , Member (Error CaseAlternativeWithoutExpressions) e
+  , Member (Error CaseWithoutAlternatives) e
+  , Member (Error CaseWithoutExpressions) e
+  , Member (Error DoLetWithoutBindings) e
+  , Member (Error DoWithoutStatements) e
+  , Member (Error InvalidExpression) e
+  , Member (Error InvalidExpressions) e
+  , Member (Error InvalidLetBinding) e
+  , Member (Error InvalidWhereDeclaration) e
+  , Member (Error LetWithoutBindings) e
+  , Member (Error NoExpressions) e
+  , Member (Error RecordUpdateWithoutUpdates) e
+  , Member (Error UnguardedExpression) e
+  , Member (Error WhereWithoutDeclarations) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   Language.PureScript.Guard ->
   Eff e (Guard Annotation.Unannotated)
@@ -799,36 +781,33 @@ dynamicGuardedExpression separator = \case
       <+> dynamicExpression y
 
 guardedExpression ::
-  ( Members
-    '[ Error BinaryBinderWithoutOperator
-     , Error CaseAlternativeWithoutBinders
-     , Error CaseAlternativeWithoutExpressions
-     , Error CaseWithoutAlternatives
-     , Error CaseWithoutExpressions
-     , Error DoLetWithoutBindings
-     , Error DoWithoutStatements
-     , Error InvalidExpression
-     , Error InvalidExpressions
-     , Error InvalidLetBinding
-     , Error InvalidWhereDeclaration
-     , Error LetWithoutBindings
-     , Error NoExpressions
-     , Error RecordUpdateWithoutUpdates
-     , Error UnguardedExpression
-     , Error WhereWithoutDeclarations
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error BinaryBinderWithoutOperator) e
+  , Member (Error CaseAlternativeWithoutBinders) e
+  , Member (Error CaseAlternativeWithoutExpressions) e
+  , Member (Error CaseWithoutAlternatives) e
+  , Member (Error CaseWithoutExpressions) e
+  , Member (Error DoLetWithoutBindings) e
+  , Member (Error DoWithoutStatements) e
+  , Member (Error InvalidExpression) e
+  , Member (Error InvalidExpressions) e
+  , Member (Error InvalidLetBinding) e
+  , Member (Error InvalidWhereDeclaration) e
+  , Member (Error LetWithoutBindings) e
+  , Member (Error NoExpressions) e
+  , Member (Error RecordUpdateWithoutUpdates) e
+  , Member (Error UnguardedExpression) e
+  , Member (Error WhereWithoutDeclarations) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   Language.PureScript.GuardedExpr ->
   Eff e (GuardedExpression Annotation.Unannotated)
@@ -887,36 +866,33 @@ normalizeLetBinding = \case
   LetBindingValue x -> LetBindingValue (normalize x)
 
 letBinding ::
-  ( Members
-    '[ Error BinaryBinderWithoutOperator
-     , Error CaseAlternativeWithoutBinders
-     , Error CaseAlternativeWithoutExpressions
-     , Error CaseWithoutAlternatives
-     , Error CaseWithoutExpressions
-     , Error DoLetWithoutBindings
-     , Error DoWithoutStatements
-     , Error InvalidExpression
-     , Error InvalidExpressions
-     , Error InvalidLetBinding
-     , Error InvalidWhereDeclaration
-     , Error LetWithoutBindings
-     , Error NoExpressions
-     , Error RecordUpdateWithoutUpdates
-     , Error UnguardedExpression
-     , Error WhereWithoutDeclarations
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error BinaryBinderWithoutOperator) e
+  , Member (Error CaseAlternativeWithoutBinders) e
+  , Member (Error CaseAlternativeWithoutExpressions) e
+  , Member (Error CaseWithoutAlternatives) e
+  , Member (Error CaseWithoutExpressions) e
+  , Member (Error DoLetWithoutBindings) e
+  , Member (Error DoWithoutStatements) e
+  , Member (Error InvalidExpression) e
+  , Member (Error InvalidExpressions) e
+  , Member (Error InvalidLetBinding) e
+  , Member (Error InvalidWhereDeclaration) e
+  , Member (Error LetWithoutBindings) e
+  , Member (Error NoExpressions) e
+  , Member (Error RecordUpdateWithoutUpdates) e
+  , Member (Error UnguardedExpression) e
+  , Member (Error WhereWithoutDeclarations) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   Language.PureScript.Declaration ->
   Eff e (LetBinding Annotation.Unannotated)
@@ -1058,36 +1034,33 @@ normalizeRecordUpdate = \case
   RecordUpdateNest x y -> RecordUpdateNest x (fmap normalizeRecordUpdate y)
 
 recordUpdate ::
-  ( Members
-    '[ Error BinaryBinderWithoutOperator
-     , Error CaseAlternativeWithoutBinders
-     , Error CaseAlternativeWithoutExpressions
-     , Error CaseWithoutAlternatives
-     , Error CaseWithoutExpressions
-     , Error DoLetWithoutBindings
-     , Error DoWithoutStatements
-     , Error InvalidExpression
-     , Error InvalidExpressions
-     , Error InvalidLetBinding
-     , Error InvalidWhereDeclaration
-     , Error LetWithoutBindings
-     , Error NoExpressions
-     , Error RecordUpdateWithoutUpdates
-     , Error UnguardedExpression
-     , Error WhereWithoutDeclarations
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error BinaryBinderWithoutOperator) e
+  , Member (Error CaseAlternativeWithoutBinders) e
+  , Member (Error CaseAlternativeWithoutExpressions) e
+  , Member (Error CaseWithoutAlternatives) e
+  , Member (Error CaseWithoutExpressions) e
+  , Member (Error DoLetWithoutBindings) e
+  , Member (Error DoWithoutStatements) e
+  , Member (Error InvalidExpression) e
+  , Member (Error InvalidExpressions) e
+  , Member (Error InvalidLetBinding) e
+  , Member (Error InvalidWhereDeclaration) e
+  , Member (Error LetWithoutBindings) e
+  , Member (Error NoExpressions) e
+  , Member (Error RecordUpdateWithoutUpdates) e
+  , Member (Error UnguardedExpression) e
+  , Member (Error WhereWithoutDeclarations) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   (Language.PureScript.PSString.PSString, Language.PureScript.Expr) ->
   Eff e (RecordUpdate Annotation.Unannotated)
@@ -1095,36 +1068,33 @@ recordUpdate = \case
   (x, y) -> fmap (RecordUpdate $ Label.fromPSString x) (expression y)
 
 recordUpdateNested ::
-  ( Members
-    '[ Error BinaryBinderWithoutOperator
-     , Error CaseAlternativeWithoutBinders
-     , Error CaseAlternativeWithoutExpressions
-     , Error CaseWithoutAlternatives
-     , Error CaseWithoutExpressions
-     , Error DoLetWithoutBindings
-     , Error DoWithoutStatements
-     , Error InvalidExpression
-     , Error InvalidExpressions
-     , Error InvalidLetBinding
-     , Error InvalidWhereDeclaration
-     , Error LetWithoutBindings
-     , Error NoExpressions
-     , Error RecordUpdateWithoutUpdates
-     , Error UnguardedExpression
-     , Error WhereWithoutDeclarations
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error BinaryBinderWithoutOperator) e
+  , Member (Error CaseAlternativeWithoutBinders) e
+  , Member (Error CaseAlternativeWithoutExpressions) e
+  , Member (Error CaseWithoutAlternatives) e
+  , Member (Error CaseWithoutExpressions) e
+  , Member (Error DoLetWithoutBindings) e
+  , Member (Error DoWithoutStatements) e
+  , Member (Error InvalidExpression) e
+  , Member (Error InvalidExpressions) e
+  , Member (Error InvalidLetBinding) e
+  , Member (Error InvalidWhereDeclaration) e
+  , Member (Error LetWithoutBindings) e
+  , Member (Error NoExpressions) e
+  , Member (Error RecordUpdateWithoutUpdates) e
+  , Member (Error UnguardedExpression) e
+  , Member (Error WhereWithoutDeclarations) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   Language.PureScript.PathTree Language.PureScript.Expr ->
   Eff e (NonEmpty (RecordUpdate Annotation.Unannotated))
@@ -1134,36 +1104,33 @@ recordUpdateNested = \case
     maybe (throwError (RecordUpdateWithoutUpdates Nothing)) pure updates
 
 recordUpdateNode ::
-  ( Members
-    '[ Error BinaryBinderWithoutOperator
-     , Error CaseAlternativeWithoutBinders
-     , Error CaseAlternativeWithoutExpressions
-     , Error CaseWithoutAlternatives
-     , Error CaseWithoutExpressions
-     , Error DoLetWithoutBindings
-     , Error DoWithoutStatements
-     , Error InvalidExpression
-     , Error InvalidExpressions
-     , Error InvalidLetBinding
-     , Error InvalidWhereDeclaration
-     , Error LetWithoutBindings
-     , Error NoExpressions
-     , Error RecordUpdateWithoutUpdates
-     , Error UnguardedExpression
-     , Error WhereWithoutDeclarations
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error BinaryBinderWithoutOperator) e
+  , Member (Error CaseAlternativeWithoutBinders) e
+  , Member (Error CaseAlternativeWithoutExpressions) e
+  , Member (Error CaseWithoutAlternatives) e
+  , Member (Error CaseWithoutExpressions) e
+  , Member (Error DoLetWithoutBindings) e
+  , Member (Error DoWithoutStatements) e
+  , Member (Error InvalidExpression) e
+  , Member (Error InvalidExpressions) e
+  , Member (Error InvalidLetBinding) e
+  , Member (Error InvalidWhereDeclaration) e
+  , Member (Error LetWithoutBindings) e
+  , Member (Error NoExpressions) e
+  , Member (Error RecordUpdateWithoutUpdates) e
+  , Member (Error UnguardedExpression) e
+  , Member (Error WhereWithoutDeclarations) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   ( Language.PureScript.PSString.PSString
   , Language.PureScript.PathNode Language.PureScript.Expr
@@ -1201,38 +1168,33 @@ dynamic, static :: Value Annotation.Normalized -> Doc a
         <> staticValueExpression z
 
 fromPureScript ::
-  ( Members
-    '[ Error BinaryBinderWithoutOperator
-     , Error CaseAlternativeWithoutBinders
-     , Error CaseAlternativeWithoutExpressions
-     , Error CaseWithoutAlternatives
-     , Error CaseWithoutExpressions
-     , Error DoLetWithoutBindings
-     , Error DoWithoutStatements
-     , Error InvalidExpression
-     , Error InvalidExpressions
-     , Error InvalidLetBinding
-     , Error InvalidWhereDeclaration
-     , Error LetWithoutBindings
-     , Error NoExpressions
-     , Error RecordUpdateWithoutUpdates
-     , Error UnguardedExpression
-     , Error WhereWithoutDeclarations
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error BinaryBinderWithoutOperator) e
+  , Member (Error CaseAlternativeWithoutBinders) e
+  , Member (Error CaseAlternativeWithoutExpressions) e
+  , Member (Error CaseWithoutAlternatives) e
+  , Member (Error CaseWithoutExpressions) e
+  , Member (Error DoLetWithoutBindings) e
+  , Member (Error DoWithoutStatements) e
+  , Member (Error InvalidExpression) e
+  , Member (Error InvalidExpressions) e
+  , Member (Error InvalidLetBinding) e
+  , Member (Error InvalidWhereDeclaration) e
+  , Member (Error LetWithoutBindings) e
+  , Member (Error NoExpressions) e
+  , Member (Error RecordUpdateWithoutUpdates) e
+  , Member (Error UnguardedExpression) e
+  , Member (Error WhereWithoutDeclarations) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   Language.PureScript.ValueDeclarationData [Language.PureScript.GuardedExpr] ->
   Eff e (Value Annotation.Unannotated)
@@ -1282,38 +1244,33 @@ staticValueExpression = \case
   ValueExpressionUnguarded x -> space <> equals <+> staticExpression x
 
 valueExpression ::
-  ( Members
-    '[ Error BinaryBinderWithoutOperator
-     , Error CaseAlternativeWithoutBinders
-     , Error CaseAlternativeWithoutExpressions
-     , Error CaseWithoutAlternatives
-     , Error CaseWithoutExpressions
-     , Error DoLetWithoutBindings
-     , Error DoWithoutStatements
-     , Error InvalidExpression
-     , Error InvalidExpressions
-     , Error InvalidLetBinding
-     , Error InvalidWhereDeclaration
-     , Error LetWithoutBindings
-     , Error NoExpressions
-     , Error RecordUpdateWithoutUpdates
-     , Error UnguardedExpression
-     , Error WhereWithoutDeclarations
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error BinaryBinderWithoutOperator) e
+  , Member (Error CaseAlternativeWithoutBinders) e
+  , Member (Error CaseAlternativeWithoutExpressions) e
+  , Member (Error CaseWithoutAlternatives) e
+  , Member (Error CaseWithoutExpressions) e
+  , Member (Error DoLetWithoutBindings) e
+  , Member (Error DoWithoutStatements) e
+  , Member (Error InvalidExpression) e
+  , Member (Error InvalidExpressions) e
+  , Member (Error InvalidLetBinding) e
+  , Member (Error InvalidWhereDeclaration) e
+  , Member (Error LetWithoutBindings) e
+  , Member (Error NoExpressions) e
+  , Member (Error RecordUpdateWithoutUpdates) e
+  , Member (Error UnguardedExpression) e
+  , Member (Error WhereWithoutDeclarations) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   NonEmpty Language.PureScript.GuardedExpr ->
   Eff e (ValueExpression Annotation.Unannotated)
@@ -1348,36 +1305,33 @@ normalizeWhereDeclaration = \case
   WhereDeclarationValue x -> WhereDeclarationValue (normalize x)
 
 whereDeclaration ::
-  ( Members
-    '[ Error BinaryBinderWithoutOperator
-     , Error CaseAlternativeWithoutBinders
-     , Error CaseAlternativeWithoutExpressions
-     , Error CaseWithoutAlternatives
-     , Error CaseWithoutExpressions
-     , Error DoLetWithoutBindings
-     , Error DoWithoutStatements
-     , Error InvalidExpression
-     , Error InvalidExpressions
-     , Error InvalidLetBinding
-     , Error InvalidWhereDeclaration
-     , Error LetWithoutBindings
-     , Error NoExpressions
-     , Error RecordUpdateWithoutUpdates
-     , Error UnguardedExpression
-     , Error WhereWithoutDeclarations
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error BinaryBinderWithoutOperator) e
+  , Member (Error CaseAlternativeWithoutBinders) e
+  , Member (Error CaseAlternativeWithoutExpressions) e
+  , Member (Error CaseWithoutAlternatives) e
+  , Member (Error CaseWithoutExpressions) e
+  , Member (Error DoLetWithoutBindings) e
+  , Member (Error DoWithoutStatements) e
+  , Member (Error InvalidExpression) e
+  , Member (Error InvalidExpressions) e
+  , Member (Error InvalidLetBinding) e
+  , Member (Error InvalidWhereDeclaration) e
+  , Member (Error LetWithoutBindings) e
+  , Member (Error NoExpressions) e
+  , Member (Error RecordUpdateWithoutUpdates) e
+  , Member (Error UnguardedExpression) e
+  , Member (Error WhereWithoutDeclarations) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   Language.PureScript.Declaration ->
   Eff e (WhereDeclaration Annotation.Unannotated)

@@ -31,7 +31,7 @@ module Type
 
 import "rio" RIO hiding (Data)
 
-import "freer-simple" Control.Monad.Freer        (Eff, Members)
+import "freer-simple" Control.Monad.Freer        (Eff, Member)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.Bitraversable                 (bitraverse)
 import "base" Data.List.NonEmpty                 (NonEmpty((:|)), (<|))
@@ -68,19 +68,16 @@ data Constraint a
   deriving (Functor, Show)
 
 constraint ::
-  ( Members
-    '[ Error InferredConstraintData
-     , Error InferredForallWithSkolem
-     , Error InferredSkolem
-     , Error InferredType
-     , Error InfixTypeNotTypeOp
-     , Error PrettyPrintForAll
-     , Error PrettyPrintFunction
-     , Error PrettyPrintObject
-     , Error Kind.InferredKind
-     , Error Name.Missing
-     ]
-    e
+  ( Member (Error InferredConstraintData) e
+  , Member (Error InferredForallWithSkolem) e
+  , Member (Error InferredSkolem) e
+  , Member (Error InferredType) e
+  , Member (Error InfixTypeNotTypeOp) e
+  , Member (Error PrettyPrintForAll) e
+  , Member (Error PrettyPrintFunction) e
+  , Member (Error PrettyPrintObject) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.Missing) e
   ) =>
   Language.PureScript.Constraint ->
   Eff e (Constraint Annotation.Unannotated)
@@ -135,19 +132,16 @@ normalizeRow = \case
   Row surround y z -> Row surround (fmap normalizeRowPair y) (normalizeRowpen z)
 
 row ::
-  ( Members
-    '[ Error InferredConstraintData
-     , Error InferredForallWithSkolem
-     , Error InferredSkolem
-     , Error InferredType
-     , Error InfixTypeNotTypeOp
-     , Error PrettyPrintForAll
-     , Error PrettyPrintFunction
-     , Error PrettyPrintObject
-     , Error Kind.InferredKind
-     , Error Name.Missing
-     ]
-    e
+  ( Member (Error InferredConstraintData) e
+  , Member (Error InferredForallWithSkolem) e
+  , Member (Error InferredSkolem) e
+  , Member (Error InferredType) e
+  , Member (Error InfixTypeNotTypeOp) e
+  , Member (Error PrettyPrintForAll) e
+  , Member (Error PrettyPrintFunction) e
+  , Member (Error PrettyPrintObject) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.Missing) e
   ) =>
   Language.PureScript.Label.Label ->
   Language.PureScript.Type ->
@@ -186,19 +180,16 @@ normalizeRowPair = \case
   RowPair x y -> RowPair x (normalize y)
 
 rowPair ::
-  ( Members
-    '[ Error InferredConstraintData
-     , Error InferredForallWithSkolem
-     , Error InferredSkolem
-     , Error InferredType
-     , Error InfixTypeNotTypeOp
-     , Error PrettyPrintForAll
-     , Error PrettyPrintFunction
-     , Error PrettyPrintObject
-     , Error Kind.InferredKind
-     , Error Name.Missing
-     ]
-    e
+  ( Member (Error InferredConstraintData) e
+  , Member (Error InferredForallWithSkolem) e
+  , Member (Error InferredSkolem) e
+  , Member (Error InferredType) e
+  , Member (Error InfixTypeNotTypeOp) e
+  , Member (Error PrettyPrintForAll) e
+  , Member (Error PrettyPrintFunction) e
+  , Member (Error PrettyPrintObject) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.Missing) e
   ) =>
   Language.PureScript.Label.Label ->
   Language.PureScript.Type ->
@@ -368,19 +359,16 @@ normalize = \case
   TypeWildcard x -> TypeWildcard x
 
 fromPureScript ::
-  ( Members
-    '[ Error InferredConstraintData
-     , Error InferredForallWithSkolem
-     , Error InferredSkolem
-     , Error InferredType
-     , Error InfixTypeNotTypeOp
-     , Error PrettyPrintForAll
-     , Error PrettyPrintFunction
-     , Error PrettyPrintObject
-     , Error Kind.InferredKind
-     , Error Name.Missing
-     ]
-    e
+  ( Member (Error InferredConstraintData) e
+  , Member (Error InferredForallWithSkolem) e
+  , Member (Error InferredSkolem) e
+  , Member (Error InferredType) e
+  , Member (Error InfixTypeNotTypeOp) e
+  , Member (Error PrettyPrintForAll) e
+  , Member (Error PrettyPrintFunction) e
+  , Member (Error PrettyPrintObject) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.Missing) e
   ) =>
   Language.PureScript.Type ->
   Eff e (Type Annotation.Unannotated)
@@ -452,11 +440,8 @@ normalizeVariables = \case
   Variables x -> Variables ((fmap . fmap . fmap) Kind.normalize x)
 
 variables ::
-  ( Members
-    '[ Error Kind.InferredKind
-     , Error Name.Missing
-     ]
-    e
+  ( Member (Error Kind.InferredKind) e
+  , Member (Error Name.Missing) e
   ) =>
   [(Text, Maybe Language.PureScript.Kind)] ->
   Eff e (Variables Annotation.Unannotated)
