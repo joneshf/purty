@@ -1,20 +1,12 @@
 module Exports
-  ( module Bar
-  , module Foo
-  , class Bar
-  , class Foo
-  , kind Bar
-  , kind Foo
-  , type (&&)
+  ( module A
+  , class A
+  , kind A
   , type (||)
-  , Bar
-      ( Baz
-      , Qux
+  , A
+      ( B
       )
-  , Foo
-  , (&&)
   , (||)
-  , bar
-  , baz
-  , foo
+  , a
+  , b
   ) where
