@@ -140,6 +140,17 @@ golden formatting originalFile =
     Static  -> [reldir|static|]
   goldenFile = files </> formattingDir </> filename originalFile
 
+goldenTests :: IO TestTree
+goldenTests = do
+  filesUsed <- filesUsedTests
+  formatting <- formattingTests
+  pure $
+    testGroup
+      "golden"
+      [ filesUsed
+      , formatting
+      ]
+
 psFiles :: Path Rel a -> IO [Path Rel File]
 psFiles dir = do
   paths <- findByExtension [".purs"] (toFilePath $ files </> dir)
@@ -168,14 +179,3 @@ test ::
     )
     LByteString
 test absFile = encodeUtf8 . renderLazy <$> Purty.fromAbsFile absFile
-
-goldenTests :: IO TestTree
-goldenTests = do
-  filesUsed <- filesUsedTests
-  formatting <- formattingTests
-  pure $
-    testGroup
-      "golden"
-      [ filesUsed
-      , formatting
-      ]
