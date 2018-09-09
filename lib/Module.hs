@@ -10,9 +10,8 @@ module Module
 
 import "rio" RIO
 
-import "freer-simple" Control.Monad.Freer        (Eff, Members)
+import "freer-simple" Control.Monad.Freer        (Eff, Member, Members)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
-import "freer-simple" Data.OpenUnion             ((:++:))
 import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, line, (<+>))
 import "path" Path                               (Abs, File, Path, fromAbsFile)
 import "parsec" Text.Parsec                      (ParseError)
@@ -69,18 +68,15 @@ dynamic = \case
       <> Declaration.dynamic declarations
 
 fromPureScript ::
-  ( Members
-    ( Declaration.Class.Errors
-    :++: Declaration.DataType.Errors
-    :++: Declaration.Fixity.Errors
-    :++: Declaration.Instance.Errors
-    :++: Declaration.Value.Errors
-    :++: Export.Errors
-    :++: Kind.Errors
-    :++: Name.Errors
-    :++: Type.Errors
-    )
-    e
+  ( Members Declaration.Class.Errors e
+  , Members Declaration.DataType.Errors e
+  , Members Declaration.Fixity.Errors e
+  , Members Declaration.Instance.Errors e
+  , Members Declaration.Value.Errors e
+  , Members Export.Errors e
+  , Members Kind.Errors e
+  , Members Name.Errors e
+  , Members Type.Errors e
   ) =>
   Language.PureScript.Module ->
   Eff
@@ -108,7 +104,7 @@ normalize = \case
     Module ann comments name exports imports (Declaration.normalize declarations)
 
 parse ::
-  (Members '[Error ParseError, File.File, Log.Log] e) =>
+  (Member (Error ParseError) e, Member File.File e, Member Log.Log e) =>
   Path Abs File ->
   Eff e Language.PureScript.Module
 parse absFile = do
@@ -119,7 +115,7 @@ parse absFile = do
   pure m
 
 parse' ::
-  (Members '[Error ParseError] e) =>
+  (Member (Error ParseError) e) =>
   Path Abs File ->
   Text ->
   Eff e (FilePath, Language.PureScript.Module)

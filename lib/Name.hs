@@ -2,7 +2,7 @@ module Name where
 
 import "rio" RIO
 
-import "freer-simple" Control.Monad.Freer        (Eff, Members)
+import "freer-simple" Control.Monad.Freer        (Eff, Member)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.List.NonEmpty                 (NonEmpty, nonEmpty)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
@@ -27,7 +27,7 @@ docFromCommon = \case
   Common _ann name -> pretty name
 
 common ::
-  (Members '[Error InvalidCommon] e) =>
+  (Member (Error InvalidCommon) e) =>
   Language.PureScript.Ident ->
   Eff e (Common Annotation.Unannotated)
 common = \case
@@ -82,7 +82,7 @@ docFromModule = \case
   Module names -> intercalateMap1 "." docFromProper names
 
 module' ::
-  (Members '[Error Missing] e) =>
+  (Member (Error Missing) e) =>
   Language.PureScript.ModuleName ->
   Eff e (Module Annotation.Unannotated)
 module' = \case
@@ -99,7 +99,7 @@ docFromQualified f = \case
   Qualified (Just x) y -> docFromModule x <> dot <> f y
 
 qualified ::
-  (Members '[Error Missing] e) =>
+  (Member (Error Missing) e) =>
   (a -> Eff e (g Annotation.Unannotated)) ->
   Language.PureScript.Qualified a ->
   Eff e (Qualified g Annotation.Unannotated)

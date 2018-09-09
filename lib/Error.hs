@@ -2,7 +2,7 @@ module Error where
 
 import "rio" RIO
 
-import "freer-simple" Control.Monad.Freer       (Eff, Members)
+import "freer-simple" Control.Monad.Freer       (Eff, Member)
 import "freer-simple" Control.Monad.Freer.Error (handleError)
 import "freer-simple" Data.OpenUnion            ((:++:))
 import "parsec" Text.Parsec                     (ParseError)
@@ -20,7 +20,7 @@ import qualified "this" Name
 import qualified "this" Type
 
 declarationClass ::
-  (Members '[Exit.Exit, Log.Log] e) =>
+  (Member Exit.Exit e, Member Log.Log e) =>
   Eff (Declaration.Class.Errors :++: e) a ->
   Eff e a
 declarationClass x =
@@ -33,7 +33,7 @@ declarationClass x =
     Exit.failure
 
 declarationDataType ::
-  (Members '[Exit.Exit, Log.Log] e) =>
+  (Member Exit.Exit e, Member Log.Log e) =>
   Eff (Declaration.DataType.Errors :++: e) a ->
   Eff e a
 declarationDataType x =
@@ -45,7 +45,7 @@ declarationDataType x =
     Exit.failure
 
 declarationFixity ::
-  (Members '[Exit.Exit, Log.Log] e) =>
+  (Member Exit.Exit e, Member Log.Log e) =>
   Eff (Declaration.Fixity.Errors :++: e) a ->
   Eff e a
 declarationFixity x =
@@ -57,7 +57,7 @@ declarationFixity x =
     Exit.failure
 
 declarationInstance ::
-  (Members '[Exit.Exit, Log.Log] e) =>
+  (Member Exit.Exit e, Member Log.Log e) =>
   Eff (Declaration.Instance.Errors :++: e) a ->
   Eff e a
 declarationInstance x =
@@ -73,7 +73,7 @@ declarationInstance x =
     Exit.failure
 
 declarationValue ::
-  (Members '[Exit.Exit, Log.Log] e) =>
+  (Member Exit.Exit e, Member Log.Log e) =>
   Eff (Declaration.Value.Errors :++: e) a ->
   Eff e a
 declarationValue x =
@@ -100,7 +100,7 @@ declarationValue x =
     Exit.failure
 
 export ::
-  (Members '[Exit.Exit, Log.Log] e) =>
+  (Member Exit.Exit e, Member Log.Log e) =>
   Eff (Export.Errors :++: e) a ->
   Eff e a
 export x =
@@ -115,7 +115,7 @@ export x =
     Exit.failure
 
 kind ::
-  (Members '[Exit.Exit, Log.Log] e) =>
+  (Member Exit.Exit e, Member Log.Log e) =>
   Eff (Kind.Errors :++: e) a ->
   Eff e a
 kind x =
@@ -127,7 +127,7 @@ kind x =
     Exit.failure
 
 name ::
-  (Members '[Exit.Exit, Log.Log] e) =>
+  (Member Exit.Exit e, Member Log.Log e) =>
   Eff (Name.Errors :++: e) a ->
   Eff e a
 name x =
@@ -139,14 +139,14 @@ name x =
     Log.error (display err)
     Exit.failure
 
-parseError :: (Members '[Exit.Exit, Log.Log] e) => ParseError -> Eff e a
+parseError :: (Member Exit.Exit e, Member Log.Log e) => ParseError -> Eff e a
 parseError err = do
   Log.error "Problem parsing module"
   Log.error (displayShow err)
   Exit.failure
 
 type' ::
-  (Members '[Exit.Exit, Log.Log] e) =>
+  (Member Exit.Exit e, Member Log.Log e) =>
   Eff (Type.Errors :++: e) a ->
   Eff e a
 type' x =

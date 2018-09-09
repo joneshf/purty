@@ -2,7 +2,7 @@ module Declaration.Foreign where
 
 import "rio" RIO hiding (Data)
 
-import "freer-simple" Control.Monad.Freer        (Eff, Members)
+import "freer-simple" Control.Monad.Freer        (Eff, Member)
 import "freer-simple" Control.Monad.Freer.Error  (Error)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
@@ -26,11 +26,8 @@ data Data a
   deriving (Functor, Show)
 
 data' ::
-  ( Members
-    '[ Error Kind.InferredKind
-     , Error Name.Missing
-     ]
-    e
+  ( Member (Error Kind.InferredKind) e
+  , Member (Error Name.Missing) e
   ) =>
   Language.PureScript.SourceAnn ->
   Language.PureScript.ProperName 'Language.PureScript.TypeName ->
@@ -116,20 +113,17 @@ normalizeValue = \case
     Value comments (Annotation.None <$ name) (Type.normalize type')
 
 value ::
-  ( Members
-    '[ Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   Language.PureScript.SourceAnn ->
   Language.PureScript.Ident ->

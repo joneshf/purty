@@ -2,7 +2,7 @@ module Declaration.Fixity where
 
 import "rio" RIO
 
-import "freer-simple" Control.Monad.Freer        (Eff, Members)
+import "freer-simple" Control.Monad.Freer        (Eff, Member)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.Bifunctor                     (bimap)
 import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, line, pretty, (<+>))
@@ -43,10 +43,7 @@ docFromPrecedence = \case
   Precedence x -> pretty x
 
 precedence ::
-  ( Members
-    '[ Error NegativePrecedence
-     ]
-    e
+  ( Member (Error NegativePrecedence) e
   ) =>
   Language.PureScript.Qualified
     (Either Language.PureScript.Ident (Language.PureScript.ProperName a)) ->
@@ -83,12 +80,8 @@ normalizeType = \case
   Type v w x y z -> Type v w x (Annotation.None <$ y) (Annotation.None <$ z)
 
 type' ::
-  ( Members
-    '[ Error NegativePrecedence
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     ]
-    e
+  ( Member (Error NegativePrecedence) e
+  , Member (Error Name.Missing) e
   ) =>
   Language.PureScript.SourceAnn ->
   Language.PureScript.TypeFixity ->
@@ -144,12 +137,9 @@ normalizeValue = \case
     ValueValue v w x (Annotation.None <$ y) (Annotation.None <$ z)
 
 value ::
-  ( Members
-    '[ Error NegativePrecedence
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     ]
-    e
+  ( Member (Error NegativePrecedence) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
   ) =>
   Language.PureScript.SourceAnn ->
   Language.PureScript.ValueFixity ->

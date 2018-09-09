@@ -2,7 +2,7 @@ module Export where
 
 import "rio" RIO
 
-import "freer-simple" Control.Monad.Freer        (Eff, Members)
+import "freer-simple" Control.Monad.Freer        (Eff, Member)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "base" Data.List                          (intersperse)
 import "base" Data.List.NonEmpty
@@ -133,13 +133,10 @@ docFromExport = \case
   ExportValueOperator op -> pure (Name.docFromValueOperator op)
 
 export ::
-  ( Members
-    '[ Error InstanceExported
-     , Error InvalidExport
-     , Error Name.Missing
-     , Error ReExportExported
-     ]
-    e
+  ( Member (Error InstanceExported) e
+  , Member (Error InvalidExport) e
+  , Member (Error Name.Missing) e
+  , Member (Error ReExportExported) e
   ) =>
   Language.PureScript.DeclarationRef ->
   Eff e (Export Annotation.Unannotated)
@@ -166,14 +163,11 @@ newtype Exports a
 instance (Log.Inspect a) => Log.Inspect (Exports a)
 
 exports ::
-  ( Members
-    '[ Error EmptyExplicitExports
-     , Error InstanceExported
-     , Error InvalidExport
-     , Error Name.Missing
-     , Error ReExportExported
-     ]
-    e
+  ( Member (Error EmptyExplicitExports) e
+  , Member (Error InstanceExported) e
+  , Member (Error InvalidExport) e
+  , Member (Error Name.Missing) e
+  , Member (Error ReExportExported) e
   ) =>
   Maybe [Language.PureScript.DeclarationRef] ->
   Eff e (Exports Annotation.Unannotated)
@@ -277,7 +271,7 @@ docFromValue = \case
   Value _ann name -> pretty name
 
 value ::
-  (Members '[Error InvalidExport] e) =>
+  (Member (Error InvalidExport) e) =>
   Language.PureScript.Ident ->
   Eff e (Value Annotation.Unannotated)
 value = \case
@@ -285,14 +279,11 @@ value = \case
   ident -> throwError (InvalidExport ident)
 
 fromPureScript ::
-  ( Members
-    '[ Error EmptyExplicitExports
-     , Error InstanceExported
-     , Error InvalidExport
-     , Error Name.Missing
-     , Error ReExportExported
-     ]
-    e
+  ( Member (Error EmptyExplicitExports) e
+  , Member (Error InstanceExported) e
+  , Member (Error InvalidExport) e
+  , Member (Error Name.Missing) e
+  , Member (Error ReExportExported) e
   ) =>
   [Language.PureScript.DeclarationRef] ->
   Eff e (NonEmpty (Export Annotation.Unannotated))

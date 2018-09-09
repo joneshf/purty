@@ -8,7 +8,7 @@ module Declaration
 
 import "rio" RIO hiding (Data)
 
-import "freer-simple" Control.Monad.Freer        (Eff, Members)
+import "freer-simple" Control.Monad.Freer        (Eff, Member)
 import "freer-simple" Control.Monad.Freer.Error  (Error)
 import "semigroupoids" Data.Semigroup.Foldable   (intercalateMap1)
 import "prettyprinter" Data.Text.Prettyprint.Doc (Doc, flatAlt, group, line)
@@ -72,90 +72,84 @@ normalizeDeclaration = \case
   DeclarationValue x -> DeclarationValue (Declaration.Value.normalize x)
 
 declarations ::
-  ( Members
-    '[ Error Declaration.Class.InvalidTypeClassMethod
-     , Error Declaration.Class.MissingTypeVariable
-     , Error Declaration.DataType.WrongNewtypeConstructors
-     , Error Declaration.Fixity.NegativePrecedence
-     , Error Declaration.Instance.DerivedInChain
-     , Error Declaration.Instance.DerivedNewtypeInChain
-     , Error Declaration.Instance.Desugared
-     , Error Declaration.Instance.InvalidMethod
-     , Error Declaration.Instance.NegativeChainIndex
-     , Error Declaration.Value.BinaryBinderWithoutOperator
-     , Error Declaration.Value.CaseAlternativeWithoutBinders
-     , Error Declaration.Value.CaseAlternativeWithoutExpressions
-     , Error Declaration.Value.CaseWithoutAlternatives
-     , Error Declaration.Value.CaseWithoutExpressions
-     , Error Declaration.Value.DoLetWithoutBindings
-     , Error Declaration.Value.DoWithoutStatements
-     , Error Declaration.Value.InvalidExpression
-     , Error Declaration.Value.InvalidExpressions
-     , Error Declaration.Value.InvalidLetBinding
-     , Error Declaration.Value.InvalidWhereDeclaration
-     , Error Declaration.Value.LetWithoutBindings
-     , Error Declaration.Value.NoExpressions
-     , Error Declaration.Value.RecordUpdateWithoutUpdates
-     , Error Declaration.Value.UnguardedExpression
-     , Error Declaration.Value.WhereWithoutDeclarations
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error Declaration.Class.InvalidTypeClassMethod) e
+  , Member (Error Declaration.Class.MissingTypeVariable) e
+  , Member (Error Declaration.DataType.WrongNewtypeConstructors) e
+  , Member (Error Declaration.Fixity.NegativePrecedence) e
+  , Member (Error Declaration.Instance.DerivedInChain) e
+  , Member (Error Declaration.Instance.DerivedNewtypeInChain) e
+  , Member (Error Declaration.Instance.Desugared) e
+  , Member (Error Declaration.Instance.InvalidMethod) e
+  , Member (Error Declaration.Instance.NegativeChainIndex) e
+  , Member (Error Declaration.Value.BinaryBinderWithoutOperator) e
+  , Member (Error Declaration.Value.CaseAlternativeWithoutBinders) e
+  , Member (Error Declaration.Value.CaseAlternativeWithoutExpressions) e
+  , Member (Error Declaration.Value.CaseWithoutAlternatives) e
+  , Member (Error Declaration.Value.CaseWithoutExpressions) e
+  , Member (Error Declaration.Value.DoLetWithoutBindings) e
+  , Member (Error Declaration.Value.DoWithoutStatements) e
+  , Member (Error Declaration.Value.InvalidExpression) e
+  , Member (Error Declaration.Value.InvalidExpressions) e
+  , Member (Error Declaration.Value.InvalidLetBinding) e
+  , Member (Error Declaration.Value.InvalidWhereDeclaration) e
+  , Member (Error Declaration.Value.LetWithoutBindings) e
+  , Member (Error Declaration.Value.NoExpressions) e
+  , Member (Error Declaration.Value.RecordUpdateWithoutUpdates) e
+  , Member (Error Declaration.Value.UnguardedExpression) e
+  , Member (Error Declaration.Value.WhereWithoutDeclarations) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   [Language.PureScript.Declaration] ->
   Eff e (Declarations Annotation.Unannotated)
 declarations x = fmap (Declarations . fromList) (wither fromPureScript x)
 
 fromPureScript ::
-  ( Members
-    '[ Error Declaration.Class.InvalidTypeClassMethod
-     , Error Declaration.Class.MissingTypeVariable
-     , Error Declaration.DataType.WrongNewtypeConstructors
-     , Error Declaration.Fixity.NegativePrecedence
-     , Error Declaration.Instance.DerivedInChain
-     , Error Declaration.Instance.DerivedNewtypeInChain
-     , Error Declaration.Instance.Desugared
-     , Error Declaration.Instance.InvalidMethod
-     , Error Declaration.Instance.NegativeChainIndex
-     , Error Declaration.Value.BinaryBinderWithoutOperator
-     , Error Declaration.Value.CaseAlternativeWithoutBinders
-     , Error Declaration.Value.CaseAlternativeWithoutExpressions
-     , Error Declaration.Value.CaseWithoutAlternatives
-     , Error Declaration.Value.CaseWithoutExpressions
-     , Error Declaration.Value.DoLetWithoutBindings
-     , Error Declaration.Value.DoWithoutStatements
-     , Error Declaration.Value.InvalidExpression
-     , Error Declaration.Value.InvalidExpressions
-     , Error Declaration.Value.InvalidLetBinding
-     , Error Declaration.Value.InvalidWhereDeclaration
-     , Error Declaration.Value.LetWithoutBindings
-     , Error Declaration.Value.NoExpressions
-     , Error Declaration.Value.RecordUpdateWithoutUpdates
-     , Error Declaration.Value.UnguardedExpression
-     , Error Declaration.Value.WhereWithoutDeclarations
-     , Error Kind.InferredKind
-     , Error Name.InvalidCommon
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error Declaration.Class.InvalidTypeClassMethod) e
+  , Member (Error Declaration.Class.MissingTypeVariable) e
+  , Member (Error Declaration.DataType.WrongNewtypeConstructors) e
+  , Member (Error Declaration.Fixity.NegativePrecedence) e
+  , Member (Error Declaration.Instance.DerivedInChain) e
+  , Member (Error Declaration.Instance.DerivedNewtypeInChain) e
+  , Member (Error Declaration.Instance.Desugared) e
+  , Member (Error Declaration.Instance.InvalidMethod) e
+  , Member (Error Declaration.Instance.NegativeChainIndex) e
+  , Member (Error Declaration.Value.BinaryBinderWithoutOperator) e
+  , Member (Error Declaration.Value.CaseAlternativeWithoutBinders) e
+  , Member (Error Declaration.Value.CaseAlternativeWithoutExpressions) e
+  , Member (Error Declaration.Value.CaseWithoutAlternatives) e
+  , Member (Error Declaration.Value.CaseWithoutExpressions) e
+  , Member (Error Declaration.Value.DoLetWithoutBindings) e
+  , Member (Error Declaration.Value.DoWithoutStatements) e
+  , Member (Error Declaration.Value.InvalidExpression) e
+  , Member (Error Declaration.Value.InvalidExpressions) e
+  , Member (Error Declaration.Value.InvalidLetBinding) e
+  , Member (Error Declaration.Value.InvalidWhereDeclaration) e
+  , Member (Error Declaration.Value.LetWithoutBindings) e
+  , Member (Error Declaration.Value.NoExpressions) e
+  , Member (Error Declaration.Value.RecordUpdateWithoutUpdates) e
+  , Member (Error Declaration.Value.UnguardedExpression) e
+  , Member (Error Declaration.Value.WhereWithoutDeclarations) e
+  , Member (Error Kind.InferredKind) e
+  , Member (Error Name.InvalidCommon) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   Language.PureScript.Declaration ->
   Eff e (Maybe (Declaration Annotation.Unannotated))

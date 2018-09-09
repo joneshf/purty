@@ -2,7 +2,7 @@ module Kind where
 
 import "rio" RIO
 
-import "freer-simple" Control.Monad.Freer        (Eff, Members)
+import "freer-simple" Control.Monad.Freer        (Eff, Member)
 import "freer-simple" Control.Monad.Freer.Error  (Error, throwError)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
@@ -44,7 +44,7 @@ doc = \case
   KindRow x -> fmap ("#" <+>) (doc x)
 
 fromPureScript ::
-  (Members '[Error InferredKind, Error Name.Missing] e) =>
+  (Member (Error InferredKind) e, Member (Error Name.Missing) e) =>
   Language.PureScript.Kind ->
   Eff e (Kind Annotation.Unannotated)
 fromPureScript = \case

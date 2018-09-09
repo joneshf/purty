@@ -2,7 +2,7 @@ module Declaration.Synonym where
 
 import "rio" RIO
 
-import "freer-simple" Control.Monad.Freer        (Eff, Members)
+import "freer-simple" Control.Monad.Freer        (Eff, Member)
 import "freer-simple" Control.Monad.Freer.Error  (Error)
 import "prettyprinter" Data.Text.Prettyprint.Doc
     ( Doc
@@ -53,19 +53,16 @@ normalize = \case
       (Type.normalize z)
 
 fromPureScript ::
-  ( Members
-    '[ Error Kind.InferredKind
-     , Error Name.Missing
-     , Error Type.InferredConstraintData
-     , Error Type.InferredForallWithSkolem
-     , Error Type.InferredSkolem
-     , Error Type.InferredType
-     , Error Type.InfixTypeNotTypeOp
-     , Error Type.PrettyPrintForAll
-     , Error Type.PrettyPrintFunction
-     , Error Type.PrettyPrintObject
-     ]
-    e
+  ( Member (Error Kind.InferredKind) e
+  , Member (Error Name.Missing) e
+  , Member (Error Type.InferredConstraintData) e
+  , Member (Error Type.InferredForallWithSkolem) e
+  , Member (Error Type.InferredSkolem) e
+  , Member (Error Type.InferredType) e
+  , Member (Error Type.InfixTypeNotTypeOp) e
+  , Member (Error Type.PrettyPrintForAll) e
+  , Member (Error Type.PrettyPrintFunction) e
+  , Member (Error Type.PrettyPrintObject) e
   ) =>
   Language.PureScript.SourceAnn ->
   Language.PureScript.ProperName 'Language.PureScript.TypeName ->
