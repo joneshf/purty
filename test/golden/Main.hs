@@ -23,9 +23,11 @@ import "path" Path
     , File
     , Path
     , Rel
+    , filename
     , parseRelFile
     , reldir
     , toFilePath
+    , (</>)
     )
 import "path-io" Path.IO                                     (makeAbsolute)
 import "tasty" Test.Tasty
@@ -67,7 +69,7 @@ diff old new = ["diff", "--unified", old, new]
 golden :: Formatting -> Path Rel File -> TestTree
 golden formatting goldenFile =
   goldenVsStringDiff (toFilePath goldenFile) diff (toFilePath goldenFile) $ do
-    absFile <- makeAbsolute goldenFile
+    absFile <- makeAbsolute originalFile
     (_, logOptions) <- logOptionsMemory
     withLogFunc logOptions $ \logFunc ->
       runM
@@ -87,6 +89,8 @@ golden formatting goldenFile =
         $ Error.declarationDataType
         $ Error.declarationClass
         $ test absFile
+  where
+  originalFile = [reldir|test/golden/files/original|] </> filename goldenFile
 
 test ::
   Path Abs File ->
