@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.0.6
+
+Internal code cleanup. There shouldn't be any changes with `purty` itself.
+
+### Additions
+
+### Changes
+
+* [Prefer `Member` over `Members`](https://gitlab.com/joneshf/purty/merge_requests/86)
+* [Cleanup golden test suite](https://gitlab.com/joneshf/purty/merge_requests/87)
+
+### Deletions
+
 ## 3.0.5
 
 Patch release with a bug fix.
