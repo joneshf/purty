@@ -41,13 +41,13 @@ The rest of the time between freeze and release is dedicated to making release n
 1. Copy the entry from the [CHANGELOG.md][] to the release notes on the [Bintray package][].
 1. Download a binary on your machine and test a few files.
 1. Publish the package on npm.
-    * We have to download the published versions from Bintray to publish on npm.
-    * You should be able to run `npm publish` from a terminal.
+    * You should be able to run [ci/npm/publish.sh][] from a terminal.
 1. Celebrate! :tada:
     * Releasing software is a great thing, and no small effort. Be proud of your accomplishment.
 
 [Bintray package]: https://bintray.com/joneshf/generic/purty
 [CHANGELOG.md]: ./CHANGELOG.md
+[ci/npm/publish.sh]: ./ci/npm/publish.sh
 [create a new version]: https://bintray.com/joneshf/generic/purty/new/version
 [GitLab release process]: https://about.gitlab.com/2015/12/17/gitlab-release-process/
 [GNOME's Time-Based Release Schedule]: https://wiki.gnome.org/ReleasePlanning/TimeBased
