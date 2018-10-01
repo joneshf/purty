@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.0.7
+
+Re-publishing to npm. There was a problem with the previous version.
+
+There shouldn't be any changes with `purty` itself.
+
+### Additions
+
+### Changes
+
+### Deletions
+
 ## 3.0.6
 
 Internal code cleanup. There shouldn't be any changes with `purty` itself.
