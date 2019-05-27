@@ -2,6 +2,7 @@ module Main where
 
 import "rio" RIO hiding (log)
 
+import qualified "purty" Error
 import qualified "purty" Args
 import qualified "optparse-applicative" Options.Applicative
 import qualified "purty" Log
@@ -16,17 +17,20 @@ main = do
           { Log.name = "Log"
           , Log.verbose = Args.debug args
           }
-  run args (Log.handle config) \log -> do
+  code <- run args (Log.handle config) \log -> do
     result <- Purty.run log args
     case result of
-      Just _err -> exitFailure
-      Nothing -> exitSuccess
+      Just err -> do
+        Log.info log (Error.unwrap err)
+        pure (ExitFailure 1)
+      Nothing -> pure ExitSuccess
+  exitWith code
 
 run ::
   Args.Args ->
   Control.Monad.Component.ComponentM a ->
-  (a -> IO ()) ->
-  IO ()
+  (a -> IO ExitCode) ->
+  IO ExitCode
 run args component f
   | Args.debug args =
     Control.Monad.Component.runComponentM1
