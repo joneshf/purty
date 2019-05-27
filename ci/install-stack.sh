@@ -92,7 +92,7 @@ debug "Created log file: ${LOG_FILE}"
 
 # End Boilerplate
 
-readonly URL="https://github.com/commercialhaskell/stack/releases/download/v1.6.5/stack-1.6.5-${OS}-x86_64.tar.gz"
+readonly URL="https://github.com/commercialhaskell/stack/releases/download/v1.9.3/stack-1.9.3-${OS}-x86_64.tar.gz"
 
 debug 'Checking if Stack is already installed'
 
