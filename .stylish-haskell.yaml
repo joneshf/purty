@@ -223,6 +223,7 @@ language_extensions:
   - AutoDeriveTypeable
   - BangPatterns
   - BinaryLiterals
+  - BlockArguments
   - ConstraintKinds
   - DataKinds
   - DefaultSignatures
@@ -241,7 +242,6 @@ language_extensions:
   - GeneralizedNewtypeDeriving
   - InstanceSigs
   - KindSignatures
-  - LambdaCase
   - MultiParamTypeClasses
   - MultiWayIf
   - NamedFieldPuns
@@ -254,6 +254,7 @@ language_extensions:
   - RankNTypes
   - ScopedTypeVariables
   - StandaloneDeriving
+  - StrictData
   - TupleSections
   - TypeFamilies
   - TypeOperators

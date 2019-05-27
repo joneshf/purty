@@ -1,44 +1,42 @@
-{-# LANGUAGE ImplicitParams #-}
-module Log where
+module Log
+  ( Config(..)
+  , Handle
+  , debug
+  , handle
+  ) where
 
-import "rio" RIO
+import "rio" RIO hiding (Handle, handle)
 
-import "freer-simple" Control.Monad.Freer (Eff, Member, send)
-import "base" GHC.Stack                   (callStack)
+import qualified "base" GHC.Stack
+import qualified "componentm" Control.Monad.Component
 
-import qualified "prettyprinter" Data.Text.Prettyprint.Doc
-import qualified "purescript" Language.PureScript
-import qualified "path" Path
+data Config
+  = Config
+    { name :: Text
+    , verbose :: Bool
+    }
 
-class (Show a) => Inspect a
+data Handle
+  = Handle
+    { debug :: (HasCallStack) => Utf8Builder -> IO ()
+    }
 
-instance Inspect ()
-instance Inspect (Path.Path a b)
-instance Inspect (Data.Text.Prettyprint.Doc.Doc a)
-instance Inspect Data.Text.Prettyprint.Doc.LayoutOptions
-instance (Inspect a) => Inspect (Data.Text.Prettyprint.Doc.SimpleDocStream a)
-instance Inspect Language.PureScript.Module
+handle :: Config -> Control.Monad.Component.ComponentM Handle
+handle config = do
+  (logFunc, _) <-
+    Control.Monad.Component.buildComponent (name config) acquire release
+  pure
+    Handle
+      { debug = GHC.Stack.withFrozenCallStack debug' logFunc }
+  where
+  acquire :: IO (LogFunc, IO ())
+  acquire = do
+    options <- logOptionsHandle stderr (verbose config)
+    newLogFunc options
 
-data Log a where
-  Debug :: !CallStack -> !Utf8Builder -> Log ()
-  Inspect :: (Inspect b) => !CallStack -> b -> Log ()
-  Error :: !CallStack -> !Utf8Builder -> Log ()
+  debug' :: (HasCallStack) => LogFunc -> Utf8Builder -> IO ()
+  debug' logFunc message =
+    GHC.Stack.withFrozenCallStack runReaderT (logDebug message) logFunc
 
-debug :: (HasCallStack, Member Log e) => Utf8Builder -> Eff e ()
-debug = send . Debug callStack
-
-inspect :: (HasCallStack, Inspect a, Member Log e) => a -> Eff e ()
-inspect = send . Inspect callStack
-
-error :: (HasCallStack, Member Log e) => Utf8Builder -> Eff e ()
-error = send . Error callStack
-
--- | We use a pretty bad hack here to get around the fact that `rio`
---   doesn't allow passing in the `CallStack`.
---   This is probably going to break on us one day.
-io :: LogFunc -> Log a -> IO a
-io logFunc = \case
-  Debug x y -> let ?callStack = x in runReaderT (logDebug y) logFunc
-  Inspect x y ->
-    let ?callStack = x in runReaderT (logDebug $ displayShow y) logFunc
-  Error x y -> let ?callStack = x in runReaderT (logError y) logFunc
+  release :: (a, IO ()) -> IO ()
+  release = snd
