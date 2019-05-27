@@ -90,7 +90,7 @@ test :: Log.Handle -> FilePath -> IO LByteString
 test log file = do
   result <- Purty.format log file
   case result of
-    Left err -> do
+    Left err ->
       Test.Tasty.HUnit.assertFailure
         (Data.Text.unpack $ utf8BuilderToText $ Error.unwrap err)
     Right formatted ->
