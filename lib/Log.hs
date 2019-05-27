@@ -8,19 +8,19 @@ module Log
 
 import "rio" RIO hiding (Handle, handle)
 
-import qualified "base" GHC.Stack
 import qualified "componentm" Control.Monad.Component
+import qualified "base" GHC.Stack
 
 data Config
   = Config
-    { name :: Text
+    { name    :: Text
     , verbose :: Bool
     }
 
 data Handle
   = Handle
     { debug :: (HasCallStack) => Utf8Builder -> IO ()
-    , info :: (HasCallStack) => Utf8Builder -> IO ()
+    , info  :: (HasCallStack) => Utf8Builder -> IO ()
     }
 
 handle :: Config -> Control.Monad.Component.ComponentM Handle

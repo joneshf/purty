@@ -2,12 +2,12 @@ module Main where
 
 import "rio" RIO hiding (log)
 
-import qualified "purty" Error
 import qualified "purty" Args
-import qualified "optparse-applicative" Options.Applicative
-import qualified "purty" Log
-import qualified "purty" Purty
 import qualified "componentm" Control.Monad.Component
+import qualified "purty" Error
+import qualified "purty" Log
+import qualified "optparse-applicative" Options.Applicative
+import qualified "purty" Purty
 
 main :: IO ()
 main = do
@@ -17,7 +17,7 @@ main = do
           { Log.name = "Log"
           , Log.verbose = Args.debug args
           }
-  code <- run args (Log.handle config) \log -> do
+  code <- run args (Log.handle config) $ \log -> do
     result <- Purty.run log args
     case result of
       Just err -> do

@@ -4,8 +4,8 @@ import "rio" RIO hiding (log)
 
 import "rio" RIO.FilePath ((</>))
 
-import qualified "bytestring" Data.ByteString.Builder
 import qualified "componentm" Control.Monad.Component
+import qualified "bytestring" Data.ByteString.Builder
 import qualified "text" Data.Text
 import qualified "purty" Error
 import qualified "purty" Log
@@ -23,13 +23,13 @@ main = do
           , Log.verbose = False
           }
   result <-
-    Control.Monad.Component.runComponentM "golden" (Log.handle config) \log -> do
+    Control.Monad.Component.runComponentM "golden" (Log.handle config) $ \log -> do
       tests <- goldenTests log
       try (Test.Tasty.defaultMain tests)
   case result of
     Left ExitSuccess -> exitSuccess
-    Left code -> exitWith code
-    Right _ -> exitSuccess
+    Left code        -> exitWith code
+    Right _          -> exitSuccess
 
 diff :: FilePath -> FilePath -> [String]
 diff old new = ["diff", "--unified", old, new]
