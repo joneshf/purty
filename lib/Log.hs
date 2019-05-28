@@ -1,3 +1,4 @@
+{-# LANGUAGE ImplicitParams #-}
 module Log
   ( Config(..)
   , Handle
@@ -19,18 +20,29 @@ data Config
 
 data Handle
   = Handle
-    { debug :: (HasCallStack) => Utf8Builder -> IO ()
-    , info  :: (HasCallStack) => Utf8Builder -> IO ()
+    { debug' :: CallStack -> Utf8Builder -> IO ()
+    , info'  :: CallStack -> Utf8Builder -> IO ()
     }
 
+debug :: (HasCallStack) => Handle -> Utf8Builder -> IO ()
+debug handle' = debug' handle' GHC.Stack.callStack
+
+-- | We use a pretty bad hack here to get around the fact that `rio` doesn't
+-- allow passing in the `CallStack`. We take the explicit `CallStack`, and turn
+-- it into an implicit param that `rio`s log functions pick up.
+-- This is probably going to break on us one day.
 handle :: Config -> Control.Monad.Component.ComponentM Handle
 handle config = do
   (logFunc, _) <-
     Control.Monad.Component.buildComponent (name config) acquire release
   pure
     Handle
-      { debug = GHC.Stack.withFrozenCallStack flip runReaderT logFunc . logDebug
-      , info = GHC.Stack.withFrozenCallStack flip runReaderT logFunc . logInfo
+      { debug' = \callStack message -> do
+        let ?callStack = callStack
+        runReaderT (logDebug message) logFunc
+      , info' = \callStack message -> do
+        let ?callStack = callStack
+        runReaderT (logInfo message) logFunc
       }
   where
   acquire :: IO (LogFunc, IO ())
@@ -40,3 +52,6 @@ handle config = do
 
   release :: (a, IO ()) -> IO ()
   release = snd
+
+info :: (HasCallStack) => Handle -> Utf8Builder -> IO ()
+info handle' = info' handle' GHC.Stack.callStack
