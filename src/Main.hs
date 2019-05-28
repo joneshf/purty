@@ -21,7 +21,8 @@ main = do
     result <- Purty.run log args
     case result of
       Just err -> do
-        Log.info log (Error.unwrap err)
+        Log.debug log (Error.format err)
+        Log.info log (Error.message err)
         pure (ExitFailure 1)
       Nothing -> pure ExitSuccess
   exitWith code

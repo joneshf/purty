@@ -91,6 +91,6 @@ test log file = do
   case result of
     Left err ->
       Test.Tasty.HUnit.assertFailure
-        (Data.Text.unpack $ utf8BuilderToText $ Error.unwrap err)
+        (Data.Text.unpack $ utf8BuilderToText $ Error.format err)
     Right formatted ->
       pure (Data.ByteString.Builder.toLazyByteString $ getUtf8Builder formatted)
