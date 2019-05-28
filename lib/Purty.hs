@@ -5,8 +5,10 @@ module Purty
 
 import "rio" RIO hiding (log)
 
+import qualified "this" Annotation
 import qualified "this" Args
 import qualified "this" Error
+import qualified "this" Format
 import qualified "purescript" Language.PureScript.CST
 import qualified "this" Log
 
@@ -34,7 +36,13 @@ format log contents' = do
             )
         Right parsed -> do
           Log.debug log ("Parsed file: " <> displayShow parsed)
-          pure (Right "")
+          Log.debug log "Annotating module"
+          annotated <- Annotation.module' log parsed
+          Log.debug log ("Annotated module" <> displayShow annotated)
+          Log.debug log "Formatting module"
+          formatted <- Format.module' log annotated
+          Log.debug log ("Formatted module" <> display formatted)
+          pure (Right formatted)
 
 indentation :: Utf8Builder
 indentation = "  "
