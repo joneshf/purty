@@ -40,7 +40,7 @@ format log contents' = do
           annotated <- Annotation.module' log parsed
           Log.debug log ("Annotated module" <> displayShow annotated)
           Log.debug log "Formatting module"
-          formatted <- Format.module' log annotated
+          formatted <- Format.module' log indentation annotated
           Log.debug log ("Formatted module" <> display formatted)
           pure (Right formatted)
 
