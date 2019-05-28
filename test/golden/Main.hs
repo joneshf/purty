@@ -58,8 +58,7 @@ filesUsedTests = do
 
 formattingTests :: Log.Handle -> IO Test.Tasty.TestTree
 formattingTests log = do
-  originals' <- psFiles "original"
-  let originals = fmap RIO.FilePath.takeFileName originals'
+  originals <- psFiles "original"
   pure $ Test.Tasty.testGroup "formatting" (fmap (golden log) originals)
 
 golden :: Log.Handle -> FilePath -> Test.Tasty.TestTree
@@ -70,7 +69,7 @@ golden log original =
     goldenFile
     (test log original)
   where
-  goldenFile = files </> "formatted" </> original
+  goldenFile = files </> "formatted" </> RIO.FilePath.takeFileName original
 
 goldenTests :: Log.Handle -> IO Test.Tasty.TestTree
 goldenTests log = do
@@ -88,7 +87,7 @@ psFiles dir = Test.Tasty.Golden.findByExtension [".purs"] (files </> dir)
 
 test :: Log.Handle -> FilePath -> IO LByteString
 test log file = do
-  result <- Purty.format log file
+  result <- withLazyFile file (Purty.format log)
   case result of
     Left err ->
       Test.Tasty.HUnit.assertFailure
