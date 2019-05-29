@@ -3,6 +3,7 @@ module Span
   , delimitedNonEmpty
   , separated
   , sourceRangeFromExport
+  , sourceRangeFromImport
   , sourceRangeFromName
   , wrapped
   ) where
@@ -94,6 +95,46 @@ sourceRangeFromExport export' = case export' of
         Language.PureScript.CST.srcEnd (sourceRangeFromName name')
       }
   Language.PureScript.CST.ExportValue _ name' -> sourceRangeFromName name'
+
+sourceRangeFromImport ::
+  Language.PureScript.CST.Import a ->
+  Language.PureScript.CST.SourceRange
+sourceRangeFromImport import' = case import' of
+  Language.PureScript.CST.ImportClass _ class' name' ->
+    Language.PureScript.CST.SourceRange
+      { Language.PureScript.CST.srcStart =
+        Language.PureScript.CST.srcStart (sourceRangeFromSourceToken class')
+      , Language.PureScript.CST.srcEnd =
+        Language.PureScript.CST.srcEnd (sourceRangeFromName name')
+      }
+  Language.PureScript.CST.ImportKind _ kind' name' ->
+    Language.PureScript.CST.SourceRange
+      { Language.PureScript.CST.srcStart =
+        Language.PureScript.CST.srcStart (sourceRangeFromSourceToken kind')
+      , Language.PureScript.CST.srcEnd =
+        Language.PureScript.CST.srcEnd (sourceRangeFromName name')
+      }
+  Language.PureScript.CST.ImportOp _ name' -> sourceRangeFromName name'
+  Language.PureScript.CST.ImportType _ name' dataMembers' ->
+    Language.PureScript.CST.SourceRange
+      { Language.PureScript.CST.srcStart =
+        Language.PureScript.CST.srcStart (sourceRangeFromName name')
+      , Language.PureScript.CST.srcEnd =
+        Language.PureScript.CST.srcEnd
+          ( maybe
+            (sourceRangeFromName name')
+            sourceRangeFromDataMembers
+            dataMembers'
+          )
+      }
+  Language.PureScript.CST.ImportTypeOp _ type'' name' ->
+    Language.PureScript.CST.SourceRange
+      { Language.PureScript.CST.srcStart =
+        Language.PureScript.CST.srcStart (sourceRangeFromSourceToken type'')
+      , Language.PureScript.CST.srcEnd =
+        Language.PureScript.CST.srcEnd (sourceRangeFromName name')
+      }
+  Language.PureScript.CST.ImportValue _ name' -> sourceRangeFromName name'
 
 sourceRangeFromName ::
   Language.PureScript.CST.Name a ->

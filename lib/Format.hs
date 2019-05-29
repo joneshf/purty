@@ -207,19 +207,153 @@ exports log indentation exports'' = case exports'' of
         (export log indentation indent)
         exports'
 
+import' ::
+  Log.Handle ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.Import Span.Span ->
+  IO Utf8Builder
+import' log indentation indent' import'' = case import'' of
+  Language.PureScript.CST.ImportClass _ class' name' -> do
+    Log.debug log ("Formatting `ImportClass`: " <> displayShow name')
+    sourceToken log indent' blank class'
+      <> name log indent' space name'
+  Language.PureScript.CST.ImportKind _ kind' name' -> do
+    Log.debug log ("Formatting `ImportKind`: " <> displayShow name')
+    sourceToken log indent' blank kind'
+      <> name log indent' space name'
+  Language.PureScript.CST.ImportOp _ name' -> do
+    Log.debug log ("Formatting `ImportOp`: " <> displayShow name')
+    name log indent' blank name'
+  Language.PureScript.CST.ImportType span name' dataMembers' -> do
+    let
+      indent = case span of
+        Span.MultipleLines ->
+          indent' <> indentation
+        Span.SingleLine ->
+          indent'
+    Log.debug
+      log
+      ( "Formatting `ImportType`: "
+        <> displayShow name'
+        <> " as `"
+        <> displayShow span
+        <> "`"
+      )
+    name log indent' blank name'
+      <> foldMap (dataMembers log indentation indent) dataMembers'
+  Language.PureScript.CST.ImportTypeOp _ type'' name' -> do
+    Log.debug log ("Formatting `ImportTypeOp`: " <> displayShow name')
+    sourceToken log indent' blank type''
+      <> name log indent' space name'
+  Language.PureScript.CST.ImportValue _ name' -> do
+    Log.debug log ("Formatting `ImportValue`: " <> displayShow name')
+    name log indent' blank name'
+
+importDecl ::
+  Log.Handle ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.ImportDecl Span.Span ->
+  IO Utf8Builder
+importDecl log indentation indent'' importDecl' = case importDecl' of
+  Language.PureScript.CST.ImportDecl span import'' name'' imports'' rename -> do
+    let indent' = indent'' <> indentation
+    Log.debug log ("Formatting `ImportDecl` as `" <> displayShow span <> "`")
+    sourceToken log indent'' blank import''
+      <> name log indent'' space name''
+      <> foldMap
+        (\(hiding', imports') ->
+          case hiding' of
+            Just hiding -> do
+              let
+                hidingPrefix = case span of
+                  Span.MultipleLines ->
+                    newline <> indent'
+                  Span.SingleLine ->
+                    space
+
+                importPrefix = case span of
+                  Span.MultipleLines ->
+                    newline <> indent
+                  Span.SingleLine ->
+                    space
+
+                indent = indent' <> indentation
+              pure hidingPrefix
+                <> sourceToken log indent' blank hiding
+                <> pure importPrefix
+                <> delimitedNonEmpty
+                  log
+                  indent
+                  Span.sourceRangeFromImport
+                  (import' log indentation indent')
+                  imports'
+            Nothing -> do
+              let
+                importPrefix = case span of
+                  Span.MultipleLines ->
+                    newline <> indent'
+                  Span.SingleLine ->
+                    space
+              pure importPrefix
+                <> delimitedNonEmpty
+                  log
+                  indent'
+                  Span.sourceRangeFromImport
+                  (import' log indentation indent')
+                  imports'
+        )
+        imports''
+      <> foldMap
+        (\(as, name') -> do
+          let
+            prefix = case span of
+              Span.MultipleLines ->
+                newline <> indent''
+              Span.SingleLine ->
+                space
+          pure prefix
+            <> sourceToken log indent' blank as
+            <> name log indent' space name'
+        )
+        rename
+
+imports ::
+  Log.Handle ->
+  Indentation ->
+  [Language.PureScript.CST.ImportDecl Span.Span] ->
+  IO Utf8Builder
+imports log indentation imports' = case imports' of
+  [] -> do
+    Log.debug log "No imports to format"
+    pure blank
+  _ -> do
+    let
+      indent = blank
+    Log.debug log "Formatting imports"
+    foldMap
+      (\importDecl' ->
+        pure newline
+          <> importDecl log indentation indent importDecl'
+      )
+      imports'
+      <> pure newline
+
 module' ::
   Log.Handle ->
   Indentation ->
   Language.PureScript.CST.Module Span.Span ->
   IO Utf8Builder
 module' log indentation module''' = case module''' of
-  Language.PureScript.CST.Module _ module'' name' exports' where'' _imports' _declarations' _trailing -> do
+  Language.PureScript.CST.Module _ module'' name' exports' where'' imports' _declarations' _trailing -> do
     Log.info log "Formatting `Module` not implemented."
     sourceToken log blank blank module''
       <> name log blank space name'
       <> exports log indentation exports'
       <> sourceToken log blank space where''
       <> pure newline
+      <> imports log indentation imports'
 
 name ::
   Log.Handle ->
@@ -257,7 +391,7 @@ separated log indent f g separated' = case separated' of
           Span.MultipleLines ->
             newline <> indent
           Span.SingleLine ->
-            space
+            blank
       pure prefix
         <> sourceToken log indent blank separator
         <> pure space
