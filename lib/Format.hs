@@ -152,11 +152,11 @@ export log indentation indent' export' = case export' of
     name log indent' blank name'
   Language.PureScript.CST.ExportType span name' dataMembers' -> do
     let
-      indent = case span of
+      (indent, prefix) = case span of
         Span.MultipleLines ->
-          indent' <> indentation
+          (indent' <> indentation, newline <> indent)
         Span.SingleLine ->
-          indent'
+          (indent', blank)
     Log.debug
       log
       ( "Formatting `ExportType`: "
@@ -166,6 +166,7 @@ export log indentation indent' export' = case export' of
         <> "`"
       )
     name log indent' blank name'
+      <> pure prefix
       <> foldMap (dataMembers log indentation indent) dataMembers'
   Language.PureScript.CST.ExportTypeOp _ type'' name' -> do
     Log.debug log ("Formatting `ExportTypeOp`: " <> displayShow name')

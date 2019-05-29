@@ -1,6 +1,11 @@
 module Span
   ( Span(..)
+  , betweenSourceTokens
+  , dataMembers
   , delimitedNonEmpty
+  , export
+  , import'
+  , importDecl
   , separated
   , sourceRangeFromExport
   , sourceRangeFromImport
@@ -11,15 +16,47 @@ module Span
 import "rio" RIO
 
 import qualified "purescript" Language.PureScript.CST
-import qualified "rio" RIO.List
+import qualified "purescript" Language.PureScript.CST.Positions
 
 data Span
   = MultipleLines
   | SingleLine
   deriving (Show)
 
+betweenSourceTokens ::
+  Language.PureScript.CST.SourceToken ->
+  Language.PureScript.CST.SourceToken ->
+  Span
+betweenSourceTokens start end =
+  spanFromSourceRange
+    (Language.PureScript.CST.Positions.toSourceRange (start, end))
+
+dataMembers :: Language.PureScript.CST.DataMembers a -> Span
+dataMembers =
+  spanFromSourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.dataMembersRange
+
 delimitedNonEmpty :: Language.PureScript.CST.DelimitedNonEmpty a -> Span
 delimitedNonEmpty = spanFromSourceRange . sourceRangeFromWrapped
+
+export :: Language.PureScript.CST.Export a -> Span
+export =
+  spanFromSourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.exportRange
+
+import' :: Language.PureScript.CST.Import a -> Span
+import' =
+  spanFromSourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.importRange
+
+importDecl :: Language.PureScript.CST.ImportDecl a -> Span
+importDecl =
+  spanFromSourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.importDeclRange
 
 linesBetween ::
   Language.PureScript.CST.SourcePos ->
@@ -35,146 +72,43 @@ separated ::
   Span
 separated f = spanFromSourceRange . sourceRangeFromSeparated f
 
-sourceRangeFromDataMembers ::
-  Language.PureScript.CST.DataMembers a ->
-  Language.PureScript.CST.SourceRange
-sourceRangeFromDataMembers dataMembers' = case dataMembers' of
-  Language.PureScript.CST.DataAll _ sourceToken' ->
-    sourceRangeFromSourceToken sourceToken'
-  Language.PureScript.CST.DataEnumerated _ delimited' ->
-    sourceRangeFromDelimited delimited'
-
-sourceRangeFromDelimited ::
-  Language.PureScript.CST.Delimited a ->
-  Language.PureScript.CST.SourceRange
-sourceRangeFromDelimited = sourceRangeFromWrapped
-
 sourceRangeFromExport ::
   Language.PureScript.CST.Export a ->
   Language.PureScript.CST.SourceRange
-sourceRangeFromExport export' = case export' of
-  Language.PureScript.CST.ExportClass _ class' name' ->
-    Language.PureScript.CST.SourceRange
-      { Language.PureScript.CST.srcStart =
-        Language.PureScript.CST.srcStart (sourceRangeFromSourceToken class')
-      , Language.PureScript.CST.srcEnd =
-        Language.PureScript.CST.srcEnd (sourceRangeFromName name')
-      }
-  Language.PureScript.CST.ExportKind _ kind' name' ->
-    Language.PureScript.CST.SourceRange
-      { Language.PureScript.CST.srcStart =
-        Language.PureScript.CST.srcStart (sourceRangeFromSourceToken kind')
-      , Language.PureScript.CST.srcEnd =
-        Language.PureScript.CST.srcEnd (sourceRangeFromName name')
-      }
-  Language.PureScript.CST.ExportModule _ module'' name' ->
-    Language.PureScript.CST.SourceRange
-      { Language.PureScript.CST.srcStart =
-        Language.PureScript.CST.srcStart (sourceRangeFromSourceToken module'')
-      , Language.PureScript.CST.srcEnd =
-        Language.PureScript.CST.srcEnd (sourceRangeFromName name')
-      }
-  Language.PureScript.CST.ExportOp _ name' -> sourceRangeFromName name'
-  Language.PureScript.CST.ExportType _ name' dataMembers' ->
-    Language.PureScript.CST.SourceRange
-      { Language.PureScript.CST.srcStart =
-        Language.PureScript.CST.srcStart (sourceRangeFromName name')
-      , Language.PureScript.CST.srcEnd =
-        Language.PureScript.CST.srcEnd
-          ( maybe
-            (sourceRangeFromName name')
-            sourceRangeFromDataMembers
-            dataMembers'
-          )
-      }
-  Language.PureScript.CST.ExportTypeOp _ type'' name' ->
-    Language.PureScript.CST.SourceRange
-      { Language.PureScript.CST.srcStart =
-        Language.PureScript.CST.srcStart (sourceRangeFromSourceToken type'')
-      , Language.PureScript.CST.srcEnd =
-        Language.PureScript.CST.srcEnd (sourceRangeFromName name')
-      }
-  Language.PureScript.CST.ExportValue _ name' -> sourceRangeFromName name'
+sourceRangeFromExport =
+  Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.exportRange
 
 sourceRangeFromImport ::
   Language.PureScript.CST.Import a ->
   Language.PureScript.CST.SourceRange
-sourceRangeFromImport import' = case import' of
-  Language.PureScript.CST.ImportClass _ class' name' ->
-    Language.PureScript.CST.SourceRange
-      { Language.PureScript.CST.srcStart =
-        Language.PureScript.CST.srcStart (sourceRangeFromSourceToken class')
-      , Language.PureScript.CST.srcEnd =
-        Language.PureScript.CST.srcEnd (sourceRangeFromName name')
-      }
-  Language.PureScript.CST.ImportKind _ kind' name' ->
-    Language.PureScript.CST.SourceRange
-      { Language.PureScript.CST.srcStart =
-        Language.PureScript.CST.srcStart (sourceRangeFromSourceToken kind')
-      , Language.PureScript.CST.srcEnd =
-        Language.PureScript.CST.srcEnd (sourceRangeFromName name')
-      }
-  Language.PureScript.CST.ImportOp _ name' -> sourceRangeFromName name'
-  Language.PureScript.CST.ImportType _ name' dataMembers' ->
-    Language.PureScript.CST.SourceRange
-      { Language.PureScript.CST.srcStart =
-        Language.PureScript.CST.srcStart (sourceRangeFromName name')
-      , Language.PureScript.CST.srcEnd =
-        Language.PureScript.CST.srcEnd
-          ( maybe
-            (sourceRangeFromName name')
-            sourceRangeFromDataMembers
-            dataMembers'
-          )
-      }
-  Language.PureScript.CST.ImportTypeOp _ type'' name' ->
-    Language.PureScript.CST.SourceRange
-      { Language.PureScript.CST.srcStart =
-        Language.PureScript.CST.srcStart (sourceRangeFromSourceToken type'')
-      , Language.PureScript.CST.srcEnd =
-        Language.PureScript.CST.srcEnd (sourceRangeFromName name')
-      }
-  Language.PureScript.CST.ImportValue _ name' -> sourceRangeFromName name'
+sourceRangeFromImport =
+  Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.importRange
 
 sourceRangeFromName ::
   Language.PureScript.CST.Name a ->
   Language.PureScript.CST.SourceRange
 sourceRangeFromName =
-  sourceRangeFromSourceToken
-    . Language.PureScript.CST.nameTok
+  Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.nameRange
 
 sourceRangeFromSeparated ::
   (a -> Language.PureScript.CST.SourceRange) ->
   Language.PureScript.CST.Separated a ->
   Language.PureScript.CST.SourceRange
 sourceRangeFromSeparated f separated' = case separated' of
-  Language.PureScript.CST.Separated head tail ->
-    Language.PureScript.CST.SourceRange
-      { Language.PureScript.CST.srcStart =
-        Language.PureScript.CST.srcStart (f head)
-      , Language.PureScript.CST.srcEnd =
-        Language.PureScript.CST.srcEnd
-          (f $ maybe head snd $ RIO.List.lastMaybe tail)
-      }
-
-sourceRangeFromSourceToken ::
-  Language.PureScript.CST.SourceToken ->
-  Language.PureScript.CST.SourceRange
-sourceRangeFromSourceToken =
-  Language.PureScript.CST.tokRange
-    . Language.PureScript.CST.tokAnn
+  Language.PureScript.CST.Separated head _ ->
+    Language.PureScript.CST.Positions.widen
+      (f head)
+      (f $ Language.PureScript.CST.Positions.sepLast separated')
 
 sourceRangeFromWrapped ::
   Language.PureScript.CST.Wrapped a ->
   Language.PureScript.CST.SourceRange
-sourceRangeFromWrapped wrapped' = case wrapped' of
-  Language.PureScript.CST.Wrapped open _ close ->
-    Language.PureScript.CST.SourceRange
-      { Language.PureScript.CST.srcStart =
-        Language.PureScript.CST.srcStart (sourceRangeFromSourceToken open)
-      , Language.PureScript.CST.srcEnd =
-        Language.PureScript.CST.srcEnd (sourceRangeFromSourceToken close)
-      }
+sourceRangeFromWrapped =
+  Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.wrappedRange
 
 spanFromSourceRange :: Language.PureScript.CST.SourceRange -> Span
 spanFromSourceRange sourceRange = case sourceRange of
