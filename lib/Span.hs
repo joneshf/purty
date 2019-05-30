@@ -7,6 +7,7 @@ module Span
   , import'
   , importDecl
   , labeled
+  , recordLabeled
   , separated
   , sourceRangeFromBinder
   , sourceRangeFromConstraint
@@ -19,6 +20,7 @@ module Span
   , sourceRangeFromKind
   , sourceRangeFromName
   , sourceRangeFromPatternGuard
+  , sourceRangeFromRecordLabeled
   , sourceRangeFromType
   , wrapped
   ) where
@@ -84,6 +86,25 @@ linesBetween ::
 linesBetween start end = case (start, end) of
   (Language.PureScript.CST.SourcePos line _, Language.PureScript.CST.SourcePos line' _) ->
     line - line'
+
+name :: Language.PureScript.CST.Name a -> Span
+name =
+  spanFromSourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.nameRange
+
+recordLabeled ::
+  (a -> Language.PureScript.CST.SourceRange) ->
+  Language.PureScript.CST.RecordLabeled a ->
+  Span
+recordLabeled f recordLabeled' = case recordLabeled' of
+  Language.PureScript.CST.RecordPun name' -> name name'
+  Language.PureScript.CST.RecordField label' _ a ->
+    spanFromSourceRange
+      ( Language.PureScript.CST.Positions.widen
+        (sourceRangeFromLabel label')
+        (f a)
+      )
 
 separated ::
   (a -> Language.PureScript.CST.SourceRange) ->
@@ -154,6 +175,13 @@ sourceRangeFromKind =
   Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.kindRange
 
+sourceRangeFromLabel ::
+  Language.PureScript.CST.Label ->
+  Language.PureScript.CST.SourceRange
+sourceRangeFromLabel =
+  Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.labelRange
+
 sourceRangeFromName ::
   Language.PureScript.CST.Name a ->
   Language.PureScript.CST.SourceRange
@@ -169,6 +197,15 @@ sourceRangeFromPatternGuard patternGuard' = case patternGuard' of
     Language.PureScript.CST.Positions.widen
       (maybe (sourceRangeFromExpr expr') (sourceRangeFromBinder . fst) binder')
       (sourceRangeFromExpr expr')
+
+sourceRangeFromRecordLabeled ::
+  (a -> Language.PureScript.CST.SourceRange) ->
+  Language.PureScript.CST.RecordLabeled a ->
+  Language.PureScript.CST.SourceRange
+sourceRangeFromRecordLabeled f recordLabeled' = case recordLabeled' of
+  Language.PureScript.CST.RecordPun name' -> sourceRangeFromName name'
+  Language.PureScript.CST.RecordField label _ a ->
+    Language.PureScript.CST.Positions.widen (sourceRangeFromLabel label) (f a)
 
 sourceRangeFromSeparated ::
   (a -> Language.PureScript.CST.SourceRange) ->

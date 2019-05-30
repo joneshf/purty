@@ -2,7 +2,7 @@ module Format
   ( module'
   ) where
 
-import "rio" RIO hiding (log, span)
+import "rio" RIO hiding (bool, log, span)
 
 import qualified "purescript" Language.PureScript.CST
 import qualified "this" Span
@@ -26,18 +26,99 @@ binder ::
   Indent ->
   Language.PureScript.CST.Binder Span.Span ->
   IO Utf8Builder
-binder log indentation indent binder' = case binder' of
+binder log indentation indent' binder'' = case binder'' of
   Language.PureScript.CST.BinderArray span delimited' -> do
     Log.debug log ("Formatting `BinderArray` as `" <> displayShow span <> "`")
     delimited
       log
-      indent
+      indent'
       Span.sourceRangeFromBinder
-      (binder log indentation indent)
+      (binder log indentation indent')
       delimited'
-  _ -> do
-    Log.info log "Formatting binder not implemented"
-    mempty
+  Language.PureScript.CST.BinderBoolean _ bool _ -> do
+    Log.debug log "Formatting `BinderBoolean`"
+    sourceToken log indent' blank bool
+  Language.PureScript.CST.BinderChar _ char _ -> do
+    Log.debug log "Formatting `BinderChar`"
+    sourceToken log indent' blank char
+  Language.PureScript.CST.BinderConstructor span name' binders -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log "Formatting `BinderConstructor`"
+    qualifiedName log indent' blank name'
+      <> foldMap
+        (\binder' ->
+          pure prefix
+            <> binder log indentation indent' binder'
+        )
+        binders
+  Language.PureScript.CST.BinderNamed _ name' at binder' -> do
+    Log.debug log "Formatting `BinderNamed`"
+    name log indent' blank name'
+      <> sourceToken log indent' blank at
+      <> binder log indentation indent' binder'
+  Language.PureScript.CST.BinderNumber _ negative number _ -> do
+    Log.debug log "Formatting `BinderNumber`"
+    foldMap (sourceToken log indent' blank) negative
+      <> sourceToken log indent' blank number
+  Language.PureScript.CST.BinderOp span binder1 name' binder2 -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `BinderOp` as `" <> displayShow span <> "`")
+    binder log indentation indent' binder1
+      <> qualifiedName log indent' prefix name'
+      <> pure prefix
+      <> binder log indentation indent binder2
+  Language.PureScript.CST.BinderParens span wrapped' -> do
+    Log.debug log ("Formatting `BinderParens` as `" <> displayShow span <> "`")
+    wrapped log indent' (binder log indentation indent') wrapped'
+  Language.PureScript.CST.BinderRecord span delimited' -> do
+    Log.debug log ("Formatting `BinderRecord` as `" <> displayShow span <> "`")
+    delimited
+      log
+      indent'
+      (Span.sourceRangeFromRecordLabeled Span.sourceRangeFromBinder)
+      ( recordLabeled
+        log
+        indentation
+        indent'
+        Span.sourceRangeFromBinder
+        (binder log indentation indent')
+      )
+      delimited'
+  Language.PureScript.CST.BinderString _ string _ -> do
+    Log.debug log "Formatting `BinderString`"
+    sourceToken log indent' blank string
+  Language.PureScript.CST.BinderTyped span binder' colons type'' -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `BinderTyped` as `" <> displayShow span <> "`")
+    binder log indentation indent' binder'
+      <> sourceToken log indent' blank colons
+      <> pure prefix
+      <> type' log indentation indent type''
+  Language.PureScript.CST.BinderVar _ name' -> do
+    Log.debug log "Formatting `BinderVar`"
+    name log indent' blank name'
+  Language.PureScript.CST.BinderWildcard _ wildcard -> do
+    Log.debug log "Formatting `BinderWildcard`"
+    sourceToken log indent' blank wildcard
+
+  -- _ -> do
+  --   Log.info log "Formatting binder not implemented"
+  --   mempty
 
 classFundep ::
   Log.Handle ->
@@ -868,6 +949,17 @@ kind log indentation indent' kind' = case kind' of
     Log.info log "Formatting kind not implemented"
     mempty
 
+label ::
+  Log.Handle ->
+  Indent ->
+  Prefix ->
+  Language.PureScript.CST.Label ->
+  IO Utf8Builder
+label log indent prefix label'' = case label'' of
+  Language.PureScript.CST.Label label' _ -> do
+    Log.debug log ("Formatting `Label`: " <> displayShow label')
+    sourceToken log indent prefix label'
+
 labeled ::
   Log.Handle ->
   Indent ->
@@ -878,7 +970,7 @@ labeled ::
   Language.PureScript.CST.Labeled a b ->
   IO Utf8Builder
 labeled log indent f g h i labeled' = case labeled' of
-  Language.PureScript.CST.Labeled label separator value -> do
+  Language.PureScript.CST.Labeled label' separator value -> do
     let
       span = Span.labeled f h labeled'
 
@@ -888,7 +980,7 @@ labeled log indent f g h i labeled' = case labeled' of
         Span.SingleLine ->
           space
     Log.debug log ("Formatting `Labeled` as `" <> displayShow span <> "`")
-    g label
+    g label'
       <> sourceToken log indent space separator
       <> pure prefix
       <> i value
@@ -1021,6 +1113,33 @@ qualifiedName log indent prefix qualifiedName'' = case qualifiedName'' of
   Language.PureScript.CST.QualifiedName qualifiedName' _ _ -> do
     Log.debug log ("Formatting `QualifiedName`: " <> displayShow qualifiedName')
     sourceToken log indent prefix qualifiedName'
+
+recordLabeled ::
+  Log.Handle ->
+  Indentation ->
+  Indent ->
+  (a -> Language.PureScript.CST.SourceRange) ->
+  (a -> IO Utf8Builder) ->
+  Language.PureScript.CST.RecordLabeled a ->
+  IO Utf8Builder
+recordLabeled log indentation indent' f g recordLabeled' = case recordLabeled' of
+  Language.PureScript.CST.RecordPun name' -> do
+    Log.debug log "Formatting `RecordPun`"
+    name log indent' blank name'
+  Language.PureScript.CST.RecordField label' colon a -> do
+    let
+      span = Span.recordLabeled f recordLabeled'
+
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `RecordField` as `" <> displayShow span <> "`")
+    label log indent' blank label'
+      <> sourceToken log indent' blank colon
+      <> pure prefix
+      <> g a
 
 separated ::
   forall a.
