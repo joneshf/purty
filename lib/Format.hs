@@ -1206,7 +1206,7 @@ kind ::
   Indent ->
   Language.PureScript.CST.Kind Span.Span ->
   IO Utf8Builder
-kind log indentation indent' kind' = case kind' of
+kind log indentation indent' kind'' = case kind'' of
   Language.PureScript.CST.KindArr span k1 arrow k2 -> do
     let
       (indent, prefix) = case span of
@@ -1219,9 +1219,16 @@ kind log indentation indent' kind' = case kind' of
       <> sourceToken log indent' space arrow
       <> pure prefix
       <> kind log indentation indent k2
-  _ -> do
-    Log.info log "Formatting kind not implemented"
-    mempty
+  Language.PureScript.CST.KindName _ name' -> do
+    Log.debug log ("Formatting `KindName`: " <> displayShow name')
+    qualifiedName log indent' blank name'
+  Language.PureScript.CST.KindParens _ wrapped' -> do
+    Log.debug log ("Formatting `KindParens`: " <> displayShow wrapped')
+    wrapped log indent' (kind log indentation indent') wrapped'
+  Language.PureScript.CST.KindRow _ sourceToken' kind' -> do
+    Log.debug log ("Formatting `KindRow`: " <> displayShow sourceToken')
+    sourceToken log indent' blank sourceToken'
+      <> kind log indentation indent' kind'
 
 label ::
   Log.Handle ->
