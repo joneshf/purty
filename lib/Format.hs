@@ -5,8 +5,8 @@ module Format
 import "rio" RIO hiding (bool, log, span)
 
 import qualified "purescript" Language.PureScript.CST
-import qualified "this" Span
 import qualified "this" Log
+import qualified "this" Span
 
 type Indent
   = Utf8Builder
