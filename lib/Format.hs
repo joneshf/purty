@@ -2,7 +2,7 @@ module Format
   ( module'
   ) where
 
-import "rio" RIO hiding (bool, log, span)
+import "rio" RIO hiding (log, span)
 
 import qualified "purescript" Language.PureScript.CST
 import qualified "this" Log
@@ -62,9 +62,9 @@ binder log indentation indent' binder'' = case binder'' of
       Span.sourceRangeFromBinder
       (binder log indentation indent')
       delimited'
-  Language.PureScript.CST.BinderBoolean _ bool _ -> do
+  Language.PureScript.CST.BinderBoolean _ boolean _ -> do
     Log.debug log "Formatting `BinderBoolean`"
-    sourceToken log indent' blank bool
+    sourceToken log indent' blank boolean
   Language.PureScript.CST.BinderChar _ char _ -> do
     Log.debug log "Formatting `BinderChar`"
     sourceToken log indent' blank char
@@ -143,10 +143,6 @@ binder log indentation indent' binder'' = case binder'' of
     Log.debug log "Formatting `BinderWildcard`"
     sourceToken log indent' blank wildcard
 
-  -- _ -> do
-  --   Log.info log "Formatting binder not implemented"
-  --   mempty
-
 classFundep ::
   Log.Handle ->
   Indent ->
@@ -211,6 +207,7 @@ classHead log span indentation indent' classHead' = case classHead' of
             <> separated
               log
               indent
+              space
               Span.sourceRangeFromClassFundep
               (classFundep log indent)
               classFundeps
@@ -407,6 +404,7 @@ declaration log indentation indent' declaration' = case declaration' of
             <> separated
               log
               indent
+              space
               Span.sourceRangeFromDataCtor
               (dataCtor log indentation indent)
               dataCtors
@@ -447,6 +445,7 @@ declaration log indentation indent' declaration' = case declaration' of
     separated
       log
       indent
+      space
       Span.sourceRangeFromInstance
       (instance' log span indentation indent)
       instances
@@ -507,7 +506,7 @@ delimited ::
   IO Utf8Builder
 delimited log indent f g delimited' = do
   Log.debug log "Formatting `Delimited`"
-  wrapped log indent (foldMap $ separated log indent f g) delimited'
+  wrapped log indent (foldMap $ separated log indent space f g) delimited'
 
 delimitedNonEmpty ::
   Log.Handle ->
@@ -518,7 +517,31 @@ delimitedNonEmpty ::
   IO Utf8Builder
 delimitedNonEmpty log indent f g delimitedNonEmpty' = do
   Log.debug log "Formatting `DelimitedNonEmpty`"
-  wrapped log indent (separated log indent f g) delimitedNonEmpty'
+  wrapped log indent (separated log indent space f g) delimitedNonEmpty'
+
+doBlock ::
+  Log.Handle ->
+  Span.Span ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.DoBlock Span.Span ->
+  IO Utf8Builder
+doBlock log span indentation indent' doBlock' = case doBlock' of
+  Language.PureScript.CST.DoBlock do' doStatements -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log "Formatting `DoBlock`"
+    sourceToken log indent' blank do'
+      <> foldMap
+        (\doStatement' ->
+          pure prefix
+            <> doStatement log indentation indent doStatement'
+        )
+        doStatements
 
 doStatement ::
   Log.Handle ->
@@ -642,7 +665,7 @@ expr ::
   Indent ->
   Language.PureScript.CST.Expr Span.Span ->
   IO Utf8Builder
-expr log indentation indent' expr' = case expr' of
+expr log indentation indent' expr'' = case expr'' of
   Language.PureScript.CST.ExprAdo span adoBlock' -> do
     Log.debug log ("Formatting `ExprAdo` as `" <> displayShow span <> "`")
     adoBlock log span indentation indent' adoBlock'
@@ -665,6 +688,115 @@ expr log indentation indent' expr' = case expr' of
       Span.sourceRangeFromExpr
       (expr log indentation indent')
       delimited'
+  Language.PureScript.CST.ExprBoolean _ boolean _ -> do
+    Log.debug log "Formatting `ExprBoolean`"
+    sourceToken log indent' blank boolean
+  Language.PureScript.CST.ExprChar _ char _ -> do
+    Log.debug log "Formatting `ExprChar`"
+    sourceToken log indent' blank char
+  Language.PureScript.CST.ExprConstructor _ name' -> do
+    Log.debug log "Formatting `ExprConstructor`"
+    qualifiedName log indent' blank name'
+  Language.PureScript.CST.ExprDo span doBlock' -> do
+    Log.debug log ("Formatting `ExprDo` as `" <> displayShow span <> "`")
+    doBlock log span indentation indent' doBlock'
+  Language.PureScript.CST.ExprHole _ hole -> do
+    Log.debug log "Formatting `ExprHole`"
+    name log indent' blank hole
+  Language.PureScript.CST.ExprIdent _ name' -> do
+    Log.debug log "Formatting `ExprIdent`"
+    qualifiedName log indent' blank name'
+  Language.PureScript.CST.ExprInfix span expr1 wrapped' expr2 -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `ExprInfix` as `" <> displayShow span <> "`")
+    expr log indentation indent' expr1
+      <> pure prefix
+      <> wrapped log indent (expr log indentation indent) wrapped'
+      <> pure space
+      <> expr log indentation indent expr2
+  Language.PureScript.CST.ExprNegate _ negative expr' -> do
+    Log.debug log "Formatting `ExprNegate`"
+    sourceToken log indent' blank negative
+      <> expr log indentation indent' expr'
+  Language.PureScript.CST.ExprNumber _ number _ -> do
+    Log.debug log "Formatting `ExprNumber`"
+    sourceToken log indent' blank number
+  Language.PureScript.CST.ExprOp span expr1 op expr2 -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `ExprOp` as `" <> displayShow span <> "`")
+    expr log indentation indent' expr1
+      <> qualifiedName log indent prefix op
+      <> pure space
+      <> expr log indentation indent expr2
+  Language.PureScript.CST.ExprOpName _ name' -> do
+    Log.debug log "Formatting `ExprOpName`"
+    qualifiedName log indent' blank name'
+  Language.PureScript.CST.ExprParens span wrapped' -> do
+    Log.debug log ("Formatting `ExprParens` as `" <> displayShow span <> "`")
+    wrapped log indent' (expr log indentation indent') wrapped'
+  Language.PureScript.CST.ExprRecord span delimited' -> do
+    Log.debug log ("Formatting `ExprRecord` as `" <> displayShow span <> "`")
+    delimited
+      log
+      indent'
+      (Span.sourceRangeFromRecordLabeled Span.sourceRangeFromExpr)
+      ( recordLabeled
+        log
+        indentation
+        indent'
+        Span.sourceRangeFromExpr
+        (expr log indentation indent')
+      )
+      delimited'
+  Language.PureScript.CST.ExprRecordAccessor span recordAccessor' -> do
+    Log.debug
+      log
+      ("Formatting `ExprRecordAccessor` as `" <> displayShow span <> "`")
+    recordAccessor log span indentation indent' recordAccessor'
+  Language.PureScript.CST.ExprRecordUpdate span expr' delimitedNonEmpty' -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `ExprRecordUpdate` as `" <> displayShow span <> "`")
+    expr log indentation indent' expr'
+      <> pure prefix
+      <> delimitedNonEmpty
+        log
+        indent
+        Span.sourceRangeFromRecordUpdate
+        (recordUpdate log indentation indent)
+        delimitedNonEmpty'
+  Language.PureScript.CST.ExprSection _ section -> do
+    Log.debug log "Formatting `ExprSection`"
+    sourceToken log indent' blank section
+  Language.PureScript.CST.ExprString _ string _ -> do
+    Log.debug log "Formatting `ExprString`"
+    sourceToken log indent' blank string
+  Language.PureScript.CST.ExprTyped span expr' colons type'' -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `ExprTyped` as `" <> displayShow span <> "`")
+    expr log indentation indent' expr'
+      <> sourceToken log indent' space colons
+      <> pure prefix
+      <> type' log indentation indent type''
   _ -> do
     Log.info log "Formatting expr not implemented"
     mempty
@@ -772,6 +904,7 @@ guardedExpr log indentation indent' guardedExpr' = case guardedExpr' of
       <> separated
         log
         indent'
+        space
         Span.sourceRangeFromPatternGuard
         (patternGuard log indentation indent)
         patternGuards
@@ -1180,6 +1313,33 @@ qualifiedName log indent prefix qualifiedName'' = case qualifiedName'' of
     Log.debug log ("Formatting `QualifiedName`: " <> displayShow qualifiedName')
     sourceToken log indent prefix qualifiedName'
 
+recordAccessor ::
+  Log.Handle ->
+  Span.Span ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.RecordAccessor Span.Span ->
+  IO Utf8Builder
+recordAccessor log span indentation indent' recordAccessor' = case recordAccessor' of
+  Language.PureScript.CST.RecordAccessor expr' dot path -> do
+    Log.debug log ("Formatting `RecordAccessor` as `" <> displayShow span <> "`")
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', blank)
+    expr log indentation indent expr'
+      <> pure prefix
+      <> sourceToken log indent blank dot
+      <> separated
+        log
+        indent
+        blank
+        Span.sourceRangeFromLabel
+        (label log indent' blank)
+        path
+
 recordLabeled ::
   Log.Handle ->
   Indentation ->
@@ -1207,15 +1367,60 @@ recordLabeled log indentation indent' f g recordLabeled' = case recordLabeled' o
       <> pure prefix
       <> g a
 
+recordUpdate ::
+  Log.Handle ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.RecordUpdate Span.Span ->
+  IO Utf8Builder
+recordUpdate log indentation indent' recordUpdate' = case recordUpdate' of
+  Language.PureScript.CST.RecordUpdateBranch label' delimitedNonEmpty' -> do
+    let
+      span = Span.recordUpdate recordUpdate'
+
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug
+      log
+      ("Formatting `RecordUpdateBranch` as `" <> displayShow span <> "`")
+    label log indent' blank label'
+      <> pure prefix
+      <> delimitedNonEmpty
+        log
+        indent
+        Span.sourceRangeFromRecordUpdate
+        (recordUpdate log indentation indent)
+        delimitedNonEmpty'
+  Language.PureScript.CST.RecordUpdateLeaf label' equals expr' -> do
+    let
+      span = Span.recordUpdate recordUpdate'
+
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug
+      log
+      ("Formatting `RecordUpdateLeaf` as `" <> displayShow span <> "`")
+    label log indent' blank label'
+      <> sourceToken log indent' space equals
+      <> pure prefix
+      <> expr log indentation indent expr'
+
 separated ::
   forall a.
   Log.Handle ->
   Indent ->
+  Prefix ->
   (a -> Language.PureScript.CST.SourceRange) ->
   (a -> IO Utf8Builder) ->
   Language.PureScript.CST.Separated a ->
   IO Utf8Builder
-separated log indent f g separated' = case separated' of
+separated log indent prefix' f g separated' = case separated' of
   Language.PureScript.CST.Separated head tail -> do
     Log.debug log ("Formatting `Separated` as " <> displayShow span <> "`")
     g head
@@ -1232,7 +1437,7 @@ separated log indent f g separated' = case separated' of
             blank
       pure prefix
         <> sourceToken log indent blank separator
-        <> pure space
+        <> pure prefix'
         <> g value
   span :: Span.Span
   span = Span.separated f separated'

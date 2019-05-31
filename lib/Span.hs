@@ -9,6 +9,7 @@ module Span
   , importDecl
   , labeled
   , recordLabeled
+  , recordUpdate
   , separated
   , sourceRangeFromBinder
   , sourceRangeFromConstraint
@@ -19,9 +20,11 @@ module Span
   , sourceRangeFromImport
   , sourceRangeFromInstance
   , sourceRangeFromKind
+  , sourceRangeFromLabel
   , sourceRangeFromName
   , sourceRangeFromPatternGuard
   , sourceRangeFromRecordLabeled
+  , sourceRangeFromRecordUpdate
   , sourceRangeFromType
   , wrapped
   ) where
@@ -113,6 +116,9 @@ recordLabeled f recordLabeled' = case recordLabeled' of
         (f a)
       )
 
+recordUpdate :: Language.PureScript.CST.RecordUpdate a -> Span
+recordUpdate = spanFromSourceRange . sourceRangeFromRecordUpdate
+
 separated ::
   (a -> Language.PureScript.CST.SourceRange) ->
   Language.PureScript.CST.Separated a ->
@@ -146,6 +152,11 @@ sourceRangeFromDataCtor ::
 sourceRangeFromDataCtor =
   Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.dataCtorRange
+
+sourceRangeFromDelimitedNonEmpty ::
+  Language.PureScript.CST.DelimitedNonEmpty a ->
+  Language.PureScript.CST.SourceRange
+sourceRangeFromDelimitedNonEmpty = sourceRangeFromWrapped
 
 sourceRangeFromExpr ::
   Language.PureScript.CST.Expr a ->
@@ -213,6 +224,19 @@ sourceRangeFromRecordLabeled f recordLabeled' = case recordLabeled' of
   Language.PureScript.CST.RecordPun name' -> sourceRangeFromName name'
   Language.PureScript.CST.RecordField label _ a ->
     Language.PureScript.CST.Positions.widen (sourceRangeFromLabel label) (f a)
+
+sourceRangeFromRecordUpdate ::
+  Language.PureScript.CST.RecordUpdate a ->
+  Language.PureScript.CST.SourceRange
+sourceRangeFromRecordUpdate recordUpdate' = case recordUpdate' of
+  Language.PureScript.CST.RecordUpdateBranch label delimitedNonEmpty' ->
+    Language.PureScript.CST.Positions.widen
+      (sourceRangeFromLabel label)
+      (sourceRangeFromDelimitedNonEmpty delimitedNonEmpty')
+  Language.PureScript.CST.RecordUpdateLeaf label _ expr' ->
+    Language.PureScript.CST.Positions.widen
+      (sourceRangeFromLabel label)
+      (sourceRangeFromExpr expr')
 
 sourceRangeFromSeparated ::
   (a -> Language.PureScript.CST.SourceRange) ->
