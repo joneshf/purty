@@ -37,7 +37,7 @@ message error' = case error' of
   Error _ message' -> message'
 
 new :: (HasCallStack) => Utf8Builder -> Error
-new message' = Error GHC.Stack.callStack message'
+new = Error GHC.Stack.callStack
 
 newline :: Utf8Builder
 newline = "\n"

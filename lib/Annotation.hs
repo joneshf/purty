@@ -22,6 +22,21 @@ dataMembers log dataMembers' = case dataMembers' of
     Log.debug log ("Annotating `DataEnumerated` as `" <> displayShow span <> "`")
     pure (Language.PureScript.CST.DataEnumerated span delimited')
 
+debug ::
+  (Show a) =>
+  Utf8Builder ->
+  Language.PureScript.CST.Name a ->
+  Span.Span ->
+  Utf8Builder
+debug x y z =
+  "Annotating `"
+    <> x
+    <> "`: "
+    <> displayShow y
+    <> " as `"
+    <> displayShow z
+    <> "`"
+
 declaration ::
   Log.Handle ->
   Language.PureScript.CST.Declaration a ->
@@ -64,21 +79,6 @@ export log export' = case export' of
     Log.debug log (debug "ExportValue" name' span)
     pure (Language.PureScript.CST.ExportValue span name')
   where
-  debug ::
-    (Show a) =>
-    Utf8Builder ->
-    Language.PureScript.CST.Name a ->
-    Span.Span ->
-    Utf8Builder
-  debug x y z =
-    "Annotating `"
-      <> x
-      <> "`: "
-      <> displayShow y
-      <> " as `"
-      <> displayShow z
-      <> "`"
-
   span :: Span.Span
   span = Span.export export'
 
@@ -107,21 +107,6 @@ import' log import'' = case import'' of
     Log.debug log (debug "ImportValue" name' span)
     pure (Language.PureScript.CST.ImportValue span name')
   where
-  debug ::
-    (Show a) =>
-    Utf8Builder ->
-    Language.PureScript.CST.Name a ->
-    Span.Span ->
-    Utf8Builder
-  debug x y z =
-    "Annotating `"
-      <> x
-      <> "`: "
-      <> displayShow y
-      <> " as `"
-      <> displayShow z
-      <> "`"
-
   span :: Span.Span
   span = Span.import' import''
 

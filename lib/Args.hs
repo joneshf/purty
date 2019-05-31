@@ -13,13 +13,13 @@ import qualified "this" Log
 import qualified "optparse-applicative" Options.Applicative
 import qualified "rio" RIO.File
 
-data Args
+newtype Args
   = Format Format
 
 data Format
   = Format' Input Output Verbose
 
-data Input
+newtype Input
   = InputFile FilePath
 
 data Output

@@ -17,6 +17,33 @@ type Indentation
 type Prefix
   = Utf8Builder
 
+adoBlock ::
+  Log.Handle ->
+  Span.Span ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.AdoBlock Span.Span ->
+  IO Utf8Builder
+adoBlock log span indentation indent' adoBlock' = case adoBlock' of
+  Language.PureScript.CST.AdoBlock ado doStatements in' expr' -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log "Formatting `AdoBlock`"
+    sourceToken log indent' blank ado
+      <> foldMap
+        (\doStatement' ->
+          pure prefix
+            <> doStatement log indentation indent doStatement'
+        )
+        doStatements
+      <> pure prefix
+      <> sourceToken log indent blank in'
+      <> exprPrefix log indentation indent expr'
+
 blank :: Utf8Builder
 blank = ""
 
@@ -493,6 +520,42 @@ delimitedNonEmpty log indent f g delimitedNonEmpty' = do
   Log.debug log "Formatting `DelimitedNonEmpty`"
   wrapped log indent (separated log indent f g) delimitedNonEmpty'
 
+doStatement ::
+  Log.Handle ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.DoStatement Span.Span ->
+  IO Utf8Builder
+doStatement log indentation indent' doStatement' = case doStatement' of
+  Language.PureScript.CST.DoBind binder' arrow expr' -> do
+    let
+      span = Span.doStatement doStatement'
+
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `DoBind` as `" <> displayShow span <> "`")
+    binder log indentation indent' binder'
+      <> sourceToken log indent' space arrow
+      <> pure prefix
+      <> expr log indentation indent expr'
+  Language.PureScript.CST.DoDiscard expr' -> do
+    Log.debug log "Formatting `DoDiscard`"
+    expr log indentation indent' expr'
+  Language.PureScript.CST.DoLet let' letBindings -> do
+    let
+      indent = indent' <> indentation
+    Log.debug log "Formatting `DoDiscard`"
+    sourceToken log indent' blank let'
+      <> foldMap
+        (\letBinding' ->
+          pure (newline <> indent)
+            <> letBinding log indentation indent letBinding'
+        )
+        letBindings
+
 export ::
   Log.Handle ->
   Indentation ->
@@ -580,6 +643,20 @@ expr ::
   Language.PureScript.CST.Expr Span.Span ->
   IO Utf8Builder
 expr log indentation indent' expr' = case expr' of
+  Language.PureScript.CST.ExprAdo span adoBlock' -> do
+    Log.debug log ("Formatting `ExprAdo` as `" <> displayShow span <> "`")
+    adoBlock log span indentation indent' adoBlock'
+  Language.PureScript.CST.ExprApp span expr1 expr2 -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `ExprApp` as `" <> displayShow span <> "`")
+    expr log indentation indent' expr1
+      <> pure prefix
+      <> expr log indentation indent expr2
   Language.PureScript.CST.ExprArray span delimited' -> do
     Log.debug log ("Formatting `ExprArray` as `" <> displayShow span <> "`")
     delimited
@@ -598,18 +675,7 @@ exprPrefix ::
   Indent ->
   Language.PureScript.CST.Expr Span.Span ->
   IO Utf8Builder
-exprPrefix log indentation indent' expr' = case expr' of
-  Language.PureScript.CST.ExprArray span delimited' -> do
-    Log.debug log ("Formatting `ExprArray` as `" <> displayShow span <> "`")
-    delimited
-      log
-      indent'
-      Span.sourceRangeFromExpr
-      (expr log indentation indent')
-      delimited'
-  _ -> do
-    Log.info log "Formatting expr not implemented"
-    mempty
+exprPrefix = expr
 
 fixityFields ::
   Log.Handle ->
@@ -1263,7 +1329,7 @@ where' log indentation indent' where''' = case where''' of
   Language.PureScript.CST.Where expr' letBindings'' -> do
     let
       indent = indent' <> indentation
-    Log.debug log "Formatting `Where`"
+    Log.debug log ("Formatting `Where`: " <> displayShow where''')
     exprPrefix log indentation indent' expr'
       <> foldMap
         (\(where'', letBindings') ->

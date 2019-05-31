@@ -3,6 +3,7 @@ module Span
   , betweenSourceTokens
   , dataMembers
   , delimitedNonEmpty
+  , doStatement
   , export
   , import'
   , importDecl
@@ -51,6 +52,12 @@ dataMembers =
 
 delimitedNonEmpty :: Language.PureScript.CST.DelimitedNonEmpty a -> Span
 delimitedNonEmpty = spanFromSourceRange . sourceRangeFromWrapped
+
+doStatement :: Language.PureScript.CST.DoStatement a -> Span
+doStatement =
+  spanFromSourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.doStatementRange
 
 export :: Language.PureScript.CST.Export a -> Span
 export =

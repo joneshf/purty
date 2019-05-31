@@ -56,8 +56,7 @@ run log args = case args of
     Log.debug log "Formatting file"
     results <- Args.withInput log format' (format log)
     case results of
-      Left err -> do
-        pure (Just $ Error.wrap "Error formatting file" err)
+      Left err -> pure (Just $ Error.wrap "Error formatting file" err)
       Right formatted -> do
         Log.debug log "Writing formatted file."
         Args.write log format' formatted
