@@ -143,6 +143,46 @@ binder log indentation indent' binder'' = case binder'' of
     Log.debug log "Formatting `BinderWildcard`"
     sourceToken log indent' blank wildcard
 
+caseOf ::
+  Log.Handle ->
+  Span.Span ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.CaseOf Span.Span ->
+  IO Utf8Builder
+caseOf log span indentation indent' caseOf' = case caseOf' of
+  Language.PureScript.CST.CaseOf case' head of' branches -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `CaseOf` as `" <> displayShow span <> "`")
+    sourceToken log indent' blank case'
+      <> pure prefix
+      <> separated
+        log
+        indent
+        space
+        Span.sourceRangeFromExpr
+        (expr log indentation indent)
+        head
+      <> pure space
+      <> sourceToken log indent' blank of'
+      <> foldMap
+        (\(binders, guarded') ->
+          separated
+            log
+            indent
+            space
+            Span.sourceRangeFromBinder
+            (binder log indentation indent)
+            binders
+            <> guarded log indentation indent guarded'
+        )
+        branches
+
 classFundep ::
   Log.Handle ->
   Indent ->
@@ -691,6 +731,9 @@ expr log indentation indent' expr'' = case expr'' of
   Language.PureScript.CST.ExprBoolean _ boolean _ -> do
     Log.debug log "Formatting `ExprBoolean`"
     sourceToken log indent' blank boolean
+  Language.PureScript.CST.ExprCase span caseOf' -> do
+    Log.debug log ("Formatting `ExprCase` as `" <> displayShow span <> "`")
+    caseOf log span indentation indent' caseOf'
   Language.PureScript.CST.ExprChar _ char _ -> do
     Log.debug log "Formatting `ExprChar`"
     sourceToken log indent' blank char
@@ -706,6 +749,9 @@ expr log indentation indent' expr'' = case expr'' of
   Language.PureScript.CST.ExprIdent _ name' -> do
     Log.debug log "Formatting `ExprIdent`"
     qualifiedName log indent' blank name'
+  Language.PureScript.CST.ExprIf span ifThenElse' -> do
+    Log.debug log ("Formatting `ExprIf` as `" <> displayShow span <> "`")
+    ifThenElse log span indentation indent' ifThenElse'
   Language.PureScript.CST.ExprInfix span expr1 wrapped' expr2 -> do
     let
       (indent, prefix) = case span of
@@ -719,6 +765,12 @@ expr log indentation indent' expr'' = case expr'' of
       <> wrapped log indent (expr log indentation indent) wrapped'
       <> pure space
       <> expr log indentation indent expr2
+  Language.PureScript.CST.ExprLambda span lambda' -> do
+    Log.debug log ("Formatting `ExprLambda` as `" <> displayShow span <> "`")
+    lambda log span indentation indent' lambda'
+  Language.PureScript.CST.ExprLet span letIn' -> do
+    Log.debug log ("Formatting `ExprLet` as `" <> displayShow span <> "`")
+    letIn log span indentation indent' letIn'
   Language.PureScript.CST.ExprNegate _ negative expr' -> do
     Log.debug log "Formatting `ExprNegate`"
     sourceToken log indent' blank negative
@@ -797,9 +849,6 @@ expr log indentation indent' expr'' = case expr'' of
       <> sourceToken log indent' space colons
       <> pure prefix
       <> type' log indentation indent type''
-  _ -> do
-    Log.info log "Formatting expr not implemented"
-    mempty
 
 exprPrefix ::
   Log.Handle ->
@@ -910,6 +959,32 @@ guardedExpr log indentation indent' guardedExpr' = case guardedExpr' of
         patternGuards
       <> sourceToken log indent' blank separator
       <> where' log indentation indent' where''
+
+ifThenElse ::
+  Log.Handle ->
+  Span.Span ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.IfThenElse Span.Span ->
+  IO Utf8Builder
+ifThenElse log span indentation indent' ifThenElse' = case ifThenElse' of
+  Language.PureScript.CST.IfThenElse if' cond then' true else' false -> do
+    let
+      (expr', indent, prefix) = case span of
+        Span.MultipleLines ->
+          (exprPrefix, indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (expr, indent', space)
+    Log.debug log ("Formatting `IfThenElse` as `" <> displayShow span <> "`")
+    sourceToken log indent' blank if'
+      <> pure space
+      <> expr log indentation indent cond
+      <> pure prefix
+      <> sourceToken log indent' blank then'
+      <> expr' log indentation indent true
+      <> pure prefix
+      <> sourceToken log indent' blank else'
+      <> expr' log indentation indent false
 
 import' ::
   Log.Handle ->
@@ -1216,6 +1291,33 @@ labeledNameType log indent =
     Span.sourceRangeFromType
     (type' log indent blank)
 
+lambda ::
+  Log.Handle ->
+  Span.Span ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.Lambda Span.Span ->
+  IO Utf8Builder
+lambda log span indentation indent' lambda' = case lambda' of
+  Language.PureScript.CST.Lambda reverseSolidus binders arrow expr' -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `Lambda` as `" <> displayShow span <> "`")
+    sourceToken log indent' blank reverseSolidus
+      <> foldMap
+        (\binder' ->
+          binder log indentation indent' binder'
+            <> pure space
+        )
+        binders
+      <> sourceToken log indent' blank arrow
+      <> pure prefix
+      <> expr log indentation indent expr'
+
 letBinding ::
   Log.Handle ->
   Indentation ->
@@ -1238,6 +1340,33 @@ letBinding log indentation indent' letBinding' = case letBinding' of
       log
       ("Formatting `LetBindingSignature` as `" <> displayShow span <> "`")
     labeledNameType log indent' labeled'
+
+letIn ::
+  Log.Handle ->
+  Span.Span ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.LetIn Span.Span ->
+  IO Utf8Builder
+letIn log span indentation indent' letIn' = case letIn' of
+  Language.PureScript.CST.LetIn let' letBindings in' expr'' -> do
+    let
+      (expr', inPrefix, indent, letBindingPrefix) = case span of
+        Span.MultipleLines ->
+          (exprPrefix, newline <> indent', indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (expr, space, indent', space)
+    Log.debug log ("Formatting `LetIn` as `" <> displayShow span <> "`")
+    sourceToken log indent' blank let'
+      <> foldMap
+        (\letBinding' ->
+          pure letBindingPrefix
+            <> letBinding log indentation indent' letBinding'
+        )
+        letBindings
+      <> pure inPrefix
+      <> sourceToken log indent' blank in'
+      <> expr' log indentation indent expr''
 
 module' ::
   Log.Handle ->
