@@ -71,6 +71,7 @@ library:
     - optparse-applicative == 0.14.3.0
     - purescript
     - rio == 0.1.9.2
+    - text == 1.2.3.1
   source-dirs: lib
 license: BSD3
 maintainer: jones3.hardy@gmail.com

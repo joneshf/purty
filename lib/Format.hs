@@ -260,11 +260,11 @@ commentLeading ::
   Log.Handle ->
   Indent ->
   Prefix ->
-  Language.PureScript.CST.Comment a ->
+  Language.PureScript.CST.Comment Language.PureScript.CST.LineFeed ->
   IO Utf8Builder
 commentLeading log indent prefix comment'' = case comment'' of
   Language.PureScript.CST.Comment comment' -> do
-    Log.debug log ("Formatting comment: " <> display comment')
+    debug log "Comment" comment'' (Span.comment Span.lineFeed comment'')
     pure (prefix <> display comment' <> newline <> indent)
   Language.PureScript.CST.Line _ -> do
     Log.debug log "Not formatting `Line`"
@@ -274,13 +274,15 @@ commentLeading log indent prefix comment'' = case comment'' of
     pure blank
 
 commentTrailing ::
+  (Show a) =>
   Log.Handle ->
+  (a -> Span.Span) ->
   Prefix ->
   Language.PureScript.CST.Comment a ->
   IO Utf8Builder
-commentTrailing log prefix comment'' = case comment'' of
+commentTrailing log f prefix comment'' = case comment'' of
   Language.PureScript.CST.Comment comment' -> do
-    Log.debug log ("Formatting comment: " <> display comment')
+    debug log "Comment" comment'' (Span.comment f comment'')
     pure (prefix <> display comment')
   Language.PureScript.CST.Line _ -> do
     Log.debug log "Not formatting `Line`"
@@ -293,28 +295,30 @@ commentsLeading ::
   Log.Handle ->
   Indent ->
   Prefix ->
-  [Language.PureScript.CST.Comment a] ->
+  [Language.PureScript.CST.Comment Language.PureScript.CST.LineFeed] ->
   IO Utf8Builder
 commentsLeading log indent prefix commentsLeading' = case commentsLeading' of
   [] -> do
     Log.debug log "No leading comments to format"
     pure blank
   _ -> do
-    Log.debug log "Formatting leading comments"
+    debug log "leading comments" commentsLeading' Span.MultipleLines
     foldMap (commentLeading log indent prefix) commentsLeading'
 
 commentsTrailing ::
+  (Show a) =>
   Log.Handle ->
+  (a -> Span.Span) ->
   Prefix ->
   [Language.PureScript.CST.Comment a] ->
   IO Utf8Builder
-commentsTrailing log prefix commentsTrailing' = case commentsTrailing' of
+commentsTrailing log f prefix commentsTrailing' = case commentsTrailing' of
   [] -> do
     Log.debug log "No trailing comments to format"
     pure blank
   _ -> do
-    Log.debug log "Formatting trailing comments"
-    foldMap (commentTrailing log prefix) commentsTrailing'
+    debug log "trailing comments" commentsTrailing' Span.MultipleLines
+    foldMap (commentTrailing log f prefix) commentsTrailing'
 
 constraint ::
   Log.Handle ->
@@ -542,7 +546,7 @@ declarations log indentation declarations' = case declarations' of
   _ -> do
     let
       indent = blank
-    Log.debug log "Formatting declarations"
+    debug log "declarations" declarations' Span.MultipleLines
     foldMap
       (\declaration' ->
         pure newline
@@ -663,7 +667,7 @@ export log indentation indent' export' = case export' of
           (indent' <> indentation, newline <> indent)
         Span.SingleLine ->
           (indent', blank)
-    Log.debug log ( "Formatting `ExportType`: " <> displayShow name' <> " as `" <> displayShow span <> "`")
+    debug log "ExportType" export' span
     name log indent' blank name'
       <> pure prefix
       <> foldMap (dataMembers log indentation indent) dataMembers'
@@ -698,7 +702,7 @@ exports log indentation exports'' = case exports'' of
           space
 
       span = Span.delimitedNonEmpty exports'
-    Log.debug log ("Formatting exports as `" <> displayShow span <> "`")
+    debug log "exports" exports' span
     pure prefix
       <> delimitedNonEmpty
         log
@@ -1050,7 +1054,7 @@ import' log indentation indent' import'' = case import'' of
           indent' <> indentation
         Span.SingleLine ->
           indent'
-    Log.debug log ( "Formatting `ImportType`: " <> displayShow name' <> " as `" <> displayShow span <> "`")
+    debug log "ImportType" import'' span
     name log indent' blank name'
       <> foldMap (dataMembers log indentation indent) dataMembers'
   Language.PureScript.CST.ImportTypeOp span type'' name' -> do
@@ -1142,7 +1146,7 @@ imports log indentation imports' = case imports' of
   _ -> do
     let
       indent = blank
-    Log.debug log "Formatting imports"
+    debug log "imports" imports' Span.MultipleLines
     foldMap
       (\importDecl' ->
         pure newline
@@ -1417,7 +1421,7 @@ module' log indentation module''' = case module''' of
       <> pure newline
       <> imports log indentation imports'
       <> declarations log indentation declarations'
-      <> commentsTrailing log blank trailing
+      <> commentsTrailing log Span.lineFeed blank trailing
 
 name ::
   Log.Handle ->
@@ -1672,7 +1676,7 @@ tokenAnn log indent prefix tokenAnn' inside = case tokenAnn' of
     debug log "TokenAnn" tokenAnn' (Span.sourceRange sourceRange)
     commentsLeading log indent prefix leading
       <> inside
-      <> commentsTrailing log prefix trailing
+      <> commentsTrailing log absurd prefix trailing
 
 type' ::
   Log.Handle ->

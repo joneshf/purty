@@ -1,6 +1,7 @@
 module Span
   ( Span(..)
   , betweenSourceTokens
+  , comment
   , dataMembers
   , delimitedNonEmpty
   , doStatement
@@ -11,6 +12,7 @@ module Span
   , importDecl
   , label
   , labeled
+  , lineFeed
   , name
   , oneOrDelimited
   , patternGuard
@@ -31,6 +33,7 @@ import "rio" RIO
 import qualified "purescript" Language.PureScript.CST
 import qualified "purescript" Language.PureScript.CST.Positions
 import qualified "this" SourceRange
+import qualified "text" Data.Text
 
 data Span
   = MultipleLines
@@ -44,6 +47,15 @@ betweenSourceTokens ::
 betweenSourceTokens start end =
   sourceRange
     (Language.PureScript.CST.Positions.toSourceRange (start, end))
+
+comment :: (a -> Span) -> Language.PureScript.CST.Comment a -> Span
+comment f comment'' = case comment'' of
+  Language.PureScript.CST.Comment comment' ->
+    case Data.Text.count "\n" comment' of
+      0 -> Span.SingleLine
+      _ -> Span.MultipleLines
+  Language.PureScript.CST.Line a -> f a
+  Language.PureScript.CST.Space _ -> Span.SingleLine
 
 dataMembers :: Language.PureScript.CST.DataMembers a -> Span
 dataMembers =
@@ -112,6 +124,11 @@ linesBetween ::
 linesBetween start end = case (start, end) of
   (Language.PureScript.CST.SourcePos line _, Language.PureScript.CST.SourcePos line' _) ->
     line - line'
+
+lineFeed :: Language.PureScript.CST.LineFeed -> Span
+lineFeed lineFeed' = case lineFeed' of
+  Language.PureScript.CST.LF -> Span.SingleLine
+  Language.PureScript.CST.CRLF -> Span.SingleLine
 
 name :: Language.PureScript.CST.Name a -> Span
 name =
