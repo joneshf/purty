@@ -1,8 +1,10 @@
 module SourceRange
-  ( binder
+  ( adoBlock
+  , binder
   , constraint
   , classFundep
   , dataCtor
+  , doBlock
   , export
   , expr
   , import'
@@ -13,6 +15,7 @@ module SourceRange
   , name
   , oneOrDelimited
   , patternGuard
+  , recordAccessor
   , recordLabeled
   , recordUpdate
   , separated
@@ -22,8 +25,18 @@ module SourceRange
 
 import "rio" RIO
 
+import qualified "base" Data.List.NonEmpty
 import qualified "purescript" Language.PureScript.CST
 import qualified "purescript" Language.PureScript.CST.Positions
+
+adoBlock ::
+  Language.PureScript.CST.AdoBlock a ->
+  Language.PureScript.CST.SourceRange
+adoBlock adoBlock' = case adoBlock' of
+  Language.PureScript.CST.AdoBlock ado _ _ expr' ->
+    Language.PureScript.CST.Positions.widen
+      (Language.PureScript.CST.Positions.srcRange ado)
+      (expr expr')
 
 binder ::
   Language.PureScript.CST.Binder a ->
@@ -57,6 +70,22 @@ delimitedNonEmpty ::
   Language.PureScript.CST.DelimitedNonEmpty a ->
   Language.PureScript.CST.SourceRange
 delimitedNonEmpty = wrapped
+
+doBlock ::
+  Language.PureScript.CST.DoBlock a ->
+  Language.PureScript.CST.SourceRange
+doBlock doBlock' = case doBlock' of
+  Language.PureScript.CST.DoBlock do' doStatements ->
+    Language.PureScript.CST.Positions.widen
+      (Language.PureScript.CST.Positions.srcRange do')
+      (doStatement $ Data.List.NonEmpty.last doStatements)
+
+doStatement ::
+  Language.PureScript.CST.DoStatement a ->
+  Language.PureScript.CST.SourceRange
+doStatement =
+  Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.doStatementRange
 
 expr ::
   Language.PureScript.CST.Expr a ->
@@ -133,6 +162,13 @@ patternGuard patternGuard' = case patternGuard' of
     Language.PureScript.CST.Positions.widen
       (maybe (expr expr') (binder . fst) binder')
       (expr expr')
+
+recordAccessor ::
+  Language.PureScript.CST.RecordAccessor a ->
+  Language.PureScript.CST.SourceRange
+recordAccessor recordAccessor' = case recordAccessor' of
+  Language.PureScript.CST.RecordAccessor expr' _ path ->
+    Language.PureScript.CST.Positions.widen (expr expr') (separated label path)
 
 recordLabeled ::
   (a -> Language.PureScript.CST.SourceRange) ->

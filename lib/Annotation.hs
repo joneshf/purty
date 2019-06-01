@@ -28,11 +28,51 @@ binder ::
   Log.Handle ->
   Language.PureScript.CST.Binder a ->
   IO (Language.PureScript.CST.Binder Span.Span)
-binder log binder' = case binder' of
+binder log binder''' = case binder''' of
+  Language.PureScript.CST.BinderBoolean _ boolean x -> do
+    let span = Span.binder binder'''
+    debug log "BinderBoolean" binder''' span
+    pure (Language.PureScript.CST.BinderBoolean span boolean x)
+  Language.PureScript.CST.BinderChar _ char x -> do
+    let span = Span.binder binder'''
+    debug log "BinderChar" binder''' span
+    pure (Language.PureScript.CST.BinderChar span char x)
+  Language.PureScript.CST.BinderConstructor _ name' binders' -> do
+    let span = Span.binder binder'''
+    debug log "BinderConstructor" binder''' span
+    binders <- traverse (binder log) binders'
+    pure (Language.PureScript.CST.BinderConstructor span name' binders)
+  Language.PureScript.CST.BinderNamed _ name' at binder'' -> do
+    let span = Span.binder binder'''
+    debug log "BinderNamed" binder''' span
+    binder' <- binder log binder''
+    pure (Language.PureScript.CST.BinderNamed span name' at binder')
+  Language.PureScript.CST.BinderNumber _ negative number x -> do
+    let span = Span.binder binder'''
+    debug log "BinderNumber" binder''' span
+    pure (Language.PureScript.CST.BinderNumber span negative number x)
+  Language.PureScript.CST.BinderOp _ binder1' op binder2' -> do
+    let span = Span.binder binder'''
+    debug log "BinderOp" binder''' span
+    binder1 <- binder log binder1'
+    binder2 <- binder log binder2'
+    pure (Language.PureScript.CST.BinderOp span binder1 op binder2)
+  Language.PureScript.CST.BinderString _ string x -> do
+    let span = Span.binder binder'''
+    debug log "BinderString" binder''' span
+    pure (Language.PureScript.CST.BinderString span string x)
+  Language.PureScript.CST.BinderVar _ var -> do
+    let span = Span.binder binder'''
+    debug log "BinderVar" binder''' span
+    pure (Language.PureScript.CST.BinderVar span var)
+  Language.PureScript.CST.BinderWildcard _ wildcard -> do
+    let span = Span.binder binder'''
+    debug log "BinderWildcard" binder''' span
+    pure (Language.PureScript.CST.BinderWildcard span wildcard)
   _ -> do
     let span = Span.MultipleLines
-    notImplemented log "Binder" binder' span
-    pure (span <$ binder')
+    notImplemented log "Binder" binder''' span
+    pure (span <$ binder''')
 
 dataMembers ::
   (Show a) =>
@@ -205,6 +245,11 @@ expr log expr' = case expr' of
     expr1 <- expr log expr1'
     expr2 <- expr log expr2'
     pure (Language.PureScript.CST.ExprOp span expr1 op expr2)
+  Language.PureScript.CST.ExprRecordAccessor _ recordAccessor'' -> do
+    let span = Span.expr expr'
+    debug log "ExprRecordAccessor" expr' span
+    recordAccessor' <- recordAccessor log recordAccessor''
+    pure (Language.PureScript.CST.ExprRecordAccessor span recordAccessor')
   _ -> do
     let span = Span.MultipleLines
     notImplemented log "Expr" expr' span
@@ -388,6 +433,18 @@ patternGuard log patternGuard' = case patternGuard' of
     binder' <- (traverse . ltraverse) (binder log) binder''
     expr' <- expr log expr''
     pure (Language.PureScript.CST.PatternGuard binder' expr')
+
+recordAccessor ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.RecordAccessor a ->
+  IO (Language.PureScript.CST.RecordAccessor Span.Span)
+recordAccessor log recordAccessor' = case recordAccessor' of
+  Language.PureScript.CST.RecordAccessor expr'' dot path -> do
+    let span = Span.recordAccessor recordAccessor'
+    debug log "RecordAccessor" recordAccessor' span
+    expr' <- expr log expr''
+    pure (Language.PureScript.CST.RecordAccessor expr' dot path)
 
 type' ::
   (Show a) =>

@@ -2,6 +2,7 @@ module Span
   ( Span(..)
   , adoBlock
   , betweenSourceTokens
+  , binder
   , comment
   , dataMembers
   , delimitedNonEmpty
@@ -21,6 +22,7 @@ module Span
   , oneOrDelimited
   , patternGuard
   , qualifiedName
+  , recordAccessor
   , recordLabeled
   , recordUpdate
   , separated
@@ -45,7 +47,7 @@ data Span
   deriving (Show)
 
 adoBlock :: Language.PureScript.CST.AdoBlock a -> Span
-adoBlock = expr . Language.PureScript.CST.ExprAdo () . void
+adoBlock = sourceRange . SourceRange.adoBlock
 
 betweenSourceTokens ::
   Language.PureScript.CST.SourceToken ->
@@ -54,6 +56,12 @@ betweenSourceTokens ::
 betweenSourceTokens start end =
   sourceRange
     (Language.PureScript.CST.Positions.toSourceRange (start, end))
+
+binder :: Language.PureScript.CST.Binder a -> Span
+binder =
+  sourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.binderRange
 
 comment :: (a -> Span) -> Language.PureScript.CST.Comment a -> Span
 comment f comment'' = case comment'' of
@@ -74,7 +82,7 @@ delimitedNonEmpty :: Language.PureScript.CST.DelimitedNonEmpty a -> Span
 delimitedNonEmpty = sourceRange . SourceRange.wrapped
 
 doBlock :: Language.PureScript.CST.DoBlock a -> Span
-doBlock = expr . Language.PureScript.CST.ExprDo () . void
+doBlock = sourceRange . SourceRange.doBlock
 
 doStatement :: Language.PureScript.CST.DoStatement a -> Span
 doStatement =
@@ -172,6 +180,9 @@ qualifiedName =
   sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.qualRange
+
+recordAccessor :: Language.PureScript.CST.RecordAccessor a -> Span
+recordAccessor = sourceRange . SourceRange.recordAccessor
 
 recordLabeled ::
   (a -> Language.PureScript.CST.SourceRange) ->
