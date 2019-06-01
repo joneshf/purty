@@ -871,31 +871,31 @@ exprPrefix log indentation indent' expr' =
 
   prefix :: Utf8Builder
   prefix = case expr' of
-    Language.PureScript.CST.ExprAdo{} -> space
-    Language.PureScript.CST.ExprApp{} -> newline <> indent
-    Language.PureScript.CST.ExprArray{} -> newline <> indent
-    Language.PureScript.CST.ExprBoolean{} -> newline <> indent
-    Language.PureScript.CST.ExprCase{} -> space
-    Language.PureScript.CST.ExprChar{} -> newline <> indent
-    Language.PureScript.CST.ExprConstructor{} -> newline <> indent
-    Language.PureScript.CST.ExprDo{} -> space
-    Language.PureScript.CST.ExprHole{} -> newline <> indent
-    Language.PureScript.CST.ExprIdent{} -> newline <> indent
-    Language.PureScript.CST.ExprIf{} -> space
-    Language.PureScript.CST.ExprInfix{} -> newline <> indent
-    Language.PureScript.CST.ExprLambda{} -> space
-    Language.PureScript.CST.ExprLet{} -> space
-    Language.PureScript.CST.ExprNegate{} -> newline <> indent
-    Language.PureScript.CST.ExprNumber{} -> newline <> indent
-    Language.PureScript.CST.ExprOp{} -> newline <> indent
-    Language.PureScript.CST.ExprOpName{} -> newline <> indent
-    Language.PureScript.CST.ExprParens{} -> newline <> indent
-    Language.PureScript.CST.ExprRecord{} -> newline <> indent
+    Language.PureScript.CST.ExprAdo{}            -> space
+    Language.PureScript.CST.ExprApp{}            -> newline <> indent
+    Language.PureScript.CST.ExprArray{}          -> newline <> indent
+    Language.PureScript.CST.ExprBoolean{}        -> newline <> indent
+    Language.PureScript.CST.ExprCase{}           -> space
+    Language.PureScript.CST.ExprChar{}           -> newline <> indent
+    Language.PureScript.CST.ExprConstructor{}    -> newline <> indent
+    Language.PureScript.CST.ExprDo{}             -> space
+    Language.PureScript.CST.ExprHole{}           -> newline <> indent
+    Language.PureScript.CST.ExprIdent{}          -> newline <> indent
+    Language.PureScript.CST.ExprIf{}             -> space
+    Language.PureScript.CST.ExprInfix{}          -> newline <> indent
+    Language.PureScript.CST.ExprLambda{}         -> space
+    Language.PureScript.CST.ExprLet{}            -> space
+    Language.PureScript.CST.ExprNegate{}         -> newline <> indent
+    Language.PureScript.CST.ExprNumber{}         -> newline <> indent
+    Language.PureScript.CST.ExprOp{}             -> newline <> indent
+    Language.PureScript.CST.ExprOpName{}         -> newline <> indent
+    Language.PureScript.CST.ExprParens{}         -> newline <> indent
+    Language.PureScript.CST.ExprRecord{}         -> newline <> indent
     Language.PureScript.CST.ExprRecordAccessor{} -> newline <> indent
-    Language.PureScript.CST.ExprRecordUpdate{} -> space
-    Language.PureScript.CST.ExprSection{} -> newline <> indent
-    Language.PureScript.CST.ExprString{} -> newline <> indent
-    Language.PureScript.CST.ExprTyped{} -> newline <> indent
+    Language.PureScript.CST.ExprRecordUpdate{}   -> space
+    Language.PureScript.CST.ExprSection{}        -> newline <> indent
+    Language.PureScript.CST.ExprString{}         -> newline <> indent
+    Language.PureScript.CST.ExprTyped{}          -> newline <> indent
 
 fixityFields ::
   Log.Handle ->
