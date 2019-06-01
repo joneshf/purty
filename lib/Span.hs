@@ -4,6 +4,7 @@ module Span
   , betweenSourceTokens
   , binder
   , comment
+  , constraint
   , dataMembers
   , delimitedNonEmpty
   , doBlock
@@ -14,6 +15,7 @@ module Span
   , guardedExpr
   , import'
   , importDecl
+  , kind
   , label
   , labeled
   , lineFeed
@@ -25,9 +27,11 @@ module Span
   , recordAccessor
   , recordLabeled
   , recordUpdate
+  , row
   , separated
   , sourceRange
   , sourceToken
+  , type'
   , typeVarBinding
   , valueBindingFields
   , where'
@@ -71,6 +75,12 @@ comment f comment'' = case comment'' of
       _ -> Span.MultipleLines
   Language.PureScript.CST.Line a -> f a
   Language.PureScript.CST.Space _ -> Span.SingleLine
+
+constraint :: Language.PureScript.CST.Constraint a -> Span
+constraint =
+  sourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.constraintRange
 
 dataMembers :: Language.PureScript.CST.DataMembers a -> Span
 dataMembers =
@@ -125,6 +135,12 @@ importDecl =
   sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.importDeclRange
+
+kind :: Language.PureScript.CST.Kind a -> Span
+kind =
+  sourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.kindRange
 
 label :: Language.PureScript.CST.Label -> Span
 label =
@@ -200,6 +216,23 @@ recordLabeled f recordLabeled' = case recordLabeled' of
 recordUpdate :: Language.PureScript.CST.RecordUpdate a -> Span
 recordUpdate = sourceRange . SourceRange.recordUpdate
 
+row :: Language.PureScript.CST.Row a -> Span
+row row' = case row' of
+  Language.PureScript.CST.Row labels' tail -> case (labels', tail) of
+    (Just labels, Just (_, type'')) ->
+      sourceRange
+        ( Language.PureScript.CST.Positions.widen
+          ( SourceRange.separated
+            (SourceRange.labeled SourceRange.label SourceRange.type')
+            labels
+          )
+          (SourceRange.type' type'')
+        )
+    (Just labels, Nothing) ->
+      separated (SourceRange.labeled SourceRange.label SourceRange.type') labels
+    (Nothing, Just (_, type'')) -> type' type''
+    (Nothing, Nothing) -> SingleLine
+
 separated ::
   (a -> Language.PureScript.CST.SourceRange) ->
   Language.PureScript.CST.Separated a ->
@@ -215,6 +248,12 @@ sourceRange sourceRange' = case sourceRange' of
     case linesBetween start end of
       0 -> SingleLine
       _ -> MultipleLines
+
+type' :: Language.PureScript.CST.Type a -> Span
+type' =
+  sourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.typeRange
 
 typeVarBinding :: Language.PureScript.CST.TypeVarBinding a -> Span
 typeVarBinding =

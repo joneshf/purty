@@ -74,6 +74,23 @@ binder log binder''' = case binder''' of
     notImplemented log "Binder" binder''' span
     pure (span <$ binder''')
 
+constraint ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.Constraint a ->
+  IO (Language.PureScript.CST.Constraint Span.Span)
+constraint log constraint' = case constraint' of
+  Language.PureScript.CST.Constraint _ name' types' -> do
+    let span = Span.constraint constraint'
+    debug log "Constraint" constraint' span
+    types <- traverse (type' log) types'
+    pure (Language.PureScript.CST.Constraint span name' types)
+  Language.PureScript.CST.ConstraintParens _ wrapped'' -> do
+    let span = Span.constraint constraint'
+    debug log "ConstraintParens" constraint' span
+    wrapped' <- wrapped log (constraint log) wrapped''
+    pure (Language.PureScript.CST.ConstraintParens span wrapped')
+
 dataMembers ::
   (Show a) =>
   Log.Handle ->
@@ -108,6 +125,11 @@ declaration ::
   Language.PureScript.CST.Declaration a ->
   IO (Language.PureScript.CST.Declaration Span.Span)
 declaration log declaration' = case declaration' of
+  Language.PureScript.CST.DeclSignature _ labeled'' -> do
+    let span = Span.labeled SourceRange.name SourceRange.type' labeled''
+    debug log "DeclSignature" declaration' span
+    labeled' <- labeledNameType log labeled''
+    pure (Language.PureScript.CST.DeclSignature span labeled')
   Language.PureScript.CST.DeclValue _ valueBindingFields'' -> do
     let span = Span.valueBindingFields valueBindingFields''
     debug log "DeclValue" declaration' span
@@ -117,6 +139,15 @@ declaration log declaration' = case declaration' of
     let span = Span.MultipleLines
     notImplemented log "Declaration" declaration' span
     pure (span <$ declaration')
+
+delimited ::
+  (Show a) =>
+  Log.Handle ->
+  (a -> IO b) ->
+  Language.PureScript.CST.Delimited a ->
+  IO (Language.PureScript.CST.Delimited b)
+delimited log f =
+  wrapped log ((traverse . traverse) f)
 
 doBlock ::
   (Show a) =>
@@ -245,6 +276,15 @@ expr log expr' = case expr' of
     expr1 <- expr log expr1'
     expr2 <- expr log expr2'
     pure (Language.PureScript.CST.ExprOp span expr1 op expr2)
+  Language.PureScript.CST.ExprRecord _ delimited'' -> do
+    let span = Span.expr expr'
+    debug log "ExprRecord" expr' span
+    delimited' <-
+      delimited
+        log
+        (recordLabeled log SourceRange.expr $ expr log)
+        delimited''
+    pure (Language.PureScript.CST.ExprRecord span delimited')
   Language.PureScript.CST.ExprRecordAccessor _ recordAccessor'' -> do
     let span = Span.expr expr'
     debug log "ExprRecordAccessor" expr' span
@@ -326,6 +366,33 @@ importDecl log importDecl' = case importDecl' of
     imports <- (traverse . traverse . traverse . traverse) (import' log) imports'
     pure (Language.PureScript.CST.ImportDecl span import'' name' imports rename)
 
+kind ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.Kind a ->
+  IO (Language.PureScript.CST.Kind Span.Span)
+kind log kind''' = case kind''' of
+  Language.PureScript.CST.KindArr _ kind1' arrow kind2' -> do
+    let span = Span.kind kind'''
+    debug log "KindArr" kind''' span
+    kind1 <- kind log kind1'
+    kind2 <- kind log kind2'
+    pure (Language.PureScript.CST.KindArr span kind1 arrow kind2)
+  Language.PureScript.CST.KindName _ name' -> do
+    let span = Span.kind kind'''
+    debug log "KindName" kind''' span
+    pure (Language.PureScript.CST.KindName span name')
+  Language.PureScript.CST.KindParens _ wrapped'' -> do
+    let span = Span.kind kind'''
+    debug log "KindParens" kind''' span
+    wrapped' <- wrapped log (kind log) wrapped''
+    pure (Language.PureScript.CST.KindParens span wrapped')
+  Language.PureScript.CST.KindRow _ sourceToken kind'' -> do
+    let span = Span.kind kind'''
+    debug log "KindRow" kind''' span
+    kind' <- kind log kind''
+    pure (Language.PureScript.CST.KindRow span sourceToken kind')
+
 labeled ::
   (Show a, Show b) =>
   Log.Handle ->
@@ -340,6 +407,19 @@ labeled log f g h labeled' = case labeled' of
     debug log "Labeled" labeled' span
     value <- h value'
     pure (Language.PureScript.CST.Labeled label' separator value)
+
+labeledNameKind ::
+  (Show a, Show b) =>
+  Log.Handle ->
+  Language.PureScript.CST.Labeled
+    (Language.PureScript.CST.Name a)
+    (Language.PureScript.CST.Kind b) ->
+  IO
+    ( Language.PureScript.CST.Labeled
+      (Language.PureScript.CST.Name a)
+      (Language.PureScript.CST.Kind Span.Span)
+    )
+labeledNameKind log = labeled log SourceRange.name SourceRange.kind (kind log)
 
 labeledNameType ::
   (Show a, Show b) =>
@@ -446,16 +526,134 @@ recordAccessor log recordAccessor' = case recordAccessor' of
     expr' <- expr log expr''
     pure (Language.PureScript.CST.RecordAccessor expr' dot path)
 
+recordLabeled ::
+  (Show a) =>
+  Log.Handle ->
+  (a -> Language.PureScript.CST.SourceRange) ->
+  (a -> IO b) ->
+  Language.PureScript.CST.RecordLabeled a ->
+  IO (Language.PureScript.CST.RecordLabeled b)
+recordLabeled log f g recordLabeled' = case recordLabeled' of
+  Language.PureScript.CST.RecordPun name' -> do
+    let span = Span.recordLabeled f recordLabeled'
+    debug log "RecordPun" recordLabeled' span
+    pure (Language.PureScript.CST.RecordPun name')
+  Language.PureScript.CST.RecordField label' colon a -> do
+    let span = Span.recordLabeled f recordLabeled'
+    debug log "RecordField" recordLabeled' span
+    b <- g a
+    pure (Language.PureScript.CST.RecordField label' colon b)
+
+row ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.Row a ->
+  IO (Language.PureScript.CST.Row Span.Span)
+row log row' = case row' of
+  Language.PureScript.CST.Row labels' tail' -> do
+    let span = Span.row row'
+    debug log "Row" row' span
+    labels <- (traverse . traverse . traverse) (type' log) labels'
+    tail <- (traverse . traverse) (type' log) tail'
+    pure (Language.PureScript.CST.Row labels tail)
+
 type' ::
   (Show a) =>
   Log.Handle ->
   Language.PureScript.CST.Type a ->
   IO (Language.PureScript.CST.Type Span.Span)
-type' log type'' = case type'' of
+type' log type'''' = case type'''' of
+  Language.PureScript.CST.TypeApp _ type1' type2' -> do
+    let span = Span.type' type''''
+    debug log "TypeApp" type'''' span
+    type1 <- type' log type1'
+    type2 <- type' log type2'
+    pure (Language.PureScript.CST.TypeApp span type1 type2)
+  Language.PureScript.CST.TypeArr _ type1' arrow type2' -> do
+    let span = Span.type' type''''
+    debug log "TypeArr" type'''' span
+    type1 <- type' log type1'
+    type2 <- type' log type2'
+    pure (Language.PureScript.CST.TypeArr span type1 arrow type2)
+  Language.PureScript.CST.TypeConstrained _ constraint'' arrow type''' -> do
+    let span = Span.type' type''''
+    debug log "TypeConstrained" type'''' span
+    constraint' <- constraint log constraint''
+    type'' <- type' log type'''
+    pure (Language.PureScript.CST.TypeConstrained span constraint' arrow type'')
+  Language.PureScript.CST.TypeConstructor _ name' -> do
+    let span = Span.type' type''''
+    debug log "TypeConstructor" type'''' span
+    pure (Language.PureScript.CST.TypeConstructor span name')
+  Language.PureScript.CST.TypeForall _ forall' typeVarBindings' dot type''' -> do
+    let span = Span.type' type''''
+    debug log "TypeForall" type'''' span
+    typeVarBindings <- traverse (typeVarBinding log) typeVarBindings'
+    type'' <- type' log type'''
+    pure (Language.PureScript.CST.TypeForall span forall' typeVarBindings dot type'')
+  Language.PureScript.CST.TypeHole _ hole -> do
+    let span = Span.type' type''''
+    debug log "TypeHole" type'''' span
+    pure (Language.PureScript.CST.TypeHole span hole)
+  Language.PureScript.CST.TypeKinded _ type''' colons kind'' -> do
+    let span = Span.type' type''''
+    debug log "TypeKinded" type'''' span
+    type'' <- type' log type'''
+    kind' <- kind log kind''
+    pure (Language.PureScript.CST.TypeKinded span type'' colons kind')
+  Language.PureScript.CST.TypeOp _ type1' op type2' -> do
+    let span = Span.type' type''''
+    debug log "TypeOp" type'''' span
+    type1 <- type' log type1'
+    type2 <- type' log type2'
+    pure (Language.PureScript.CST.TypeOp span type1 op type2)
+  Language.PureScript.CST.TypeOpName _ op -> do
+    let span = Span.type' type''''
+    debug log "TypeOpName" type'''' span
+    pure (Language.PureScript.CST.TypeOpName span op)
+  Language.PureScript.CST.TypeParens _ wrapped'' -> do
+    let span = Span.type' type''''
+    debug log "TypeParens" type'''' span
+    wrapped' <- wrapped log (type' log) wrapped''
+    pure (Language.PureScript.CST.TypeParens span wrapped')
+  Language.PureScript.CST.TypeRecord _ wrapped'' -> do
+    let span = Span.type' type''''
+    debug log "TypeRecord" type'''' span
+    wrapped' <- wrapped log (row log) wrapped''
+    pure (Language.PureScript.CST.TypeRecord span wrapped')
+  Language.PureScript.CST.TypeRow _ wrapped'' -> do
+    let span = Span.type' type''''
+    debug log "TypeRow" type'''' span
+    wrapped' <- wrapped log (row log) wrapped''
+    pure (Language.PureScript.CST.TypeRow span wrapped')
+  Language.PureScript.CST.TypeVar _ var -> do
+    let span = Span.type' type''''
+    debug log "TypeVar" type'''' span
+    pure (Language.PureScript.CST.TypeVar span var)
+  Language.PureScript.CST.TypeWildcard _ wildcard -> do
+    let span = Span.type' type''''
+    debug log "TypeWildcard" type'''' span
+    pure (Language.PureScript.CST.TypeWildcard span wildcard)
   _ -> do
     let span = Span.MultipleLines
-    notImplemented log "Type" type'' span
-    pure (span <$ type'')
+    notImplemented log "Type" type'''' span
+    pure (span <$ type'''')
+
+typeVarBinding ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.TypeVarBinding a ->
+  IO (Language.PureScript.CST.TypeVarBinding Span.Span)
+typeVarBinding log typeVarBinding' = case typeVarBinding' of
+  Language.PureScript.CST.TypeVarKinded wrapped'' -> do
+    let span = Span.typeVarBinding typeVarBinding'
+    debug log "TypeVarKinded" typeVarBinding' span
+    wrapped' <- wrapped log (labeledNameKind log) wrapped''
+    pure (Language.PureScript.CST.TypeVarKinded wrapped')
+  Language.PureScript.CST.TypeVarName name' -> do
+    let span = Span.typeVarBinding typeVarBinding'
+    debug log "TypeVarName" typeVarBinding' span
+    pure (Language.PureScript.CST.TypeVarName name')
 
 valueBindingFields ::
   (Show a) =>
@@ -482,3 +680,15 @@ where' log where'' = case where'' of
     letBindings <- (traverse . traverse . traverse) (letBinding log) letBindings'
     expr' <- expr log expr''
     pure (Language.PureScript.CST.Where expr' letBindings)
+
+wrapped ::
+  (Show a) =>
+  Log.Handle ->
+  (a -> IO b) ->
+  Language.PureScript.CST.Wrapped a ->
+  IO (Language.PureScript.CST.Wrapped b)
+wrapped log f wrapped' = case wrapped' of
+  Language.PureScript.CST.Wrapped open a close -> do
+    debug log "Wrapped" wrapped' (Span.wrapped wrapped')
+    b <- f a
+    pure (Language.PureScript.CST.Wrapped open b close)

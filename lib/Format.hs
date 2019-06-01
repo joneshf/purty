@@ -239,7 +239,7 @@ classHead log span indentation indent' classHead' = case classHead' of
       <> foldMap
         (\typeVarBinding' ->
           pure space
-            <> typeVarBinding log indent typeVarBinding'
+            <> typeVarBinding log indentation indent typeVarBinding'
         )
         typeVarBindings
       <> foldMap
@@ -335,7 +335,7 @@ constraint log indentation indent' constraint' = case constraint' of
         Span.SingleLine ->
           (indent', space)
     debug log "Constraint" constraint' span
-    qualifiedName log indent' space name'
+    qualifiedName log indent' blank name'
       <> foldMap
         (\type'' ->
           pure prefix
@@ -371,10 +371,11 @@ dataCtor log indentation indent' dataCtor' = case dataCtor' of
 
 dataHead ::
   Log.Handle ->
+  Indentation ->
   Indent ->
   Language.PureScript.CST.DataHead Span.Span ->
   IO Utf8Builder
-dataHead log indent dataHead' = case dataHead' of
+dataHead log indentation indent dataHead' = case dataHead' of
   Language.PureScript.CST.DataHead data' name' typeVarBindings -> do
     debug log "DataHead" dataHead' Span.SingleLine
     sourceToken log indent blank data'
@@ -382,7 +383,7 @@ dataHead log indent dataHead' = case dataHead' of
       <> foldMap
         (\typeVarBinding' ->
           pure space
-            <> typeVarBinding log indent typeVarBinding'
+            <> typeVarBinding log indentation indent typeVarBinding'
         )
         typeVarBindings
 
@@ -443,7 +444,7 @@ declaration log indentation indent' declaration' = case declaration' of
             <> foldMap
               (\labeled' ->
                 pure (newline <> indent)
-                  <> labeledNameType log indent labeled'
+                  <> labeledNameType log indentation indent labeled'
               )
               labeleds
         )
@@ -453,7 +454,7 @@ declaration log indentation indent' declaration' = case declaration' of
     let
       indent = indent' <> indentation
     debug log "DeclData" declaration' span
-    dataHead log indent' dataHead'
+    dataHead log indentation indent' dataHead'
       <> foldMap
         (\(equals, dataCtors) ->
           pure (newline <> indent)
@@ -511,7 +512,7 @@ declaration log indentation indent' declaration' = case declaration' of
     let
       indent = indent' <> indentation
     debug log "DeclNewtype" declaration' span
-    dataHead log indent' dataHead'
+    dataHead log indentation indent' dataHead'
       <> pure (newline <> indent)
       <> sourceToken log indent blank equals
       <> name log indent space name'
@@ -519,12 +520,12 @@ declaration log indentation indent' declaration' = case declaration' of
       <> pure newline
   Language.PureScript.CST.DeclSignature span labeled' -> do
     debug log "DeclSignature" declaration' span
-    labeledNameType log indent' labeled'
+    labeledNameType log indentation indent' labeled'
   Language.PureScript.CST.DeclType span dataHead' equals type'' -> do
     let
       indent = indent' <> indentation
     debug log "DeclType" declaration' span
-    dataHead log indent' dataHead'
+    dataHead log indentation indent' dataHead'
       <> pure (newline <> indent)
       <> sourceToken log indent blank equals
       <> type' log indentation indent type''
@@ -945,14 +946,14 @@ foreign' log span indentation indent' foreign'' = case foreign'' of
     debug log "ForeignData" foreign'' span
     sourceToken log indent' blank data'
       <> pure prefix
-      <> labeledNameKind log indent labeled'
+      <> labeledNameKind log indentation indent labeled'
   Language.PureScript.CST.ForeignKind kind' name' -> do
     debug log "ForeignKind" foreign'' span
     sourceToken log indent' blank kind'
       <> name log indent' space name'
   Language.PureScript.CST.ForeignValue labeled' -> do
     debug log "ForeignValue" foreign'' span
-    labeledNameType log indent' labeled'
+    labeledNameType log indentation indent' labeled'
 
 guarded ::
   Log.Handle ->
@@ -1186,7 +1187,7 @@ instanceBinding log indentation indent instanceBinding' = case instanceBinding' 
     valueBindingFields log indentation indent valueBindingFields'
   Language.PureScript.CST.InstanceBindingSignature span labeled' -> do
     debug log "InstanceBindingSignature" instanceBinding' span
-    labeledNameType log indent labeled'
+    labeledNameType log indentation indent labeled'
 
 instanceHead ::
   Log.Handle ->
@@ -1271,62 +1272,85 @@ label log indent prefix label'' = case label'' of
 labeled ::
   (Show a, Show b) =>
   Log.Handle ->
+  Indentation ->
   Indent ->
   (a -> Language.PureScript.CST.SourceRange) ->
   (a -> IO Utf8Builder) ->
   (b -> Language.PureScript.CST.SourceRange) ->
-  (b -> IO Utf8Builder) ->
+  (Indent -> b -> IO Utf8Builder) ->
   Language.PureScript.CST.Labeled a b ->
   IO Utf8Builder
-labeled log indent f g h i labeled' = case labeled' of
+labeled log indentation indent' f g h i labeled' = case labeled' of
   Language.PureScript.CST.Labeled label' separator value -> do
     let
       span = Span.labeled f h labeled'
 
-      prefix = case span of
+      (indent, prefix) = case span of
         Span.MultipleLines ->
-          newline <> indent
+          (indent' <> indentation, newline <> indent)
         Span.SingleLine ->
-          space
+          (indent', space)
     debug log "Labeled" labeled' span
     g label'
       <> sourceToken log indent space separator
       <> pure prefix
-      <> i value
+      <> i indent value
+
+labeledLabelType ::
+  Log.Handle ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.Labeled
+    Language.PureScript.CST.Label
+    (Language.PureScript.CST.Type Span.Span) ->
+  IO Utf8Builder
+labeledLabelType log indentation indent =
+  labeled
+    log
+    indentation
+    indent
+    SourceRange.label
+    (label log indent blank)
+    SourceRange.type'
+    (type' log indentation)
 
 labeledNameKind ::
   (Show a) =>
   Log.Handle ->
+  Indentation ->
   Indent ->
   Language.PureScript.CST.Labeled
     (Language.PureScript.CST.Name a)
     (Language.PureScript.CST.Kind Span.Span) ->
   IO Utf8Builder
-labeledNameKind log indent =
+labeledNameKind log indentation indent =
   labeled
     log
+    indentation
     indent
     SourceRange.name
     (name log indent blank)
     SourceRange.kind
-    (kind log indent blank)
+    (kind log indentation)
 
 labeledNameType ::
   (Show a) =>
   Log.Handle ->
+  Indentation ->
   Indent ->
   Language.PureScript.CST.Labeled
     (Language.PureScript.CST.Name a)
     (Language.PureScript.CST.Type Span.Span) ->
   IO Utf8Builder
-labeledNameType log indent =
+labeledNameType log indentation indent =
   labeled
     log
+    indentation
     indent
     SourceRange.name
     (name log indent blank)
     SourceRange.type'
-    (type' log indent blank)
+    (type' log indentation)
 
 lambda ::
   Log.Handle ->
@@ -1372,7 +1396,7 @@ letBinding log indentation indent' letBinding' = case letBinding' of
       <> where' log indentation indent' where''
   Language.PureScript.CST.LetBindingSignature span labeled' -> do
     debug log "LetBindingSignature" letBinding' span
-    labeledNameType log indent' labeled'
+    labeledNameType log indentation indent' labeled'
 
 letIn ::
   Log.Handle ->
@@ -1593,14 +1617,7 @@ row log span indentation indent' row' = case row' of
           indent'
           space
           (SourceRange.labeled SourceRange.label SourceRange.type')
-          ( labeled
-            log
-            indent
-            SourceRange.label
-            (label log indent blank)
-            SourceRange.type'
-            (type' log indentation indent)
-          )
+          (labeledLabelType log indentation indent)
       )
       labels'
       <> foldMap
@@ -1693,58 +1710,58 @@ type' log indentation indent' type''' = case type''' of
       <> type' log indentation indent t2
   Language.PureScript.CST.TypeArr span t1 arrow t2 -> do
     let
-      (indent, prefix) = case span of
+      prefix = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent)
+          newline <> indent'
         Span.SingleLine ->
-          (indent', space)
+          space
     debug log "TypeArr" type''' span
     type' log indentation indent' t1
       <> pure space
       <> sourceToken log indent' blank arrow
       <> pure prefix
-      <> type' log indentation indent t2
+      <> type' log indentation indent' t2
   Language.PureScript.CST.TypeArrName span arrName -> do
     debug log "TypeArrName" type''' span
     sourceToken log indent' blank arrName
   Language.PureScript.CST.TypeConstrained span constraint' arrow type'' -> do
     let
-      (indent, prefix) = case span of
+      prefix = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent)
+          newline <> indent'
         Span.SingleLine ->
-          (indent', space)
+          space
     debug log "TypeConstrained" type''' span
     constraint log indentation indent' constraint'
       <> pure space
       <> sourceToken log indent' blank arrow
       <> pure prefix
-      <> type' log indentation indent type''
+      <> type' log indentation indent' type''
   Language.PureScript.CST.TypeConstructor span name' -> do
     debug log "TypeConstructor" type''' span
     qualifiedName log indent' blank name'
   Language.PureScript.CST.TypeForall span forall' typeVarBindings dot type'' -> do
     let
-      (indent, prefix) = case span of
+      prefix = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent)
+          newline <> indent'
         Span.SingleLine ->
-          (indent', space)
+          space
     debug log "TypeForall" type''' span
     sourceToken log indent' blank forall'
       <> foldMap
         (\typeVarBinding' ->
           pure space
-            <> typeVarBinding log indent' typeVarBinding'
+            <> typeVarBinding log indentation indent' typeVarBinding'
         )
         typeVarBindings
       <> sourceToken log indent' blank dot
       <> pure prefix
-      <> type' log indentation indent type''
+      <> type' log indentation indent' type''
   Language.PureScript.CST.TypeHole span hole -> do
     debug log "TypeHole" type''' span
     name log indent' blank hole
-  Language.PureScript.CST.TypeKinded span type'' arrow kind' -> do
+  Language.PureScript.CST.TypeKinded span type'' colons kind' -> do
     let
       (indent, prefix) = case span of
         Span.MultipleLines ->
@@ -1754,7 +1771,7 @@ type' log indentation indent' type''' = case type''' of
     debug log "TypeKinded" type''' span
     type' log indentation indent' type''
       <> pure space
-      <> sourceToken log indent' blank arrow
+      <> sourceToken log indent' blank colons
       <> pure prefix
       <> kind log indentation indent kind'
   Language.PureScript.CST.TypeOp span type1 op type2 -> do
@@ -1793,16 +1810,17 @@ type' log indentation indent' type''' = case type''' of
 
 typeVarBinding ::
   Log.Handle ->
+  Indentation ->
   Indent ->
   Language.PureScript.CST.TypeVarBinding Span.Span ->
   IO Utf8Builder
-typeVarBinding log indent' typeVarBinding' = case typeVarBinding' of
+typeVarBinding log indentation indent' typeVarBinding' = case typeVarBinding' of
   Language.PureScript.CST.TypeVarName name' -> do
     debug log "TypeVarName" typeVarBinding' (Span.typeVarBinding typeVarBinding')
     name log indent' blank name'
   Language.PureScript.CST.TypeVarKinded wrapped' -> do
     debug log "TypeVarKinded" typeVarBinding' (Span.typeVarBinding typeVarBinding')
-    wrapped log indent' (labeledNameKind log indent') wrapped'
+    wrapped log indent' (labeledNameKind log indentation indent') wrapped'
 
 valueBindingFields ::
   Log.Handle ->
