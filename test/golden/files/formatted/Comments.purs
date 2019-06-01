@@ -13,7 +13,7 @@ class Foo
 -- A Block comment on a data.
 data X
   = X -- A line comment on a constructor
-  | X2 {- A block comment on a construction -}         {-Another block comment on the same constructor-}
+  | X2 {- A block comment on a construction -} {-Another block comment on the same constructor-}
 
 {- | A Line comment on a newtype -}
 newtype Y
