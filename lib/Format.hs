@@ -610,19 +610,10 @@ doStatement ::
   IO Utf8Builder
 doStatement log indentation indent' doStatement' = case doStatement' of
   Language.PureScript.CST.DoBind binder' arrow expr' -> do
-    let
-      span = Span.doStatement doStatement'
-
-      (indent, prefix) = case span of
-        Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent)
-        Span.SingleLine ->
-          (indent', space)
-    debug log "DoBind" doStatement' span
+    debug log "DoBind" doStatement' (Span.doStatement doStatement')
     binder log indentation indent' binder'
       <> sourceToken log indent' space arrow
-      <> pure prefix
-      <> expr log indentation indent expr'
+      <> exprPrefix log indentation indent' expr'
   Language.PureScript.CST.DoDiscard expr' -> do
     debug log "DoDiscard" doStatement' (Span.doStatement doStatement')
     expr log indentation indent' expr'
@@ -866,15 +857,12 @@ exprPrefix ::
   Indent ->
   Language.PureScript.CST.Expr Span.Span ->
   IO Utf8Builder
-exprPrefix log indentation indent' expr' =
+exprPrefix log indentation indent expr' =
     pure prefix
       <> expr log indentation indent expr'
   where
-  indent :: Utf8Builder
-  indent = indent' <> indentation
-
-  prefix :: Utf8Builder
-  prefix = case expr' of
+  multiLine :: Utf8Builder
+  multiLine = case expr' of
     Language.PureScript.CST.ExprAdo{}            -> space
     Language.PureScript.CST.ExprApp{}            -> newline <> indent
     Language.PureScript.CST.ExprArray{}          -> newline <> indent
@@ -900,6 +888,13 @@ exprPrefix log indentation indent' expr' =
     Language.PureScript.CST.ExprSection{}        -> newline <> indent
     Language.PureScript.CST.ExprString{}         -> newline <> indent
     Language.PureScript.CST.ExprTyped{}          -> newline <> indent
+
+  prefix :: Utf8Builder
+  prefix = case Span.expr expr' of
+    Span.MultipleLines ->
+      multiLine
+    Span.SingleLine ->
+      space
 
 fixityFields ::
   Log.Handle ->

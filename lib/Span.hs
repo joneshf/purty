@@ -1,11 +1,14 @@
 module Span
   ( Span(..)
+  , adoBlock
   , betweenSourceTokens
   , comment
   , dataMembers
   , delimitedNonEmpty
+  , doBlock
   , doStatement
   , export
+  , expr
   , guarded
   , guardedExpr
   , import'
@@ -41,6 +44,9 @@ data Span
   | SingleLine
   deriving (Show)
 
+adoBlock :: Language.PureScript.CST.AdoBlock a -> Span
+adoBlock = expr . Language.PureScript.CST.ExprAdo () . void
+
 betweenSourceTokens ::
   Language.PureScript.CST.SourceToken ->
   Language.PureScript.CST.SourceToken ->
@@ -67,6 +73,9 @@ dataMembers =
 delimitedNonEmpty :: Language.PureScript.CST.DelimitedNonEmpty a -> Span
 delimitedNonEmpty = sourceRange . SourceRange.wrapped
 
+doBlock :: Language.PureScript.CST.DoBlock a -> Span
+doBlock = expr . Language.PureScript.CST.ExprDo () . void
+
 doStatement :: Language.PureScript.CST.DoStatement a -> Span
 doStatement =
   sourceRange
@@ -78,6 +87,12 @@ export =
   sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.exportRange
+
+expr :: Language.PureScript.CST.Expr a -> Span
+expr =
+  sourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.exprRange
 
 guarded :: Language.PureScript.CST.Guarded a -> Span
 guarded =

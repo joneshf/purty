@@ -10,6 +10,19 @@ import qualified "this" Log
 import qualified "this" SourceRange
 import qualified "this" Span
 
+adoBlock ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.AdoBlock a ->
+  IO (Language.PureScript.CST.AdoBlock Span.Span)
+adoBlock log adoBlock' = case adoBlock' of
+  Language.PureScript.CST.AdoBlock ado doStatements' in' expr'' -> do
+    let span = Span.adoBlock adoBlock'
+    debug log "AdoBlock" adoBlock' span
+    doStatements <- traverse (doStatement log) doStatements'
+    expr' <- expr log expr''
+    pure (Language.PureScript.CST.AdoBlock ado doStatements in' expr')
+
 binder ::
   (Show a) =>
   Log.Handle ->
@@ -65,6 +78,41 @@ declaration log declaration' = case declaration' of
     notImplemented log "Declaration" declaration' span
     pure (span <$ declaration')
 
+doBlock ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.DoBlock a ->
+  IO (Language.PureScript.CST.DoBlock Span.Span)
+doBlock log doBlock' = case doBlock' of
+  Language.PureScript.CST.DoBlock do' doStatements' -> do
+    let span = Span.doBlock doBlock'
+    debug log "DoBlock" doBlock' span
+    doStatements <- traverse (doStatement log) doStatements'
+    pure (Language.PureScript.CST.DoBlock do' doStatements)
+
+doStatement ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.DoStatement a ->
+  IO (Language.PureScript.CST.DoStatement Span.Span)
+doStatement log doStatement' = case doStatement' of
+  Language.PureScript.CST.DoBind binder'' arrow expr'' -> do
+    let span = Span.doStatement doStatement'
+    debug log "DoBind" doStatement' span
+    binder' <- binder log binder''
+    expr' <- expr log expr''
+    pure (Language.PureScript.CST.DoBind binder' arrow expr')
+  Language.PureScript.CST.DoDiscard expr'' -> do
+    let span = Span.doStatement doStatement'
+    debug log "DoDiscard" doStatement' span
+    expr' <- expr log expr''
+    pure (Language.PureScript.CST.DoDiscard expr')
+  Language.PureScript.CST.DoLet let' letBindings'' -> do
+    let span = Span.doStatement doStatement'
+    debug log "DoLet" doStatement' span
+    letBindings' <- traverse (letBinding log) letBindings''
+    pure (Language.PureScript.CST.DoLet let' letBindings')
+
 export ::
   (Show a) =>
   Log.Handle ->
@@ -103,6 +151,60 @@ expr ::
   Language.PureScript.CST.Expr a ->
   IO (Language.PureScript.CST.Expr Span.Span)
 expr log expr' = case expr' of
+  Language.PureScript.CST.ExprAdo _ adoBlock'' -> do
+    let span = Span.expr expr'
+    debug log "ExprAdo" expr' span
+    adoBlock' <- adoBlock log adoBlock''
+    pure (Language.PureScript.CST.ExprAdo span adoBlock')
+  Language.PureScript.CST.ExprApp _ expr1' expr2' -> do
+    let span = Span.expr expr'
+    debug log "ExprApp" expr' span
+    expr1 <- expr log expr1'
+    expr2 <- expr log expr2'
+    pure (Language.PureScript.CST.ExprApp span expr1 expr2)
+  Language.PureScript.CST.ExprBoolean _ boolean x -> do
+    let span = Span.expr expr'
+    debug log "ExprBoolean" expr' span
+    pure (Language.PureScript.CST.ExprBoolean span boolean x)
+  Language.PureScript.CST.ExprChar _ char x -> do
+    let span = Span.expr expr'
+    debug log "ExprChar" expr' span
+    pure (Language.PureScript.CST.ExprChar span char x)
+  Language.PureScript.CST.ExprConstructor _ name' -> do
+    let span = Span.expr expr'
+    debug log "ExprConstructor" expr' span
+    pure (Language.PureScript.CST.ExprConstructor span name')
+  Language.PureScript.CST.ExprDo _ doBlock'' -> do
+    let span = Span.expr expr'
+    debug log "ExprDo" expr' span
+    doBlock' <- doBlock log doBlock''
+    pure (Language.PureScript.CST.ExprDo span doBlock')
+  Language.PureScript.CST.ExprHole _ hole -> do
+    let span = Span.expr expr'
+    debug log "ExprHole" expr' span
+    pure (Language.PureScript.CST.ExprHole span hole)
+  Language.PureScript.CST.ExprIdent _ name' -> do
+    let span = Span.expr expr'
+    debug log "ExprIdent" expr' span
+    pure (Language.PureScript.CST.ExprIdent span name')
+  Language.PureScript.CST.ExprNumber _ number x -> do
+    let span = Span.expr expr'
+    debug log "ExprNumber" expr' span
+    pure (Language.PureScript.CST.ExprNumber span number x)
+  Language.PureScript.CST.ExprString _ string x -> do
+    let span = Span.expr expr'
+    debug log "ExprString" expr' span
+    pure (Language.PureScript.CST.ExprString span string x)
+  Language.PureScript.CST.ExprOpName _ name' -> do
+    let span = Span.expr expr'
+    debug log "ExprOpName" expr' span
+    pure (Language.PureScript.CST.ExprOpName span name')
+  Language.PureScript.CST.ExprOp _ expr1' op expr2' -> do
+    let span = Span.expr expr'
+    debug log "ExprOp" expr' span
+    expr1 <- expr log expr1'
+    expr2 <- expr log expr2'
+    pure (Language.PureScript.CST.ExprOp span expr1 op expr2)
   _ -> do
     let span = Span.MultipleLines
     notImplemented log "Expr" expr' span
