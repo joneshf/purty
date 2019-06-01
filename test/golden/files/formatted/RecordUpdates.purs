@@ -1,7 +1,8 @@
 module RecordUpdates where
 
 foo x =
-  x { bar
+  x
+    { bar
       { baz = 10
       }
     , qux = "hi"

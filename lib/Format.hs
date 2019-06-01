@@ -30,7 +30,7 @@ adoBlock log span indentation indent' adoBlock' = case adoBlock' of
     let
       (indent, prefix) = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent)
+          (indent' <> indentation, newline <> indent')
         Span.SingleLine ->
           (indent', space)
     debug log "AdoBlock" adoBlock' span
@@ -42,7 +42,7 @@ adoBlock log span indentation indent' adoBlock' = case adoBlock' of
         )
         doStatements
       <> pure prefix
-      <> sourceToken log indent blank in'
+      <> sourceToken log indent' blank in'
       <> pure space
       <> expr log indentation indent expr'
 
@@ -591,7 +591,7 @@ doBlock log span indentation indent' doBlock' = case doBlock' of
     let
       (indent, prefix) = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent)
+          (indent' <> indentation, newline <> indent')
         Span.SingleLine ->
           (indent', space)
     debug log "DoBlock" doBlock' span
@@ -619,14 +619,12 @@ doStatement log indentation indent' doStatement' = case doStatement' of
     debug log "DoDiscard" doStatement' (Span.doStatement doStatement')
     expr log indentation indent' expr'
   Language.PureScript.CST.DoLet let' letBindings -> do
-    let
-      indent = indent' <> indentation
     debug log "DoLet" doStatement' (Span.doStatement doStatement')
     sourceToken log indent' blank let'
       <> foldMap
         (\letBinding' ->
-          pure (newline <> indent)
-            <> letBinding log indentation indent letBinding'
+          pure (newline <> indent')
+            <> letBinding log indentation indent' letBinding'
         )
         letBindings
 
@@ -877,7 +875,7 @@ exprPrefix log indentation indent expr' =
     Language.PureScript.CST.ExprIf{}             -> space
     Language.PureScript.CST.ExprInfix{}          -> newline <> indent
     Language.PureScript.CST.ExprLambda{}         -> space
-    Language.PureScript.CST.ExprLet{}            -> space
+    Language.PureScript.CST.ExprLet{}            -> newline <> indent
     Language.PureScript.CST.ExprNegate{}         -> newline <> indent
     Language.PureScript.CST.ExprNumber{}         -> newline <> indent
     Language.PureScript.CST.ExprOp{}             -> newline <> indent
@@ -885,7 +883,7 @@ exprPrefix log indentation indent expr' =
     Language.PureScript.CST.ExprParens{}         -> newline <> indent
     Language.PureScript.CST.ExprRecord{}         -> newline <> indent
     Language.PureScript.CST.ExprRecordAccessor{} -> newline <> indent
-    Language.PureScript.CST.ExprRecordUpdate{}   -> space
+    Language.PureScript.CST.ExprRecordUpdate{}   -> newline <> indent
     Language.PureScript.CST.ExprSection{}        -> newline <> indent
     Language.PureScript.CST.ExprString{}         -> newline <> indent
     Language.PureScript.CST.ExprTyped{}          -> newline <> indent
@@ -1389,11 +1387,13 @@ letBinding log indentation indent' letBinding' = case letBinding' of
   Language.PureScript.CST.LetBindingName span valueBindingFields' -> do
     debug log "LetBindingName" letBinding' span
     valueBindingFields log indentation indent' valueBindingFields'
+      <> pure newline
   Language.PureScript.CST.LetBindingPattern span binder' equals where'' -> do
     debug log "LetBindingPattern" letBinding' span
     binder log indentation indent' binder'
       <> sourceToken log indent' space equals
       <> where' log indentation indent' where''
+      <> pure newline
   Language.PureScript.CST.LetBindingSignature span labeled' -> do
     debug log "LetBindingSignature" letBinding' span
     labeledNameType log indentation indent' labeled'
@@ -1410,7 +1410,7 @@ letIn log span indentation indent' letIn' = case letIn' of
     let
       (expr', inPrefix, indent, letBindingPrefix) = case span of
         Span.MultipleLines ->
-          (exprPrefix, newline <> indent', indent' <> indentation, newline <> indent)
+          (exprPrefix, indent', indent' <> indentation, newline <> indent)
         Span.SingleLine ->
           (expr, space, indent', space)
     debug log "LetIn" letIn' span
@@ -1851,7 +1851,7 @@ where' log indentation indent' where''' = case where''' of
     let
       indent = indent' <> indentation
     debug log "Where" where''' (Span.where' where''')
-    exprPrefix log indentation indent' expr'
+    exprPrefix log indentation indent expr'
       <> foldMap
         (\(where'', letBindings') ->
           pure (newline <> indent)

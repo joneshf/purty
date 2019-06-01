@@ -8,7 +8,7 @@ y ::
   (forall a. Show a => a -> {expected :: expected, unexpected :: unexpected | r}) ->
   Boolean ->
   {expected :: expected, unexpected :: unexpected}
-y f x = { expected, unexpected }
+y f x = {expected, unexpected}
   where
   expected = result.expected
 
