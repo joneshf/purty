@@ -21,6 +21,7 @@ module Span
   , sourceRangeFromInstance
   , sourceRangeFromKind
   , sourceRangeFromLabel
+  , sourceRangeFromLabeled
   , sourceRangeFromName
   , sourceRangeFromPatternGuard
   , sourceRangeFromRecordLabeled
@@ -199,6 +200,15 @@ sourceRangeFromLabel ::
 sourceRangeFromLabel =
   Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.labelRange
+
+sourceRangeFromLabeled ::
+  (a -> Language.PureScript.CST.SourceRange) ->
+  (b -> Language.PureScript.CST.SourceRange) ->
+  Language.PureScript.CST.Labeled a b ->
+  Language.PureScript.CST.SourceRange
+sourceRangeFromLabeled f g labeled' = case labeled' of
+  Language.PureScript.CST.Labeled label' _ value ->
+    Language.PureScript.CST.Positions.widen (f label') (g value)
 
 sourceRangeFromName ::
   Language.PureScript.CST.Name a ->

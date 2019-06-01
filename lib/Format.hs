@@ -1547,6 +1547,50 @@ recordUpdate log indentation indent' recordUpdate' = case recordUpdate' of
       <> pure prefix
       <> expr log indentation indent expr'
 
+row ::
+  Log.Handle ->
+  Span.Span ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.Row Span.Span ->
+  IO Utf8Builder
+row log span indentation indent' row' = case row' of
+  Language.PureScript.CST.Row labels' tail -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent')
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `Row` as " <> displayShow span <> "`")
+    foldMap
+      ( separated
+          log
+          indent'
+          space
+          ( Span.sourceRangeFromLabeled
+            Span.sourceRangeFromLabel
+            Span.sourceRangeFromType
+          )
+          ( labeled
+            log
+            indent
+            Span.sourceRangeFromLabel
+            (label log indent blank)
+            Span.sourceRangeFromType
+            (type' log indentation indent)
+          )
+      )
+      labels'
+      <> foldMap
+        (\(bar, type'') ->
+          pure prefix
+            <> sourceToken log indent' blank bar
+            <> pure space
+            <> type' log indentation indent type''
+        )
+        tail
+
 separated ::
   forall a.
   Log.Handle ->
@@ -1613,7 +1657,7 @@ type' ::
   Indent ->
   Language.PureScript.CST.Type Span.Span ->
   IO Utf8Builder
-type' log indentation indent' type'' = case type'' of
+type' log indentation indent' type''' = case type''' of
   Language.PureScript.CST.TypeApp span t1 t2 -> do
     let
       (indent, prefix) = case span of
@@ -1621,13 +1665,109 @@ type' log indentation indent' type'' = case type'' of
           (indent' <> indentation, newline <> indent)
         Span.SingleLine ->
           (indent', space)
-    Log.debug log ("Formatting `Type` as " <> displayShow span <> "`")
+    Log.debug log ("Formatting `TypeApp` as " <> displayShow span <> "`")
     type' log indentation indent' t1
       <> pure prefix
       <> type' log indentation indent t2
-  _ -> do
-    Log.info log "Formatting type not implemented"
-    mempty
+  Language.PureScript.CST.TypeArr span t1 arrow t2 -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `TypeArr` as " <> displayShow span <> "`")
+    type' log indentation indent' t1
+      <> pure space
+      <> sourceToken log indent' blank arrow
+      <> pure prefix
+      <> type' log indentation indent t2
+  Language.PureScript.CST.TypeArrName _ arrName -> do
+    Log.debug log ("Formatting `TypeArrName`: " <> displayShow arrName)
+    sourceToken log indent' blank arrName
+  Language.PureScript.CST.TypeConstrained span constraint' arrow type'' -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `TypeConstrained` as " <> displayShow span <> "`")
+    constraint log indentation indent' constraint'
+      <> pure space
+      <> sourceToken log indent' blank arrow
+      <> pure prefix
+      <> type' log indentation indent type''
+  Language.PureScript.CST.TypeConstructor _ name' -> do
+    Log.debug log ("Formatting `TypeConstructor`: " <> displayShow name')
+    qualifiedName log indent' blank name'
+  Language.PureScript.CST.TypeForall span forall' typeVarBindings dot type'' -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `TypeForall` as " <> displayShow span <> "`")
+    sourceToken log indent' blank forall'
+      <> foldMap
+        (\typeVarBinding' ->
+          pure space
+            <> typeVarBinding log indent' typeVarBinding'
+        )
+        typeVarBindings
+      <> sourceToken log indent' blank dot
+      <> pure prefix
+      <> type' log indentation indent type''
+  Language.PureScript.CST.TypeHole _ hole -> do
+    Log.debug log ("Formatting `TypeHole`: " <> displayShow hole)
+    name log indent' blank hole
+  Language.PureScript.CST.TypeKinded span type'' arrow kind' -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `TypeKinded` as " <> displayShow span <> "`")
+    type' log indentation indent' type''
+      <> pure space
+      <> sourceToken log indent' blank arrow
+      <> pure prefix
+      <> kind log indentation indent kind'
+  Language.PureScript.CST.TypeOp span type1 op type2 -> do
+    let
+      (indent, prefix) = case span of
+        Span.MultipleLines ->
+          (indent' <> indentation, newline <> indent)
+        Span.SingleLine ->
+          (indent', space)
+    Log.debug log ("Formatting `TypeOp` as `" <> displayShow span <> "`")
+    type' log indentation indent' type1
+      <> qualifiedName log indent prefix op
+      <> pure space
+      <> type' log indentation indent type2
+  Language.PureScript.CST.TypeOpName _ name' -> do
+    Log.debug log "Formatting `TypeOpName`"
+    qualifiedName log indent' blank name'
+  Language.PureScript.CST.TypeParens span wrapped' -> do
+    Log.debug log ("Formatting `TypeParens` as `" <> displayShow span <> "`")
+    wrapped log indent' (type' log indentation indent') wrapped'
+  Language.PureScript.CST.TypeRecord span wrapped' -> do
+    Log.debug log ("Formatting `TypeRecord` as `" <> displayShow span <> "`")
+    wrapped log indent' (row log span indentation indent') wrapped'
+  Language.PureScript.CST.TypeRow span wrapped' -> do
+    Log.debug log ("Formatting `TypeRow` as `" <> displayShow span <> "`")
+    wrapped log indent' (row log span indentation indent') wrapped'
+  Language.PureScript.CST.TypeString _ string _ -> do
+    Log.debug log ("Formatting `TypeString`: " <> displayShow string)
+    sourceToken log indent' blank string
+  Language.PureScript.CST.TypeVar _ var -> do
+    Log.debug log ("Formatting `TypeVar`: " <> displayShow var)
+    name log indent' blank var
+  Language.PureScript.CST.TypeWildcard _ wildcard -> do
+    Log.debug log ("Formatting `TypeWildcard`: " <> displayShow wildcard)
+    sourceToken log indent' blank wildcard
 
 typeVarBinding ::
   Log.Handle ->
