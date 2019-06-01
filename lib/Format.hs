@@ -1669,7 +1669,7 @@ tokenAnn ::
   IO Utf8Builder
 tokenAnn log indent prefix tokenAnn' inside = case tokenAnn' of
   Language.PureScript.CST.TokenAnn sourceRange leading trailing -> do
-    debug log "TokenAnn" tokenAnn' (Span.spanFromSourceRange sourceRange)
+    debug log "TokenAnn" tokenAnn' (Span.sourceRange sourceRange)
     commentsLeading log indent prefix leading
       <> inside
       <> commentsTrailing log prefix trailing

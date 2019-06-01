@@ -18,8 +18,8 @@ module Span
   , recordLabeled
   , recordUpdate
   , separated
+  , sourceRange
   , sourceToken
-  , spanFromSourceRange
   , typeVarBinding
   , valueBindingFields
   , where'
@@ -42,57 +42,57 @@ betweenSourceTokens ::
   Language.PureScript.CST.SourceToken ->
   Span
 betweenSourceTokens start end =
-  spanFromSourceRange
+  sourceRange
     (Language.PureScript.CST.Positions.toSourceRange (start, end))
 
 dataMembers :: Language.PureScript.CST.DataMembers a -> Span
 dataMembers =
-  spanFromSourceRange
+  sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.dataMembersRange
 
 delimitedNonEmpty :: Language.PureScript.CST.DelimitedNonEmpty a -> Span
-delimitedNonEmpty = spanFromSourceRange . SourceRange.wrapped
+delimitedNonEmpty = sourceRange . SourceRange.wrapped
 
 doStatement :: Language.PureScript.CST.DoStatement a -> Span
 doStatement =
-  spanFromSourceRange
+  sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.doStatementRange
 
 export :: Language.PureScript.CST.Export a -> Span
 export =
-  spanFromSourceRange
+  sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.exportRange
 
 guarded :: Language.PureScript.CST.Guarded a -> Span
 guarded =
-  spanFromSourceRange
+  sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.guardedRange
 
 guardedExpr :: Language.PureScript.CST.GuardedExpr a -> Span
 guardedExpr =
-  spanFromSourceRange
+  sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.guardedExprRange
 
 import' :: Language.PureScript.CST.Import a -> Span
 import' =
-  spanFromSourceRange
+  sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.importRange
 
 importDecl :: Language.PureScript.CST.ImportDecl a -> Span
 importDecl =
-  spanFromSourceRange
+  sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.importDeclRange
 
 label :: Language.PureScript.CST.Label -> Span
 label =
-  spanFromSourceRange
+  sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.labelRange
 
@@ -103,7 +103,7 @@ labeled ::
   Span
 labeled f g labeled' = case labeled' of
   Language.PureScript.CST.Labeled a _ b ->
-    spanFromSourceRange (Language.PureScript.CST.Positions.widen (f a) (g b))
+    sourceRange (Language.PureScript.CST.Positions.widen (f a) (g b))
 
 linesBetween ::
   Language.PureScript.CST.SourcePos ->
@@ -115,7 +115,7 @@ linesBetween start end = case (start, end) of
 
 name :: Language.PureScript.CST.Name a -> Span
 name =
-  spanFromSourceRange
+  sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.nameRange
 
@@ -123,14 +123,14 @@ oneOrDelimited ::
   (a -> Language.PureScript.CST.SourceRange) ->
   Language.PureScript.CST.OneOrDelimited a ->
   Span
-oneOrDelimited f = spanFromSourceRange . SourceRange.oneOrDelimited f
+oneOrDelimited f = sourceRange . SourceRange.oneOrDelimited f
 
 patternGuard :: Language.PureScript.CST.PatternGuard a -> Span
-patternGuard = spanFromSourceRange . SourceRange.patternGuard
+patternGuard = sourceRange . SourceRange.patternGuard
 
 qualifiedName :: Language.PureScript.CST.QualifiedName a -> Span
 qualifiedName =
-  spanFromSourceRange
+  sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.qualRange
 
@@ -141,26 +141,26 @@ recordLabeled ::
 recordLabeled f recordLabeled' = case recordLabeled' of
   Language.PureScript.CST.RecordPun name' -> name name'
   Language.PureScript.CST.RecordField label' _ a ->
-    spanFromSourceRange
+    sourceRange
       ( Language.PureScript.CST.Positions.widen
         (SourceRange.label label')
         (f a)
       )
 
 recordUpdate :: Language.PureScript.CST.RecordUpdate a -> Span
-recordUpdate = spanFromSourceRange . SourceRange.recordUpdate
+recordUpdate = sourceRange . SourceRange.recordUpdate
 
 separated ::
   (a -> Language.PureScript.CST.SourceRange) ->
   Language.PureScript.CST.Separated a ->
   Span
-separated f = spanFromSourceRange . SourceRange.separated f
+separated f = sourceRange . SourceRange.separated f
 
 sourceToken :: Language.PureScript.CST.SourceToken -> Span
-sourceToken = spanFromSourceRange . Language.PureScript.CST.Positions.srcRange
+sourceToken = sourceRange . Language.PureScript.CST.Positions.srcRange
 
-spanFromSourceRange :: Language.PureScript.CST.SourceRange -> Span
-spanFromSourceRange sourceRange = case sourceRange of
+sourceRange :: Language.PureScript.CST.SourceRange -> Span
+sourceRange sourceRange' = case sourceRange' of
   Language.PureScript.CST.SourceRange start end ->
     case linesBetween start end of
       0 -> SingleLine
@@ -168,21 +168,21 @@ spanFromSourceRange sourceRange = case sourceRange of
 
 typeVarBinding :: Language.PureScript.CST.TypeVarBinding a -> Span
 typeVarBinding =
-  spanFromSourceRange
+  sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.typeVarBindingRange
 
 valueBindingFields :: Language.PureScript.CST.ValueBindingFields a -> Span
 valueBindingFields =
-  spanFromSourceRange
+  sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.valueBindingFieldsRange
 
 where' :: Language.PureScript.CST.Where a -> Span
 where' =
-  spanFromSourceRange
+  sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.whereRange
 
 wrapped :: Language.PureScript.CST.Wrapped a -> Span
-wrapped = spanFromSourceRange . SourceRange.wrapped
+wrapped = sourceRange . SourceRange.wrapped
