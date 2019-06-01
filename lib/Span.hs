@@ -13,6 +13,7 @@ module Span
   , label
   , labeled
   , lineFeed
+  , letBinding
   , name
   , oneOrDelimited
   , patternGuard
@@ -129,6 +130,12 @@ lineFeed :: Language.PureScript.CST.LineFeed -> Span
 lineFeed lineFeed' = case lineFeed' of
   Language.PureScript.CST.LF -> Span.SingleLine
   Language.PureScript.CST.CRLF -> Span.SingleLine
+
+letBinding :: Language.PureScript.CST.LetBinding a -> Span
+letBinding =
+  sourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.letBindingRange
 
 name :: Language.PureScript.CST.Name a -> Span
 name =
