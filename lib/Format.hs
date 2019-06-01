@@ -6,6 +6,7 @@ import "rio" RIO hiding (log, span)
 
 import qualified "purescript" Language.PureScript.CST
 import qualified "this" Log
+import qualified "this" SourceRange
 import qualified "this" Span
 
 type Indent
@@ -60,7 +61,7 @@ binder log indentation indent' binder'' = case binder'' of
     delimited
       log
       indent'
-      Span.sourceRangeFromBinder
+      SourceRange.binder
       (binder log indentation indent')
       delimited'
   Language.PureScript.CST.BinderBoolean span boolean _ -> do
@@ -113,12 +114,12 @@ binder log indentation indent' binder'' = case binder'' of
     delimited
       log
       indent'
-      (Span.sourceRangeFromRecordLabeled Span.sourceRangeFromBinder)
+      (SourceRange.recordLabeled SourceRange.binder)
       ( recordLabeled
         log
         indentation
         indent'
-        Span.sourceRangeFromBinder
+        SourceRange.binder
         (binder log indentation indent')
       )
       delimited'
@@ -166,7 +167,7 @@ caseOf log span indentation indent' caseOf' = case caseOf' of
         log
         indent
         space
-        Span.sourceRangeFromExpr
+        SourceRange.expr
         (expr log indentation indent)
         head
       <> pure space
@@ -177,7 +178,7 @@ caseOf log span indentation indent' caseOf' = case caseOf' of
             log
             indent
             space
-            Span.sourceRangeFromBinder
+            SourceRange.binder
             (binder log indentation indent)
             binders
             <> guarded log indentation indent guarded'
@@ -228,7 +229,7 @@ classHead log span indentation indent' classHead' = case classHead' of
             <> oneOrDelimited
               log
               indent
-              Span.sourceRangeFromConstraint
+              SourceRange.constraint
               (constraint log indentation indent)
               constraints
             <> sourceToken log indent space arrow
@@ -249,7 +250,7 @@ classHead log span indentation indent' classHead' = case classHead' of
               log
               indent
               space
-              Span.sourceRangeFromClassFundep
+              SourceRange.classFundep
               (classFundep log indent)
               classFundeps
         )
@@ -403,7 +404,7 @@ dataMembers log indentation indent' dataMembers' = case dataMembers' of
       <> delimited
         log
         indent'
-        Span.sourceRangeFromName
+        SourceRange.name
         (name log indent blank)
         delimited'
 
@@ -457,7 +458,7 @@ declaration log indentation indent' declaration' = case declaration' of
               log
               indent
               space
-              Span.sourceRangeFromDataCtor
+              SourceRange.dataCtor
               (dataCtor log indentation indent)
               dataCtors
         )
@@ -498,7 +499,7 @@ declaration log indentation indent' declaration' = case declaration' of
       log
       indent
       space
-      Span.sourceRangeFromInstance
+      SourceRange.instance'
       (instance' log span indentation indent)
       instances
       <> pure newline
@@ -702,7 +703,7 @@ exports log indentation exports'' = case exports'' of
       <> delimitedNonEmpty
         log
         indent
-        Span.sourceRangeFromExport
+        SourceRange.export
         (export log indentation indent)
         exports'
 
@@ -732,7 +733,7 @@ expr log indentation indent' expr'' = case expr'' of
     delimited
       log
       indent'
-      Span.sourceRangeFromExpr
+      SourceRange.expr
       (expr log indentation indent')
       delimited'
   Language.PureScript.CST.ExprBoolean span boolean _ -> do
@@ -808,12 +809,12 @@ expr log indentation indent' expr'' = case expr'' of
     delimited
       log
       indent'
-      (Span.sourceRangeFromRecordLabeled Span.sourceRangeFromExpr)
+      (SourceRange.recordLabeled SourceRange.expr)
       ( recordLabeled
         log
         indentation
         indent'
-        Span.sourceRangeFromExpr
+        SourceRange.expr
         (expr log indentation indent')
       )
       delimited'
@@ -833,7 +834,7 @@ expr log indentation indent' expr'' = case expr'' of
       <> delimitedNonEmpty
         log
         indent
-        Span.sourceRangeFromRecordUpdate
+        SourceRange.recordUpdate
         (recordUpdate log indentation indent)
         delimitedNonEmpty'
   Language.PureScript.CST.ExprSection span section -> do
@@ -992,7 +993,7 @@ guardedExpr log indentation indent' guardedExpr' = case guardedExpr' of
         log
         indent'
         space
-        Span.sourceRangeFromPatternGuard
+        SourceRange.patternGuard
         (patternGuard log indentation indent)
         patternGuards
       <> sourceToken log indent' blank separator
@@ -1096,7 +1097,7 @@ importDecl log indentation indent'' importDecl' = case importDecl' of
                 <> delimitedNonEmpty
                   log
                   indent
-                  Span.sourceRangeFromImport
+                  SourceRange.import'
                   (import' log indentation indent')
                   imports'
             Nothing -> do
@@ -1110,7 +1111,7 @@ importDecl log indentation indent'' importDecl' = case importDecl' of
                 <> delimitedNonEmpty
                   log
                   indent'
-                  Span.sourceRangeFromImport
+                  SourceRange.import'
                   (import' log indentation indent')
                   imports'
         )
@@ -1213,7 +1214,7 @@ instanceHead log span indentation indent' instanceHead' = case instanceHead' of
             <> oneOrDelimited
               log
               indent
-              Span.sourceRangeFromConstraint
+              SourceRange.constraint
               (constraint log indentation indent)
               constraints
             <> sourceToken log indent space arrow
@@ -1306,9 +1307,9 @@ labeledNameKind log indent =
   labeled
     log
     indent
-    Span.sourceRangeFromName
+    SourceRange.name
     (name log indent blank)
-    Span.sourceRangeFromKind
+    SourceRange.kind
     (kind log indent blank)
 
 labeledNameType ::
@@ -1323,9 +1324,9 @@ labeledNameType log indent =
   labeled
     log
     indent
-    Span.sourceRangeFromName
+    SourceRange.name
     (name log indent blank)
-    Span.sourceRangeFromType
+    SourceRange.type'
     (type' log indent blank)
 
 lambda ::
@@ -1499,7 +1500,7 @@ recordAccessor log span indentation indent' recordAccessor' = case recordAccesso
         log
         indent
         blank
-        Span.sourceRangeFromLabel
+        SourceRange.label
         (label log indent' blank)
         path
 
@@ -1553,7 +1554,7 @@ recordUpdate log indentation indent' recordUpdate' = case recordUpdate' of
       <> delimitedNonEmpty
         log
         indent
-        Span.sourceRangeFromRecordUpdate
+        SourceRange.recordUpdate
         (recordUpdate log indentation indent)
         delimitedNonEmpty'
   Language.PureScript.CST.RecordUpdateLeaf label' equals expr' -> do
@@ -1592,16 +1593,13 @@ row log span indentation indent' row' = case row' of
           log
           indent'
           space
-          ( Span.sourceRangeFromLabeled
-            Span.sourceRangeFromLabel
-            Span.sourceRangeFromType
-          )
+          (SourceRange.labeled SourceRange.label SourceRange.type')
           ( labeled
             log
             indent
-            Span.sourceRangeFromLabel
+            SourceRange.label
             (label log indent blank)
-            Span.sourceRangeFromType
+            SourceRange.type'
             (type' log indentation indent)
           )
       )
