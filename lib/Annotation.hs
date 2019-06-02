@@ -74,6 +74,22 @@ binder log binder''' = case binder''' of
     notImplemented log "Binder" binder''' span
     pure (span <$ binder''')
 
+caseOf ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.CaseOf a ->
+  IO (Language.PureScript.CST.CaseOf Span.Span)
+caseOf log caseOf' = case caseOf' of
+  Language.PureScript.CST.CaseOf case' head' of' branches' -> do
+    let span = Span.caseOf caseOf'
+    debug log "CaseOf" caseOf' span
+    head <- traverse (expr log) head'
+    branches <-
+      traverse
+        (Data.Bitraversable.bitraverse (traverse $ binder log) $ guarded log)
+        branches'
+    pure (Language.PureScript.CST.CaseOf case' head of' branches)
+
 constraint ::
   (Show a) =>
   Log.Handle ->
@@ -246,6 +262,11 @@ expr log expr''' = case expr''' of
     let span = Span.expr expr'''
     debug log "ExprBoolean" expr''' span
     pure (Language.PureScript.CST.ExprBoolean span boolean x)
+  Language.PureScript.CST.ExprCase _ caseOf'' -> do
+    let span = Span.expr expr'''
+    debug log "ExprCase" expr''' span
+    caseOf' <- caseOf log caseOf''
+    pure (Language.PureScript.CST.ExprCase span caseOf')
   Language.PureScript.CST.ExprChar _ char x -> do
     let span = Span.expr expr'''
     debug log "ExprChar" expr''' span

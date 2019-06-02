@@ -30,7 +30,7 @@ adoBlock log span indentation indent' adoBlock' = case adoBlock' of
     let
       (indent, prefix) = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent')
+          (indent' <> indentation, newline <> indent)
         Span.SingleLine ->
           (indent', space)
     debug log "AdoBlock" adoBlock' span
@@ -162,7 +162,7 @@ caseOf log span indentation indent' caseOf' = case caseOf' of
           (indent', space)
     debug log "CaseOf" caseOf' span
     sourceToken log indent' blank case'
-      <> pure prefix
+      <> pure space
       <> separated
         log
         indent
@@ -174,13 +174,14 @@ caseOf log span indentation indent' caseOf' = case caseOf' of
       <> sourceToken log indent' blank of'
       <> foldMap
         (\(binders, guarded') ->
-          separated
-            log
-            indent
-            space
-            SourceRange.binder
-            (binder log indentation indent)
-            binders
+          pure prefix
+            <> separated
+              log
+              indent
+              space
+              SourceRange.binder
+              (binder log indentation indent)
+              binders
             <> guarded log indentation indent guarded'
         )
         branches
@@ -591,7 +592,7 @@ doBlock log span indentation indent' doBlock' = case doBlock' of
     let
       (indent, prefix) = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent')
+          (indent' <> indentation, newline <> indent)
         Span.SingleLine ->
           (indent', space)
     debug log "DoBlock" doBlock' span
@@ -619,12 +620,14 @@ doStatement log indentation indent' doStatement' = case doStatement' of
     debug log "DoDiscard" doStatement' (Span.doStatement doStatement')
     expr log indentation indent' expr'
   Language.PureScript.CST.DoLet let' letBindings -> do
+    let
+      indent = indent' <> indentation
     debug log "DoLet" doStatement' (Span.doStatement doStatement')
     sourceToken log indent' blank let'
       <> foldMap
         (\letBinding' ->
-          pure (newline <> indent')
-            <> letBinding log indentation indent' letBinding'
+          pure (newline <> indent)
+            <> letBinding log indentation indent letBinding'
         )
         letBindings
 
@@ -856,10 +859,38 @@ exprPrefix ::
   Indent ->
   Language.PureScript.CST.Expr Span.Span ->
   IO Utf8Builder
-exprPrefix log indentation indent expr' =
+exprPrefix log indentation indent' expr' =
     pure prefix
       <> expr log indentation indent expr'
   where
+  indent :: Utf8Builder
+  indent = case expr' of
+    Language.PureScript.CST.ExprAdo{}            -> indent'
+    Language.PureScript.CST.ExprApp{}            -> indent' <> indentation
+    Language.PureScript.CST.ExprArray{}          -> indent' <> indentation
+    Language.PureScript.CST.ExprBoolean{}        -> indent' <> indentation
+    Language.PureScript.CST.ExprCase{}           -> indent'
+    Language.PureScript.CST.ExprChar{}           -> indent' <> indentation
+    Language.PureScript.CST.ExprConstructor{}    -> indent' <> indentation
+    Language.PureScript.CST.ExprDo{}             -> indent'
+    Language.PureScript.CST.ExprHole{}           -> indent' <> indentation
+    Language.PureScript.CST.ExprIdent{}          -> indent' <> indentation
+    Language.PureScript.CST.ExprIf{}             -> indent'
+    Language.PureScript.CST.ExprInfix{}          -> indent' <> indentation
+    Language.PureScript.CST.ExprLambda{}         -> indent'
+    Language.PureScript.CST.ExprLet{}            -> indent' <> indentation
+    Language.PureScript.CST.ExprNegate{}         -> indent' <> indentation
+    Language.PureScript.CST.ExprNumber{}         -> indent' <> indentation
+    Language.PureScript.CST.ExprOp{}             -> indent' <> indentation
+    Language.PureScript.CST.ExprOpName{}         -> indent' <> indentation
+    Language.PureScript.CST.ExprParens{}         -> indent' <> indentation
+    Language.PureScript.CST.ExprRecord{}         -> indent' <> indentation
+    Language.PureScript.CST.ExprRecordAccessor{} -> indent' <> indentation
+    Language.PureScript.CST.ExprRecordUpdate{}   -> indent' <> indentation
+    Language.PureScript.CST.ExprSection{}        -> indent' <> indentation
+    Language.PureScript.CST.ExprString{}         -> indent' <> indentation
+    Language.PureScript.CST.ExprTyped{}          -> indent' <> indentation
+
   multiLine :: Utf8Builder
   multiLine = case expr' of
     Language.PureScript.CST.ExprAdo{}            -> space
@@ -1671,7 +1702,14 @@ sourceToken log indent prefix sourceToken' = case sourceToken' of
   Language.PureScript.CST.SourceToken ann token ->
     tokenAnn log indent prefix ann $ do
       debug log "SourceToken" sourceToken' (Span.sourceToken sourceToken')
-      pure (prefix <> display (Language.PureScript.CST.printToken token))
+      pure (prefix <> printToken token)
+  where
+  printToken :: Language.PureScript.CST.Token -> Utf8Builder
+  printToken token = case token of
+    -- `Language.PureScript.CST.printToken` prints an extra reverse solidus
+    -- Use the underlying `Char` for displaying.
+    Language.PureScript.CST.TokChar _ char -> displayShow char
+    _ -> display (Language.PureScript.CST.printToken token)
 
 space :: Utf8Builder
 space = " "
@@ -1851,7 +1889,7 @@ where' log indentation indent' where''' = case where''' of
     let
       indent = indent' <> indentation
     debug log "Where" where''' (Span.where' where''')
-    exprPrefix log indentation indent expr'
+    exprPrefix log indentation indent' expr'
       <> foldMap
         (\(where'', letBindings') ->
           pure (newline <> indent)

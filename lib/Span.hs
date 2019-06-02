@@ -3,6 +3,7 @@ module Span
   , adoBlock
   , betweenSourceTokens
   , binder
+  , caseOf
   , comment
   , constraint
   , dataMembers
@@ -67,6 +68,9 @@ binder =
   sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.binderRange
+
+caseOf :: Language.PureScript.CST.CaseOf a -> Span
+caseOf = sourceRange . SourceRange.caseOf
 
 comment :: (a -> Span) -> Language.PureScript.CST.Comment a -> Span
 comment f comment'' = case comment'' of

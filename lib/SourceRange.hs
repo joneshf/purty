@@ -1,6 +1,7 @@
 module SourceRange
   ( adoBlock
   , binder
+  , caseOf
   , constraint
   , classFundep
   , dataCtor
@@ -45,6 +46,15 @@ binder ::
 binder =
   Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.binderRange
+
+caseOf ::
+  Language.PureScript.CST.CaseOf a ->
+  Language.PureScript.CST.SourceRange
+caseOf caseOf' = case caseOf' of
+  Language.PureScript.CST.CaseOf case' _ _ branches ->
+    Language.PureScript.CST.Positions.widen
+      (Language.PureScript.CST.Positions.srcRange case')
+      (guarded $ snd $ Data.List.NonEmpty.last branches)
 
 constraint ::
   Language.PureScript.CST.Constraint a ->
@@ -101,6 +111,13 @@ export ::
 export =
   Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.exportRange
+
+guarded ::
+  Language.PureScript.CST.Guarded a ->
+  Language.PureScript.CST.SourceRange
+guarded =
+  Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.guardedRange
 
 import' ::
   Language.PureScript.CST.Import a ->
