@@ -64,9 +64,9 @@ data Span
 instance Semigroup Span where
   span1 <> span2 = case (span1, span2) of
     (MultipleLines, MultipleLines) -> MultipleLines
-    (MultipleLines, SingleLine) -> MultipleLines
-    (SingleLine, MultipleLines) -> MultipleLines
-    (SingleLine, SingleLine) -> SingleLine
+    (MultipleLines, SingleLine)    -> MultipleLines
+    (SingleLine, MultipleLines)    -> MultipleLines
+    (SingleLine, SingleLine)       -> SingleLine
 
 instance Monoid Span where
   mempty = SingleLine
