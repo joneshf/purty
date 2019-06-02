@@ -726,160 +726,160 @@ expr ::
   Indent ->
   Language.PureScript.CST.Expr Span.Span ->
   IO Utf8Builder
-expr log indentation indent' expr'' = case expr'' of
+expr log indentation indent'' expr'' = case expr'' of
   Language.PureScript.CST.ExprAdo span adoBlock' -> do
     debug log "ExprAdo" expr'' span
-    adoBlock log span indentation indent' adoBlock'
+    adoBlock log span indentation indent'' adoBlock'
   Language.PureScript.CST.ExprApp span expr1 expr2 -> do
     let
-      (indent, prefix) = case span of
+      (indent', prefix) = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent)
+          (indent'' <> indentation, newline <> indent')
         Span.SingleLine ->
-          (indent', space)
+          (indent'', space)
     debug log "ExprApp" expr'' span
-    expr log indentation indent' expr1
+    expr log indentation indent'' expr1
       <> pure prefix
-      <> expr log indentation indent expr2
+      <> expr log indentation indent' expr2
   Language.PureScript.CST.ExprArray span delimited' -> do
     let
-      indent = case span of
+      indent' = case span of
         Span.MultipleLines ->
-          indent' <> indentation
+          indent'' <> indentation
         Span.SingleLine ->
-          indent'
+          indent''
     debug log "ExprArray" expr'' span
     delimited
       log
-      indent'
+      indent''
       SourceRange.expr
-      (expr log indentation indent)
+      (expr log indentation indent')
       delimited'
   Language.PureScript.CST.ExprBoolean span boolean _ -> do
     debug log "ExprBoolean" expr'' span
-    sourceToken log indent' blank boolean
+    sourceToken log indent'' blank boolean
   Language.PureScript.CST.ExprCase span caseOf' -> do
     debug log "ExprCase" expr'' span
-    caseOf log span indentation indent' caseOf'
+    caseOf log span indentation indent'' caseOf'
   Language.PureScript.CST.ExprChar span char _ -> do
     debug log "ExprChar" expr'' span
-    sourceToken log indent' blank char
+    sourceToken log indent'' blank char
   Language.PureScript.CST.ExprConstructor span name' -> do
     debug log "ExprConstructor" expr'' span
-    qualifiedName log indent' blank name'
+    qualifiedName log indent'' blank name'
   Language.PureScript.CST.ExprDo span doBlock' -> do
     debug log "ExprDo" expr'' span
-    doBlock log span indentation indent' doBlock'
+    doBlock log span indentation indent'' doBlock'
   Language.PureScript.CST.ExprHole span hole -> do
     debug log "ExprHole" expr'' span
-    name log indent' blank hole
+    name log indent'' blank hole
   Language.PureScript.CST.ExprIdent span name' -> do
     debug log "ExprIdent" expr'' span
-    qualifiedName log indent' blank name'
+    qualifiedName log indent'' blank name'
   Language.PureScript.CST.ExprIf span ifThenElse' -> do
     debug log "ExprIf" expr'' span
-    ifThenElse log span indentation indent' ifThenElse'
+    ifThenElse log span indentation indent'' ifThenElse'
   Language.PureScript.CST.ExprInfix span expr1 wrapped' expr2 -> do
     let
-      (indent, prefix) = case span of
+      (indent, indent', prefix) = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent)
+          (indent' <> indentation, indent'' <> indentation, newline <> indent')
         Span.SingleLine ->
-          (indent', space)
+          (indent', indent'', space)
     debug log "ExprInfix" expr'' span
-    expr log indentation indent' expr1
+    expr log indentation indent'' expr1
       <> pure prefix
-      <> wrapped log indent (expr log indentation indent) wrapped'
+      <> wrapped log indent (expr log indentation indent') wrapped'
       <> pure space
       <> expr log indentation indent expr2
   Language.PureScript.CST.ExprLambda span lambda' -> do
     debug log "ExprLambda" expr'' span
-    lambda log span indentation indent' lambda'
+    lambda log span indentation indent'' lambda'
   Language.PureScript.CST.ExprLet span letIn' -> do
     debug log "ExprLet" expr'' span
-    letIn log span indentation indent' letIn'
+    letIn log span indentation indent'' letIn'
   Language.PureScript.CST.ExprNegate span negative expr' -> do
     debug log "ExprNegate" expr'' span
-    sourceToken log indent' blank negative
-      <> expr log indentation indent' expr'
+    sourceToken log indent'' blank negative
+      <> expr log indentation indent'' expr'
   Language.PureScript.CST.ExprNumber span number _ -> do
     debug log "ExprNumber" expr'' span
-    sourceToken log indent' blank number
+    sourceToken log indent'' blank number
   Language.PureScript.CST.ExprOp span expr1 op expr2 -> do
     let
-      (indent, prefix) = case span of
+      (indent, indent', prefix) = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent)
+          (indent' <> indentation, indent'' <> indentation, newline <> indent')
         Span.SingleLine ->
-          (indent', space)
+          (indent', indent'', space)
     debug log "ExprOp" expr'' span
-    expr log indentation indent' expr1
-      <> qualifiedName log indent prefix op
+    expr log indentation indent'' expr1
+      <> qualifiedName log indent' prefix op
       <> pure space
       <> expr log indentation indent expr2
   Language.PureScript.CST.ExprOpName span name' -> do
     debug log "ExprOpName" expr'' span
-    qualifiedName log indent' blank name'
+    qualifiedName log indent'' blank name'
   Language.PureScript.CST.ExprParens span wrapped' -> do
     debug log "ExprParens" expr'' span
-    wrapped log indent' (expr log indentation indent') wrapped'
+    wrapped log indent'' (expr log indentation indent'') wrapped'
   Language.PureScript.CST.ExprRecord span delimited' -> do
     let
-      indent = case span of
+      indent' = case span of
         Span.MultipleLines ->
-          indent' <> indentation
+          indent'' <> indentation
         Span.SingleLine ->
-          indent'
+          indent''
     debug log "ExprRecord" expr'' span
     delimited
       log
-      indent'
+      indent''
       (SourceRange.recordLabeled SourceRange.expr)
       ( recordLabeled
         log
         indentation
-        indent'
+        indent''
         SourceRange.expr
-        (expr log indentation indent)
+        (expr log indentation indent')
       )
       delimited'
   Language.PureScript.CST.ExprRecordAccessor span recordAccessor' -> do
     debug log "ExprRecordAccessor" expr'' span
-    recordAccessor log span indentation indent' recordAccessor'
+    recordAccessor log span indentation indent'' recordAccessor'
   Language.PureScript.CST.ExprRecordUpdate span expr' delimitedNonEmpty' -> do
     let
-      (indent, prefix) = case span of
+      (indent', prefix) = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent)
+          (indent'' <> indentation, newline <> indent')
         Span.SingleLine ->
-          (indent', space)
+          (indent'', space)
     debug log "ExprRecordUpdate" expr'' span
-    expr log indentation indent' expr'
+    expr log indentation indent'' expr'
       <> pure prefix
       <> delimitedNonEmpty
         log
-        indent
+        indent'
         SourceRange.recordUpdate
-        (recordUpdate log indentation indent)
+        (recordUpdate log indentation indent')
         delimitedNonEmpty'
   Language.PureScript.CST.ExprSection span section -> do
     debug log "ExprSection" expr'' span
-    sourceToken log indent' blank section
+    sourceToken log indent'' blank section
   Language.PureScript.CST.ExprString span string _ -> do
     debug log "ExprString" expr'' span
-    sourceToken log indent' blank string
+    sourceToken log indent'' blank string
   Language.PureScript.CST.ExprTyped span expr' colons type'' -> do
     let
-      (indent, prefix) = case span of
+      (indent', prefix) = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent)
+          (indent'' <> indentation, newline <> indent')
         Span.SingleLine ->
-          (indent', space)
+          (indent'', space)
     debug log "ExprTyped" expr'' span
-    expr log indentation indent' expr'
-      <> sourceToken log indent' space colons
+    expr log indentation indent'' expr'
+      <> sourceToken log indent'' space colons
       <> pure prefix
-      <> type' log indentation indent type''
+      <> type' log indentation indent' type''
 
 exprPrefix ::
   Log.Handle ->
