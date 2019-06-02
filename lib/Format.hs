@@ -734,12 +734,18 @@ expr log indentation indent' expr'' = case expr'' of
       <> pure prefix
       <> expr log indentation indent expr2
   Language.PureScript.CST.ExprArray span delimited' -> do
+    let
+      indent = case span of
+        Span.MultipleLines ->
+          indent' <> indentation
+        Span.SingleLine ->
+          indent'
     debug log "ExprArray" expr'' span
     delimited
       log
       indent'
       SourceRange.expr
-      (expr log indentation indent')
+      (expr log indentation indent)
       delimited'
   Language.PureScript.CST.ExprBoolean span boolean _ -> do
     debug log "ExprBoolean" expr'' span
@@ -810,6 +816,12 @@ expr log indentation indent' expr'' = case expr'' of
     debug log "ExprParens" expr'' span
     wrapped log indent' (expr log indentation indent') wrapped'
   Language.PureScript.CST.ExprRecord span delimited' -> do
+    let
+      indent = case span of
+        Span.MultipleLines ->
+          indent' <> indentation
+        Span.SingleLine ->
+          indent'
     debug log "ExprRecord" expr'' span
     delimited
       log
@@ -820,7 +832,7 @@ expr log indentation indent' expr'' = case expr'' of
         indentation
         indent'
         SourceRange.expr
-        (expr log indentation indent')
+        (expr log indentation indent)
       )
       delimited'
   Language.PureScript.CST.ExprRecordAccessor span recordAccessor' -> do

@@ -17,3 +17,7 @@ baz { age, name } = { age: Foo.age, name }
 
 qux :: {age :: Int} -> {age :: Int, name :: String}
 qux { age } = { age: Foo.age, name }
+
+gar :: {age :: Int} -> {age :: Int, name :: String}
+gar { age } = { age:
+                Foo.age, name }
