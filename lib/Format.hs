@@ -4,6 +4,7 @@ module Format
 
 import "rio" RIO hiding (log, span)
 
+import qualified "base" Data.List.NonEmpty
 import qualified "purescript" Language.PureScript.CST
 import qualified "this" Log
 import qualified "this" SourceRange
@@ -16,6 +17,9 @@ type Indentation
   = Utf8Builder
 
 type Prefix
+  = Utf8Builder
+
+type Suffix
   = Utf8Builder
 
 adoBlock ::
@@ -633,11 +637,15 @@ doStatement log indentation indent' doStatement' = case doStatement' of
     debug log "DoLet" doStatement' (Span.doStatement doStatement')
     sourceToken log indent' blank let'
       <> foldMap
-        (\letBinding' ->
-          pure (newline <> indent)
-            <> letBinding log indentation indent letBinding'
-        )
-        letBindings
+        (letBinding log indentation indent (newline <> indent) newline)
+        (Data.List.NonEmpty.init letBindings)
+      <> letBinding
+        log
+        indentation
+        indent
+        (newline <> indent)
+        blank
+        (Data.List.NonEmpty.last letBindings)
 
 export ::
   Log.Handle ->
@@ -1436,22 +1444,27 @@ letBinding ::
   Log.Handle ->
   Indentation ->
   Indent ->
+  Prefix ->
+  Suffix ->
   Language.PureScript.CST.LetBinding Span.Span ->
   IO Utf8Builder
-letBinding log indentation indent' letBinding' = case letBinding' of
+letBinding log indentation indent' prefix suffix letBinding' = case letBinding' of
   Language.PureScript.CST.LetBindingName span valueBindingFields' -> do
     debug log "LetBindingName" letBinding' span
-    valueBindingFields log indentation indent' valueBindingFields'
-      <> pure newline
+    pure prefix
+      <> valueBindingFields log indentation indent' valueBindingFields'
+      <> pure suffix
   Language.PureScript.CST.LetBindingPattern span binder' equals where'' -> do
     debug log "LetBindingPattern" letBinding' span
-    binder log indentation indent' binder'
+    pure prefix
+      <> binder log indentation indent' binder'
       <> sourceToken log indent' space equals
       <> where' log indentation indent' where''
-      <> pure newline
+      <> pure suffix
   Language.PureScript.CST.LetBindingSignature span labeled' -> do
     debug log "LetBindingSignature" letBinding' span
-    labeledNameType log indentation indent' labeled'
+    pure prefix
+      <> labeledNameType log indentation indent' labeled'
 
 letIn ::
   Log.Handle ->
@@ -1465,17 +1478,21 @@ letIn log span indentation indent' letIn' = case letIn' of
     let
       (inPrefix, indent, prefix) = case span of
         Span.MultipleLines ->
-          (indent', indent' <> indentation, newline <> indent)
+          (newline <> indent', indent' <> indentation, newline <> indent)
         Span.SingleLine ->
           (space, indent', space)
     debug log "LetIn" letIn' span
     sourceToken log indent' blank let'
       <> foldMap
-        (\letBinding' ->
-          pure prefix
-            <> letBinding log indentation indent' letBinding'
-        )
-        letBindings
+        (letBinding log indentation indent prefix newline)
+        (Data.List.NonEmpty.init letBindings)
+      <> letBinding
+        log
+        indentation
+        indent
+        prefix
+        blank
+        (Data.List.NonEmpty.last letBindings)
       <> pure inPrefix
       <> sourceToken log indent' blank in'
       <> pure prefix
@@ -1920,11 +1937,15 @@ where' log indentation indent' where''' = case where''' of
           pure (newline <> indent)
             <> sourceToken log indent blank where''
             <> foldMap
-              (\letBinding' ->
-                pure (newline <> indent)
-                  <> letBinding log indentation indent letBinding'
-              )
-              letBindings'
+              (letBinding log indentation indent (newline <> indent) newline)
+              (Data.List.NonEmpty.init letBindings')
+            <> letBinding
+              log
+              indentation
+              indent
+              (newline <> indent)
+              blank
+              (Data.List.NonEmpty.last letBindings')
         )
         letBindings''
 

@@ -415,7 +415,7 @@ expr log expr''' = case expr''' of
     lambda' <- lambda log lambda''
     pure (Language.PureScript.CST.ExprLambda span lambda')
   Language.PureScript.CST.ExprLet _ letIn'' -> do
-    let span = Span.MultipleLines
+    let span = Span.expr expr'''
     debug log "ExprLet" expr''' span
     letIn' <- letIn log letIn''
     pure (Language.PureScript.CST.ExprLet span letIn')
