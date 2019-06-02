@@ -4,8 +4,8 @@ module Annotation
 
 import "rio" RIO hiding (log, span)
 
-import qualified "purescript" Language.PureScript.CST
 import qualified "base" Data.Bitraversable
+import qualified "purescript" Language.PureScript.CST
 import qualified "this" Log
 import qualified "this" SourceRange
 import qualified "this" Span

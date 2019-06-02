@@ -40,10 +40,10 @@ module Span
 
 import "rio" RIO
 
+import qualified "text" Data.Text
 import qualified "purescript" Language.PureScript.CST
 import qualified "purescript" Language.PureScript.CST.Positions
 import qualified "this" SourceRange
-import qualified "text" Data.Text
 
 data Span
   = MultipleLines
@@ -167,7 +167,7 @@ linesBetween start end = case (start, end) of
 
 lineFeed :: Language.PureScript.CST.LineFeed -> Span
 lineFeed lineFeed' = case lineFeed' of
-  Language.PureScript.CST.LF -> Span.SingleLine
+  Language.PureScript.CST.LF   -> Span.SingleLine
   Language.PureScript.CST.CRLF -> Span.SingleLine
 
 letBinding :: Language.PureScript.CST.LetBinding a -> Span
