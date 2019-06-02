@@ -149,6 +149,15 @@ delimited ::
 delimited log f =
   wrapped log ((traverse . traverse) f)
 
+delimitedNonEmpty ::
+  (Show a) =>
+  Log.Handle ->
+  (a -> IO b) ->
+  Language.PureScript.CST.DelimitedNonEmpty a ->
+  IO (Language.PureScript.CST.DelimitedNonEmpty b)
+delimitedNonEmpty log f =
+  wrapped log (traverse f)
+
 doBlock ::
   (Show a) =>
   Log.Handle ->
@@ -221,64 +230,64 @@ expr ::
   Log.Handle ->
   Language.PureScript.CST.Expr a ->
   IO (Language.PureScript.CST.Expr Span.Span)
-expr log expr' = case expr' of
+expr log expr''' = case expr''' of
   Language.PureScript.CST.ExprAdo _ adoBlock'' -> do
-    let span = Span.expr expr'
-    debug log "ExprAdo" expr' span
+    let span = Span.expr expr'''
+    debug log "ExprAdo" expr''' span
     adoBlock' <- adoBlock log adoBlock''
     pure (Language.PureScript.CST.ExprAdo span adoBlock')
   Language.PureScript.CST.ExprApp _ expr1' expr2' -> do
-    let span = Span.expr expr'
-    debug log "ExprApp" expr' span
+    let span = Span.expr expr'''
+    debug log "ExprApp" expr''' span
     expr1 <- expr log expr1'
     expr2 <- expr log expr2'
     pure (Language.PureScript.CST.ExprApp span expr1 expr2)
   Language.PureScript.CST.ExprBoolean _ boolean x -> do
-    let span = Span.expr expr'
-    debug log "ExprBoolean" expr' span
+    let span = Span.expr expr'''
+    debug log "ExprBoolean" expr''' span
     pure (Language.PureScript.CST.ExprBoolean span boolean x)
   Language.PureScript.CST.ExprChar _ char x -> do
-    let span = Span.expr expr'
-    debug log "ExprChar" expr' span
+    let span = Span.expr expr'''
+    debug log "ExprChar" expr''' span
     pure (Language.PureScript.CST.ExprChar span char x)
   Language.PureScript.CST.ExprConstructor _ name' -> do
-    let span = Span.expr expr'
-    debug log "ExprConstructor" expr' span
+    let span = Span.expr expr'''
+    debug log "ExprConstructor" expr''' span
     pure (Language.PureScript.CST.ExprConstructor span name')
   Language.PureScript.CST.ExprDo _ doBlock'' -> do
-    let span = Span.expr expr'
-    debug log "ExprDo" expr' span
+    let span = Span.expr expr'''
+    debug log "ExprDo" expr''' span
     doBlock' <- doBlock log doBlock''
     pure (Language.PureScript.CST.ExprDo span doBlock')
   Language.PureScript.CST.ExprHole _ hole -> do
-    let span = Span.expr expr'
-    debug log "ExprHole" expr' span
+    let span = Span.expr expr'''
+    debug log "ExprHole" expr''' span
     pure (Language.PureScript.CST.ExprHole span hole)
   Language.PureScript.CST.ExprIdent _ name' -> do
-    let span = Span.expr expr'
-    debug log "ExprIdent" expr' span
+    let span = Span.expr expr'''
+    debug log "ExprIdent" expr''' span
     pure (Language.PureScript.CST.ExprIdent span name')
   Language.PureScript.CST.ExprNumber _ number x -> do
-    let span = Span.expr expr'
-    debug log "ExprNumber" expr' span
+    let span = Span.expr expr'''
+    debug log "ExprNumber" expr''' span
     pure (Language.PureScript.CST.ExprNumber span number x)
   Language.PureScript.CST.ExprString _ string x -> do
-    let span = Span.expr expr'
-    debug log "ExprString" expr' span
+    let span = Span.expr expr'''
+    debug log "ExprString" expr''' span
     pure (Language.PureScript.CST.ExprString span string x)
   Language.PureScript.CST.ExprOpName _ name' -> do
-    let span = Span.expr expr'
-    debug log "ExprOpName" expr' span
+    let span = Span.expr expr'''
+    debug log "ExprOpName" expr''' span
     pure (Language.PureScript.CST.ExprOpName span name')
   Language.PureScript.CST.ExprOp _ expr1' op expr2' -> do
-    let span = Span.expr expr'
-    debug log "ExprOp" expr' span
+    let span = Span.expr expr'''
+    debug log "ExprOp" expr''' span
     expr1 <- expr log expr1'
     expr2 <- expr log expr2'
     pure (Language.PureScript.CST.ExprOp span expr1 op expr2)
   Language.PureScript.CST.ExprRecord _ delimited'' -> do
-    let span = Span.expr expr'
-    debug log "ExprRecord" expr' span
+    let span = Span.expr expr'''
+    debug log "ExprRecord" expr''' span
     delimited' <-
       delimited
         log
@@ -286,14 +295,21 @@ expr log expr' = case expr' of
         delimited''
     pure (Language.PureScript.CST.ExprRecord span delimited')
   Language.PureScript.CST.ExprRecordAccessor _ recordAccessor'' -> do
-    let span = Span.expr expr'
-    debug log "ExprRecordAccessor" expr' span
+    let span = Span.expr expr'''
+    debug log "ExprRecordAccessor" expr''' span
     recordAccessor' <- recordAccessor log recordAccessor''
     pure (Language.PureScript.CST.ExprRecordAccessor span recordAccessor')
+  Language.PureScript.CST.ExprRecordUpdate _ expr'' delimitedNonEmpty'' -> do
+    let span = Span.expr expr'''
+    debug log "ExprRecordUpdate" expr''' span
+    expr' <- expr log expr''
+    delimitedNonEmpty' <-
+      delimitedNonEmpty log (recordUpdate log) delimitedNonEmpty''
+    pure (Language.PureScript.CST.ExprRecordUpdate span expr' delimitedNonEmpty')
   _ -> do
     let span = Span.MultipleLines
-    notImplemented log "Expr" expr' span
-    pure (span <$ expr')
+    notImplemented log "Expr" expr''' span
+    pure (span <$ expr''')
 
 guarded ::
   (Show a) =>
@@ -543,6 +559,24 @@ recordLabeled log f g recordLabeled' = case recordLabeled' of
     debug log "RecordField" recordLabeled' span
     b <- g a
     pure (Language.PureScript.CST.RecordField label' colon b)
+
+recordUpdate ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.RecordUpdate a ->
+  IO (Language.PureScript.CST.RecordUpdate Span.Span)
+recordUpdate log recordUpdate' = case recordUpdate' of
+  Language.PureScript.CST.RecordUpdateBranch label' delimitedNonEmpty'' -> do
+    let span = Span.recordUpdate recordUpdate'
+    debug log "RecordPun" recordUpdate' span
+    delimitedNonEmpty' <-
+      delimitedNonEmpty log (recordUpdate log) delimitedNonEmpty''
+    pure (Language.PureScript.CST.RecordUpdateBranch label' delimitedNonEmpty')
+  Language.PureScript.CST.RecordUpdateLeaf label' equals expr'' -> do
+    let span = Span.recordUpdate recordUpdate'
+    debug log "RecordField" recordUpdate' span
+    expr' <- expr log expr''
+    pure (Language.PureScript.CST.RecordUpdateLeaf label' equals expr')
 
 row ::
   (Show a) =>
