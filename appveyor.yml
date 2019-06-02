@@ -31,6 +31,6 @@ environment:
   STACK_ROOT: '%APPVEYOR_BUILD_FOLDER%\.stack-root'
 
 install:
-  - chocolatey install haskell-stack --version 1.6.5 --yes
+  - chocolatey install haskell-stack --version 1.9.3 --yes
 
 version: '{build}'
