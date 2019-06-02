@@ -111,6 +111,26 @@ caseOf log caseOf' = case caseOf' of
         branches'
     pure (Language.PureScript.CST.CaseOf case' head of' branches)
 
+classHead ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.ClassHead a ->
+  IO (Language.PureScript.CST.ClassHead Span.Span)
+classHead log classHead' = case classHead' of
+  Language.PureScript.CST.ClassHead class' super' name' typeVarBindings'' fundeps -> do
+    let span = Span.SingleLine
+    debug log "ClassHead" classHead' span
+    super <- (traverse . ltraverse . traverse) (constraint log) super'
+    typeVarBindings' <- traverse (typeVarBinding log) typeVarBindings''
+    pure
+      ( Language.PureScript.CST.ClassHead
+        class'
+        super
+        name'
+        typeVarBindings'
+        fundeps
+      )
+
 constraint ::
   (Show a) =>
   Log.Handle ->
@@ -127,6 +147,30 @@ constraint log constraint' = case constraint' of
     debug log "ConstraintParens" constraint' span
     wrapped' <- wrapped log (constraint log) wrapped''
     pure (Language.PureScript.CST.ConstraintParens span wrapped')
+
+dataCtor ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.DataCtor a ->
+  IO (Language.PureScript.CST.DataCtor Span.Span)
+dataCtor log dataCtor' = case dataCtor' of
+  Language.PureScript.CST.DataCtor _ name' types' -> do
+    let span = Span.dataCtor dataCtor'
+    debug log "DataCtor" dataCtor' span
+    types <- traverse (type' log) types'
+    pure (Language.PureScript.CST.DataCtor span name' types)
+
+dataHead ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.DataHead a ->
+  IO (Language.PureScript.CST.DataHead Span.Span)
+dataHead log dataHead' = case dataHead' of
+  Language.PureScript.CST.DataHead sourceToken' name' typeVarBindings'' -> do
+    let span = Span.SingleLine
+    debug log "DataHead" dataHead' span
+    typeVarBindings' <- traverse (typeVarBinding log) typeVarBindings''
+    pure (Language.PureScript.CST.DataHead sourceToken' name' typeVarBindings')
 
 dataMembers ::
   (Show a) =>
@@ -162,20 +206,59 @@ declaration ::
   Language.PureScript.CST.Declaration a ->
   IO (Language.PureScript.CST.Declaration Span.Span)
 declaration log declaration' = case declaration' of
+  Language.PureScript.CST.DeclData _ dataHead'' dataCtors' -> do
+    let span = Span.MultipleLines
+    debug log "DeclData" declaration' span
+    dataHead' <- dataHead log dataHead''
+    dataCtors <- (traverse . traverse . traverse) (dataCtor log) dataCtors'
+    pure (Language.PureScript.CST.DeclData span dataHead' dataCtors)
+  Language.PureScript.CST.DeclClass _ classHead'' body' -> do
+    let span = Span.declaration declaration'
+    debug log "DeclClass" declaration' span
+    classHead' <- classHead log classHead''
+    body <- (traverse . traverse . traverse . traverse) (type' log) body'
+    pure (Language.PureScript.CST.DeclClass span classHead' body)
+  Language.PureScript.CST.DeclDerive _ derive newtype' instanceHead'' -> do
+    let span = Span.declaration declaration'
+    debug log "DeclDerive" declaration' span
+    instanceHead' <- instanceHead log instanceHead''
+    pure (Language.PureScript.CST.DeclDerive span derive newtype' instanceHead')
+  Language.PureScript.CST.DeclFixity _ fixityFields -> do
+    let span = Span.SingleLine
+    debug log "DeclFixity" declaration' span
+    pure (Language.PureScript.CST.DeclFixity span fixityFields)
+  Language.PureScript.CST.DeclForeign _ foreign'' import'' foreign'''' -> do
+    let span = Span.declaration declaration'
+    debug log "DeclForeign" declaration' span
+    foreign''' <- foreign' log foreign''''
+    pure (Language.PureScript.CST.DeclForeign span foreign'' import'' foreign''')
+  Language.PureScript.CST.DeclInstanceChain _ separated'' -> do
+    let span = Span.declaration declaration'
+    debug log "DeclInstanceChain" declaration' span
+    separated' <- traverse (instance' log) separated''
+    pure (Language.PureScript.CST.DeclInstanceChain span separated')
+  Language.PureScript.CST.DeclNewtype _ dataHead'' equals name' type''' -> do
+    let span = Span.MultipleLines
+    debug log "DeclNewtype" declaration' span
+    dataHead' <- dataHead log dataHead''
+    type'' <- type' log type'''
+    pure (Language.PureScript.CST.DeclNewtype span dataHead' equals name' type'')
   Language.PureScript.CST.DeclSignature _ labeled'' -> do
     let span = Span.labeled SourceRange.name SourceRange.type' labeled''
     debug log "DeclSignature" declaration' span
     labeled' <- labeledNameType log labeled''
     pure (Language.PureScript.CST.DeclSignature span labeled')
+  Language.PureScript.CST.DeclType _ dataHead'' equals type''' -> do
+    let span = Span.MultipleLines
+    debug log "DeclType" declaration' span
+    dataHead' <- dataHead log dataHead''
+    type'' <- type' log type'''
+    pure (Language.PureScript.CST.DeclType span dataHead' equals type'')
   Language.PureScript.CST.DeclValue _ valueBindingFields'' -> do
     let span = Span.valueBindingFields valueBindingFields''
     debug log "DeclValue" declaration' span
     valueBindingFields' <- valueBindingFields log valueBindingFields''
     pure (Language.PureScript.CST.DeclValue span valueBindingFields')
-  _ -> do
-    let span = Span.MultipleLines
-    notImplemented log "Declaration" declaration' span
-    pure (span <$ declaration')
 
 delimited ::
   (Show a) =>
@@ -396,6 +479,27 @@ expr log expr''' = case expr''' of
     type'' <- type' log type'''
     pure (Language.PureScript.CST.ExprTyped span expr' op type'')
 
+foreign' ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.Foreign a ->
+  IO (Language.PureScript.CST.Foreign Span.Span)
+foreign' log foreign'' = case foreign'' of
+  Language.PureScript.CST.ForeignData data' labeled'' -> do
+    let span = Span.foreign' foreign''
+    debug log "ForeignData" foreign'' span
+    labeled' <- traverse (kind log) labeled''
+    pure (Language.PureScript.CST.ForeignData data' labeled')
+  Language.PureScript.CST.ForeignKind kind' name' -> do
+    let span = Span.foreign' foreign''
+    debug log "ForeignKind" foreign'' span
+    pure (Language.PureScript.CST.ForeignKind kind' name')
+  Language.PureScript.CST.ForeignValue labeled'' -> do
+    let span = Span.foreign' foreign''
+    debug log "ForeignValue" foreign'' span
+    labeled' <- traverse (type' log) labeled''
+    pure (Language.PureScript.CST.ForeignValue labeled')
+
 guarded ::
   (Show a) =>
   Log.Handle ->
@@ -480,6 +584,58 @@ importDecl log importDecl' = case importDecl' of
     debug log "ImportDecl" importDecl' span
     imports <- (traverse . traverse . traverse . traverse) (import' log) imports'
     pure (Language.PureScript.CST.ImportDecl span import'' name' imports rename)
+
+instance' ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.Instance a ->
+  IO (Language.PureScript.CST.Instance Span.Span)
+instance' log instance'' = case instance'' of
+  Language.PureScript.CST.Instance instanceHead'' body' -> do
+    let span = Span.instance' instance''
+    debug log "Instance" instance'' span
+    instanceHead' <- instanceHead log instanceHead''
+    body <- (traverse . traverse . traverse) (instanceBinding log) body'
+    pure (Language.PureScript.CST.Instance instanceHead' body)
+
+instanceBinding ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.InstanceBinding a ->
+  IO (Language.PureScript.CST.InstanceBinding Span.Span)
+instanceBinding log instanceBinding' = case instanceBinding' of
+  Language.PureScript.CST.InstanceBindingName _ valueBindingFields'' -> do
+    let span = Span.instanceBinding instanceBinding'
+    debug log "InstanceBindingName" instanceBinding' span
+    valueBindingFields' <- valueBindingFields log valueBindingFields''
+    pure ( Language.PureScript.CST.InstanceBindingName span valueBindingFields')
+  Language.PureScript.CST.InstanceBindingSignature _ labeled'' -> do
+    let span = Span.instanceBinding instanceBinding'
+    debug log "InstanceBindingSignature" instanceBinding' span
+    labeled' <- labeledNameType log labeled''
+    pure ( Language.PureScript.CST.InstanceBindingSignature span labeled')
+
+instanceHead ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.InstanceHead a ->
+  IO (Language.PureScript.CST.InstanceHead Span.Span)
+instanceHead log instanceHead' = case instanceHead' of
+  Language.PureScript.CST.InstanceHead instance'' name' colons constraints' class' types' -> do
+    let span = Span.instanceHead instanceHead'
+    debug log "InstanceHead" instanceHead' span
+    constraints <-
+      (traverse . ltraverse . traverse) (constraint log) constraints'
+    types <- traverse (type' log) types'
+    pure
+      ( Language.PureScript.CST.InstanceHead
+        instance''
+        name'
+        colons
+        constraints
+        class'
+        types
+      )
 
 kind ::
   (Show a) =>
@@ -628,19 +784,6 @@ module' log module''' = case module''' of
         declarations
         trailing
       )
-
-notImplemented :: (Show a) => Log.Handle -> Utf8Builder -> a -> Span.Span -> IO ()
-notImplemented log x y z =
-  Log.info
-    log
-    ( "Annotating `"
-      <> x
-      <> "`: "
-      <> displayShow y
-      <> " not implemented. Defaulting to `"
-      <> displayShow z
-      <> "`"
-    )
 
 patternGuard ::
   (Show a) =>

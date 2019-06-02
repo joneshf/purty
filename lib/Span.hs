@@ -1,22 +1,29 @@
 module Span
   ( Span(..)
   , adoBlock
+  , betweenSourceRanges
   , betweenSourceTokens
   , binder
   , caseOf
   , comment
   , constraint
+  , dataCtor
   , dataMembers
+  , declaration
   , delimitedNonEmpty
   , doBlock
   , doStatement
   , export
   , expr
+  , foreign'
   , guarded
   , guardedExpr
   , ifThenElse
   , import'
   , importDecl
+  , instance'
+  , instanceBinding
+  , instanceHead
   , kind
   , label
   , labeled
@@ -67,13 +74,19 @@ instance Monoid Span where
 adoBlock :: Language.PureScript.CST.AdoBlock a -> Span
 adoBlock = sourceRange . SourceRange.adoBlock
 
+betweenSourceRanges ::
+  Language.PureScript.CST.SourceRange ->
+  Language.PureScript.CST.SourceRange ->
+  Span
+betweenSourceRanges start end =
+  sourceRange (Language.PureScript.CST.Positions.widen start end)
+
 betweenSourceTokens ::
   Language.PureScript.CST.SourceToken ->
   Language.PureScript.CST.SourceToken ->
   Span
 betweenSourceTokens start end =
-  sourceRange
-    (Language.PureScript.CST.Positions.toSourceRange (start, end))
+  sourceRange (Language.PureScript.CST.Positions.toSourceRange (start, end))
 
 binder :: Language.PureScript.CST.Binder a -> Span
 binder =
@@ -99,11 +112,23 @@ constraint =
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.constraintRange
 
+dataCtor :: Language.PureScript.CST.DataCtor a -> Span
+dataCtor =
+  sourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.dataCtorRange
+
 dataMembers :: Language.PureScript.CST.DataMembers a -> Span
 dataMembers =
   sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.dataMembersRange
+
+declaration :: Language.PureScript.CST.Declaration a -> Span
+declaration =
+  sourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.declRange
 
 delimitedNonEmpty :: Language.PureScript.CST.DelimitedNonEmpty a -> Span
 delimitedNonEmpty = sourceRange . SourceRange.wrapped
@@ -128,6 +153,12 @@ expr =
   sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.exprRange
+
+foreign' :: Language.PureScript.CST.Foreign a -> Span
+foreign' =
+  sourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.foreignRange
 
 guarded :: Language.PureScript.CST.Guarded a -> Span
 guarded =
@@ -155,6 +186,24 @@ importDecl =
   sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.importDeclRange
+
+instance' :: Language.PureScript.CST.Instance a -> Span
+instance' =
+  sourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.instanceRange
+
+instanceBinding :: Language.PureScript.CST.InstanceBinding a -> Span
+instanceBinding =
+  sourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.instanceBindingRange
+
+instanceHead :: Language.PureScript.CST.InstanceHead a -> Span
+instanceHead =
+  sourceRange
+    . Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.instanceHeadRange
 
 kind :: Language.PureScript.CST.Kind a -> Span
 kind =
