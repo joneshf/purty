@@ -11,10 +11,16 @@ import qualified "purty" Purty
 
 main :: IO ()
 main = do
-  args <- Options.Applicative.execParser Args.info
+  args' <- Options.Applicative.execParser Args.info
+  let config' =
+        Log.Config
+          { Log.name = "Log - config parser"
+          , Log.verbose = Args.debug args'
+          }
+  args <- run args' (Log.handle config') $ \log -> Args.withConfig log args'
   let config =
         Log.Config
-          { Log.name = "Log"
+          { Log.name = "Log - main program"
           , Log.verbose = Args.debug args
           }
   code <- run args (Log.handle config) $ \log -> do
@@ -30,8 +36,8 @@ main = do
 run ::
   Args.Args ->
   Control.Monad.Component.ComponentM a ->
-  (a -> IO ExitCode) ->
-  IO ExitCode
+  (a -> IO b) ->
+  IO b
 run args component f
   | Args.debug args =
     Control.Monad.Component.runComponentM1
