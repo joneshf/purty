@@ -9,12 +9,11 @@
 allow-newer: true
 extra-deps:
   - componentm-0.0.0.2@sha256:d15df070056810a512183021d95af6fc99a4ff96a26352de4fe46b92ebc84728
-  - dhall-1.23.0
-  - dhall-json-1.2.8
-  - git: https://github.com/purescript/purescript.git
-    commit: b7b47b236e9892675c2e7854630f1ae5e219479c
+  - dhall-1.23.0@sha256:12a699b7ed30ee40b1a3e05dfd3eef1b053914a5aebeb2f76cc568306570e51b
+  - dhall-json-1.2.8@sha256:e098f4f7891ea9ab2ac38c126614e07c821166dea47f10d876eaeda0ad5ceb11
+  - purescript-0.13.0@sha256:891a4e9bb49e32491f17086068162b3aa91fe726a9e23b1259551c871ef6d594
   - repline-0.2.1.0@sha256:0f8e92d78e771afb9d41243c2b6ab9609fe02f94e676fae3caed66fa4ce09b18
-  - rio-0.1.9.2
+  - rio-0.1.9.2@sha256:d46a202ae0930b496fd17fd9041d051d45645ab28a2f8d30cf483f50ccb21eb3
   - teardown-0.5.0.1@sha256:b7a6812637f79d81632bb7adebc5ad9a96fffacf3e5f655d5bf21728bd3786f9
 packages:
   - .
