@@ -18,6 +18,7 @@ module Span
   , kind
   , label
   , labeled
+  , lambda
   , lineFeed
   , letBinding
   , name
@@ -156,6 +157,9 @@ labeled ::
 labeled f g labeled' = case labeled' of
   Language.PureScript.CST.Labeled a _ b ->
     sourceRange (Language.PureScript.CST.Positions.widen (f a) (g b))
+
+lambda :: Language.PureScript.CST.Lambda a -> Span
+lambda = sourceRange . SourceRange.lambda
 
 linesBetween ::
   Language.PureScript.CST.SourcePos ->

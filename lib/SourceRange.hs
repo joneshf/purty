@@ -12,6 +12,7 @@ module SourceRange
   , kind
   , label
   , labeled
+  , lambda
   , name
   , oneOrDelimited
   , patternGuard
@@ -137,6 +138,15 @@ labeled ::
 labeled f g labeled' = case labeled' of
   Language.PureScript.CST.Labeled label' _ value ->
     Language.PureScript.CST.Positions.widen (f label') (g value)
+
+lambda ::
+  Language.PureScript.CST.Lambda a ->
+  Language.PureScript.CST.SourceRange
+lambda lambda' = case lambda' of
+  Language.PureScript.CST.Lambda reverseSolidus _ _ expr' ->
+    Language.PureScript.CST.Positions.widen
+      (Language.PureScript.CST.Positions.srcRange reverseSolidus)
+      (expr expr')
 
 name ::
   Language.PureScript.CST.Name a ->

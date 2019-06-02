@@ -267,6 +267,11 @@ expr log expr''' = case expr''' of
     let span = Span.expr expr'''
     debug log "ExprIdent" expr''' span
     pure (Language.PureScript.CST.ExprIdent span name')
+  Language.PureScript.CST.ExprLambda _ lambda'' -> do
+    let span = Span.expr expr'''
+    debug log "ExprLambda" expr''' span
+    lambda' <- lambda log lambda''
+    pure (Language.PureScript.CST.ExprLambda span lambda')
   Language.PureScript.CST.ExprNumber _ number x -> do
     let span = Span.expr expr'''
     debug log "ExprNumber" expr''' span
@@ -449,6 +454,19 @@ labeledNameType ::
       (Language.PureScript.CST.Type Span.Span)
     )
 labeledNameType log = labeled log SourceRange.name SourceRange.type' (type' log)
+
+lambda ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.Lambda a ->
+  IO (Language.PureScript.CST.Lambda Span.Span)
+lambda log lambda' = case lambda' of
+  Language.PureScript.CST.Lambda reverseSolidus binders' arrow expr'' -> do
+    let span = Span.lambda lambda'
+    debug log "Lambda" lambda' span
+    binders <- traverse (binder log) binders'
+    expr' <- expr log expr''
+    pure (Language.PureScript.CST.Lambda reverseSolidus binders arrow expr')
 
 letBinding ::
   (Show a) =>
