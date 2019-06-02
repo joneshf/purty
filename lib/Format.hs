@@ -920,7 +920,7 @@ exprPrefix log indentation indent' expr' =
     Language.PureScript.CST.ExprTyped{}          -> newline <> indent
 
   prefix :: Utf8Builder
-  prefix = case Span.expr expr' of
+  prefix = case fold expr' of
     Span.MultipleLines ->
       multiLine
     Span.SingleLine ->
@@ -1038,21 +1038,21 @@ ifThenElse ::
 ifThenElse log span indentation indent' ifThenElse' = case ifThenElse' of
   Language.PureScript.CST.IfThenElse if' cond then' true else' false -> do
     let
-      (expr', indent, prefix) = case span of
+      (indent, prefix) = case span of
         Span.MultipleLines ->
-          (exprPrefix, indent' <> indentation, newline <> indent)
+          (indent' <> indentation, newline <> indent)
         Span.SingleLine ->
-          (expr, indent', space)
+          (indent', space)
     debug log "IfThenElse" ifThenElse' span
     sourceToken log indent' blank if'
       <> pure space
       <> expr log indentation indent cond
       <> pure prefix
       <> sourceToken log indent' blank then'
-      <> expr' log indentation indent true
+      <> exprPrefix log indentation indent true
       <> pure prefix
       <> sourceToken log indent' blank else'
-      <> expr' log indentation indent false
+      <> exprPrefix log indentation indent false
 
 import' ::
   Log.Handle ->
@@ -1439,22 +1439,23 @@ letIn ::
 letIn log span indentation indent' letIn' = case letIn' of
   Language.PureScript.CST.LetIn let' letBindings in' expr'' -> do
     let
-      (expr', inPrefix, indent, letBindingPrefix) = case span of
+      (inPrefix, indent, prefix) = case span of
         Span.MultipleLines ->
-          (exprPrefix, indent', indent' <> indentation, newline <> indent)
+          (indent', indent' <> indentation, newline <> indent)
         Span.SingleLine ->
-          (expr, space, indent', space)
+          (space, indent', space)
     debug log "LetIn" letIn' span
     sourceToken log indent' blank let'
       <> foldMap
         (\letBinding' ->
-          pure letBindingPrefix
+          pure prefix
             <> letBinding log indentation indent' letBinding'
         )
         letBindings
       <> pure inPrefix
       <> sourceToken log indent' blank in'
-      <> expr' log indentation indent expr''
+      <> pure prefix
+      <> expr log indentation indent expr''
 
 module' ::
   Log.Handle ->

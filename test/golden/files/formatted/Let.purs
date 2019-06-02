@@ -8,7 +8,8 @@ foo =
     x = 1
 
     y = 3
-  in x
+  in
+    x
 
 bar = do
   x <- pure 1
@@ -18,3 +19,9 @@ bar = do
     z :: Int
     z = 4
   pure (x + y + z)
+
+baz =
+  let
+    x = 1
+  in
+    x

@@ -14,6 +14,7 @@ module Span
   , expr
   , guarded
   , guardedExpr
+  , ifThenElse
   , import'
   , importDecl
   , kind
@@ -22,6 +23,7 @@ module Span
   , lambda
   , lineFeed
   , letBinding
+  , letIn
   , name
   , oneOrDelimited
   , patternGuard
@@ -51,6 +53,16 @@ data Span
   = MultipleLines
   | SingleLine
   deriving (Show)
+
+instance Semigroup Span where
+  span1 <> span2 = case (span1, span2) of
+    (MultipleLines, MultipleLines) -> MultipleLines
+    (MultipleLines, SingleLine) -> MultipleLines
+    (SingleLine, MultipleLines) -> MultipleLines
+    (SingleLine, SingleLine) -> SingleLine
+
+instance Monoid Span where
+  mempty = SingleLine
 
 adoBlock :: Language.PureScript.CST.AdoBlock a -> Span
 adoBlock = sourceRange . SourceRange.adoBlock
@@ -129,6 +141,9 @@ guardedExpr =
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.guardedExprRange
 
+ifThenElse :: Language.PureScript.CST.IfThenElse a -> Span
+ifThenElse = sourceRange . SourceRange.ifThenElse
+
 import' :: Language.PureScript.CST.Import a -> Span
 import' =
   sourceRange
@@ -183,6 +198,9 @@ letBinding =
   sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.letBindingRange
+
+letIn :: Language.PureScript.CST.LetIn a -> Span
+letIn = sourceRange . SourceRange.letIn
 
 name :: Language.PureScript.CST.Name a -> Span
 name =

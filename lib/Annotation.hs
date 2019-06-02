@@ -258,6 +258,11 @@ expr log expr''' = case expr''' of
     expr1 <- expr log expr1'
     expr2 <- expr log expr2'
     pure (Language.PureScript.CST.ExprApp span expr1 expr2)
+  Language.PureScript.CST.ExprArray _ delimited'' -> do
+    let span = Span.expr expr'''
+    debug log "ExprArray" expr''' span
+    delimited' <- delimited log (expr log) delimited''
+    pure (Language.PureScript.CST.ExprArray span delimited')
   Language.PureScript.CST.ExprBoolean _ boolean x -> do
     let span = Span.expr expr'''
     debug log "ExprBoolean" expr''' span
@@ -288,29 +293,52 @@ expr log expr''' = case expr''' of
     let span = Span.expr expr'''
     debug log "ExprIdent" expr''' span
     pure (Language.PureScript.CST.ExprIdent span name')
+  Language.PureScript.CST.ExprIf _ ifThenElse'' -> do
+    let span = Span.expr expr'''
+    debug log "ExprIf" expr''' span
+    ifThenElse' <- ifThenElse log ifThenElse''
+    pure (Language.PureScript.CST.ExprIf span ifThenElse')
+  Language.PureScript.CST.ExprInfix _ expr1' wrapped'' expr2' -> do
+    let span = Span.expr expr'''
+    debug log "ExprInfix" expr''' span
+    expr1 <- expr log expr1'
+    wrapped' <- wrapped log (expr log) wrapped''
+    expr2 <- expr log expr2'
+    pure (Language.PureScript.CST.ExprInfix span expr1 wrapped' expr2)
   Language.PureScript.CST.ExprLambda _ lambda'' -> do
     let span = Span.expr expr'''
     debug log "ExprLambda" expr''' span
     lambda' <- lambda log lambda''
     pure (Language.PureScript.CST.ExprLambda span lambda')
+  Language.PureScript.CST.ExprLet _ letIn'' -> do
+    let span = Span.MultipleLines
+    debug log "ExprLet" expr''' span
+    letIn' <- letIn log letIn''
+    pure (Language.PureScript.CST.ExprLet span letIn')
+  Language.PureScript.CST.ExprNegate _ negative expr'' -> do
+    let span = Span.expr expr'''
+    debug log "ExprNegate" expr''' span
+    expr' <- expr log expr''
+    pure (Language.PureScript.CST.ExprNegate span negative expr')
   Language.PureScript.CST.ExprNumber _ number x -> do
     let span = Span.expr expr'''
     debug log "ExprNumber" expr''' span
     pure (Language.PureScript.CST.ExprNumber span number x)
-  Language.PureScript.CST.ExprString _ string x -> do
-    let span = Span.expr expr'''
-    debug log "ExprString" expr''' span
-    pure (Language.PureScript.CST.ExprString span string x)
-  Language.PureScript.CST.ExprOpName _ name' -> do
-    let span = Span.expr expr'''
-    debug log "ExprOpName" expr''' span
-    pure (Language.PureScript.CST.ExprOpName span name')
   Language.PureScript.CST.ExprOp _ expr1' op expr2' -> do
     let span = Span.expr expr'''
     debug log "ExprOp" expr''' span
     expr1 <- expr log expr1'
     expr2 <- expr log expr2'
     pure (Language.PureScript.CST.ExprOp span expr1 op expr2)
+  Language.PureScript.CST.ExprOpName _ name' -> do
+    let span = Span.expr expr'''
+    debug log "ExprOpName" expr''' span
+    pure (Language.PureScript.CST.ExprOpName span name')
+  Language.PureScript.CST.ExprParens _ wrapped'' -> do
+    let span = Span.expr expr'''
+    debug log "ExprParens" expr''' span
+    wrapped' <- wrapped log (expr log) wrapped''
+    pure (Language.PureScript.CST.ExprParens span wrapped')
   Language.PureScript.CST.ExprRecord _ delimited'' -> do
     let span = Span.expr expr'''
     debug log "ExprRecord" expr''' span
@@ -332,10 +360,20 @@ expr log expr''' = case expr''' of
     delimitedNonEmpty' <-
       delimitedNonEmpty log (recordUpdate log) delimitedNonEmpty''
     pure (Language.PureScript.CST.ExprRecordUpdate span expr' delimitedNonEmpty')
-  _ -> do
-    let span = Span.MultipleLines
-    notImplemented log "Expr" expr''' span
-    pure (span <$ expr''')
+  Language.PureScript.CST.ExprSection _ section -> do
+    let span = Span.expr expr'''
+    debug log "ExprSection" expr''' span
+    pure (Language.PureScript.CST.ExprSection span section)
+  Language.PureScript.CST.ExprString _ string x -> do
+    let span = Span.expr expr'''
+    debug log "ExprString" expr''' span
+    pure (Language.PureScript.CST.ExprString span string x)
+  Language.PureScript.CST.ExprTyped _ expr'' op type''' -> do
+    let span = Span.expr expr'''
+    debug log "ExprTyped" expr''' span
+    expr' <- expr log expr''
+    type'' <- type' log type'''
+    pure (Language.PureScript.CST.ExprTyped span expr' op type'')
 
 guarded ::
   (Show a) =>
@@ -366,6 +404,20 @@ guardedExpr log guardedExpr' = case guardedExpr' of
     patternGuards <- traverse (patternGuard log) patternGuards'
     where'' <- where' log where'''
     pure (Language.PureScript.CST.GuardedExpr bar patternGuards comma where'')
+
+ifThenElse ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.IfThenElse a ->
+  IO (Language.PureScript.CST.IfThenElse Span.Span)
+ifThenElse log ifThenElse' = case ifThenElse' of
+  Language.PureScript.CST.IfThenElse if' cond' then' true' else' false' -> do
+    let span = Span.ifThenElse ifThenElse'
+    debug log "IfThenElse" ifThenElse' span
+    cond <- expr log cond'
+    true <- expr log true'
+    false <- expr log false'
+    pure (Language.PureScript.CST.IfThenElse if' cond then' true else' false)
 
 import' ::
   (Show a) =>
@@ -511,6 +563,19 @@ letBinding log letBinding' = case letBinding' of
     debug log "LetBindingSignature" letBinding' span
     labeled' <- labeledNameType log labeled''
     pure (Language.PureScript.CST.LetBindingSignature span labeled')
+
+letIn ::
+  (Show a) =>
+  Log.Handle ->
+  Language.PureScript.CST.LetIn a ->
+  IO (Language.PureScript.CST.LetIn Span.Span)
+letIn log letIn' = case letIn' of
+  Language.PureScript.CST.LetIn let' bindings' in' expr'' -> do
+    let span = Span.letIn letIn'
+    debug log "LetIn" letIn' span
+    expr' <- expr log expr''
+    bindings <- traverse (letBinding log) bindings'
+    pure (Language.PureScript.CST.LetIn let' bindings in' expr')
 
 ltraverse ::
   (Data.Bitraversable.Bitraversable t, Applicative f) =>

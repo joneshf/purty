@@ -15,4 +15,5 @@ bar = do
       z = 4
   pure (x + y + z)
 
-baz = let x = 1 in x
+baz = let x = 1 in
+  x

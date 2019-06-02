@@ -8,12 +8,14 @@ module SourceRange
   , doBlock
   , export
   , expr
+  , ifThenElse
   , import'
   , instance'
   , kind
   , label
   , labeled
   , lambda
+  , letIn
   , name
   , oneOrDelimited
   , patternGuard
@@ -119,6 +121,15 @@ guarded =
   Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.guardedRange
 
+ifThenElse ::
+  Language.PureScript.CST.IfThenElse a ->
+  Language.PureScript.CST.SourceRange
+ifThenElse ifThenElse' = case ifThenElse' of
+  Language.PureScript.CST.IfThenElse if' _ _ _ _ expr' ->
+    Language.PureScript.CST.Positions.widen
+      (Language.PureScript.CST.Positions.srcRange if')
+      (expr expr')
+
 import' ::
   Language.PureScript.CST.Import a ->
   Language.PureScript.CST.SourceRange
@@ -163,6 +174,15 @@ lambda lambda' = case lambda' of
   Language.PureScript.CST.Lambda reverseSolidus _ _ expr' ->
     Language.PureScript.CST.Positions.widen
       (Language.PureScript.CST.Positions.srcRange reverseSolidus)
+      (expr expr')
+
+letIn ::
+  Language.PureScript.CST.LetIn a ->
+  Language.PureScript.CST.SourceRange
+letIn letIn' = case letIn' of
+  Language.PureScript.CST.LetIn let' _ _ expr' ->
+    Language.PureScript.CST.Positions.widen
+      (Language.PureScript.CST.Positions.srcRange let')
       (expr expr')
 
 name ::
