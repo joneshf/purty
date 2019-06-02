@@ -29,6 +29,11 @@ binder ::
   Language.PureScript.CST.Binder a ->
   IO (Language.PureScript.CST.Binder Span.Span)
 binder log binder''' = case binder''' of
+  Language.PureScript.CST.BinderArray _ delimited'' -> do
+    let span = Span.binder binder'''
+    debug log "BinderArray" binder''' span
+    delimited' <- delimited log (binder log) delimited''
+    pure (Language.PureScript.CST.BinderArray span delimited')
   Language.PureScript.CST.BinderBoolean _ boolean x -> do
     let span = Span.binder binder'''
     debug log "BinderBoolean" binder''' span
@@ -57,10 +62,30 @@ binder log binder''' = case binder''' of
     binder1 <- binder log binder1'
     binder2 <- binder log binder2'
     pure (Language.PureScript.CST.BinderOp span binder1 op binder2)
+  Language.PureScript.CST.BinderParens _ wrapped'' -> do
+    let span = Span.binder binder'''
+    debug log "BinderParens" binder''' span
+    wrapped' <- wrapped log (binder log) wrapped''
+    pure (Language.PureScript.CST.BinderParens span wrapped')
+  Language.PureScript.CST.BinderRecord _ delimited'' -> do
+    let span = Span.binder binder'''
+    debug log "BinderRecord" binder''' span
+    delimited' <-
+      delimited
+        log
+        (recordLabeled log SourceRange.binder $ binder log)
+        delimited''
+    pure (Language.PureScript.CST.BinderRecord span delimited')
   Language.PureScript.CST.BinderString _ string x -> do
     let span = Span.binder binder'''
     debug log "BinderString" binder''' span
     pure (Language.PureScript.CST.BinderString span string x)
+  Language.PureScript.CST.BinderTyped _ binder'' typed type''' -> do
+    let span = Span.binder binder'''
+    debug log "BinderTyped" binder''' span
+    binder' <- binder log binder''
+    type'' <- type' log type'''
+    pure (Language.PureScript.CST.BinderTyped span binder' typed type'')
   Language.PureScript.CST.BinderVar _ var -> do
     let span = Span.binder binder'''
     debug log "BinderVar" binder''' span
@@ -69,10 +94,6 @@ binder log binder''' = case binder''' of
     let span = Span.binder binder'''
     debug log "BinderWildcard" binder''' span
     pure (Language.PureScript.CST.BinderWildcard span wildcard)
-  _ -> do
-    let span = Span.MultipleLines
-    notImplemented log "Binder" binder''' span
-    pure (span <$ binder''')
 
 caseOf ::
   (Show a) =>
@@ -713,6 +734,10 @@ type' log type'''' = case type'''' of
     type1 <- type' log type1'
     type2 <- type' log type2'
     pure (Language.PureScript.CST.TypeArr span type1 arrow type2)
+  Language.PureScript.CST.TypeArrName _ arrow -> do
+    let span = Span.type' type''''
+    debug log "TypeArrName" type'''' span
+    pure (Language.PureScript.CST.TypeArrName span arrow)
   Language.PureScript.CST.TypeConstrained _ constraint'' arrow type''' -> do
     let span = Span.type' type''''
     debug log "TypeConstrained" type'''' span
@@ -764,6 +789,10 @@ type' log type'''' = case type'''' of
     debug log "TypeRow" type'''' span
     wrapped' <- wrapped log (row log) wrapped''
     pure (Language.PureScript.CST.TypeRow span wrapped')
+  Language.PureScript.CST.TypeString _ sourceToken' string -> do
+    let span = Span.type' type''''
+    debug log "TypeString" type'''' span
+    pure (Language.PureScript.CST.TypeString span sourceToken' string)
   Language.PureScript.CST.TypeVar _ var -> do
     let span = Span.type' type''''
     debug log "TypeVar" type'''' span
@@ -772,10 +801,6 @@ type' log type'''' = case type'''' of
     let span = Span.type' type''''
     debug log "TypeWildcard" type'''' span
     pure (Language.PureScript.CST.TypeWildcard span wildcard)
-  _ -> do
-    let span = Span.MultipleLines
-    notImplemented log "Type" type'''' span
-    pure (span <$ type'''')
 
 typeVarBinding ::
   (Show a) =>
