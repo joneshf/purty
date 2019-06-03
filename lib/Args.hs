@@ -18,6 +18,7 @@ import qualified "dhall" Dhall.Parser
 import qualified "dhall" Dhall.TypeCheck
 import qualified "this" Log
 import qualified "optparse-applicative" Options.Applicative
+import qualified "rio" RIO.Directory
 import qualified "rio" RIO.File
 
 data Args
@@ -337,8 +338,10 @@ write log format' formatted = case format' of
     Log.debug log "Writing formatted file to STDOUT"
     hPutBuilder stdout (getUtf8Builder formatted)
     Log.debug log "Wrote formatted file to STDOUT"
-  Format' (InputFile file) Write _ -> do
-    Log.debug log "Writing formatted file in-place"
+  Format' (InputFile file') Write _ -> do
+    Log.debug log ("Converting file " <> displayShow file' <> " to absolute.")
+    file <- RIO.Directory.makeAbsolute file'
+    Log.debug log ("Writing formatted file " <> displayShow file <> " in-place.")
     RIO.File.writeBinaryFileDurableAtomic
       file
       ( toStrictBytes
