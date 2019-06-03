@@ -1,48 +1,48 @@
 module Main where
 
-import "rio" RIO
+import "rio" RIO hiding (log)
 
-import "freer-simple" Control.Monad.Freer         (interpretM, runM)
-import "freer-simple" Control.Monad.Freer.Error   (handleError)
-import "freer-simple" Control.Monad.Freer.Reader  (runReader)
-import "optparse-applicative" Options.Applicative (execParser)
-
-import "purty" Args (argsInfo, parseConfig)
-import "purty" Env
-    ( Config(Config, formatting, output, verbosity)
-    , Verbosity(Verbose)
-    , defaultLayoutOptions
-    )
-
+import qualified "purty" Args
+import qualified "componentm" Control.Monad.Component
 import qualified "purty" Error
-import qualified "purty" Exit
-import qualified "purty" File
 import qualified "purty" Log
-import qualified "purty" Output
+import qualified "optparse-applicative" Options.Applicative
 import qualified "purty" Purty
 
 main :: IO ()
 main = do
-  cliArgs <- execParser argsInfo
-  Config{ formatting, output, verbosity } <- parseConfig cliArgs
-  logOptions <- logOptionsHandle stderr (verbosity == Verbose)
-  withLogFunc logOptions $ \logFunc ->
-    runM
-      $ runReader output
-      $ runReader defaultLayoutOptions
-      $ runReader formatting
-      $ interpretM Output.io
-      $ interpretM (Log.io logFunc)
-      $ interpretM File.io
-      $ interpretM Exit.io
-      $ flip handleError Error.parseError
-      $ Error.type'
-      $ Error.name
-      $ Error.kind
-      $ Error.export
-      $ Error.declarationValue
-      $ Error.declarationInstance
-      $ Error.declarationFixity
-      $ Error.declarationDataType
-      $ Error.declarationClass
-      $ Purty.program cliArgs
+  args' <- Options.Applicative.execParser Args.info
+  let config' =
+        Log.Config
+          { Log.name = "Log - config parser"
+          , Log.verbose = Args.debug args'
+          }
+  args <- run args' (Log.handle config') $ \log -> Args.withConfig log args'
+  let config =
+        Log.Config
+          { Log.name = "Log - main program"
+          , Log.verbose = Args.debug args
+          }
+  code <- run args (Log.handle config) $ \log -> do
+    result <- Purty.run log args
+    case result of
+      Just err -> do
+        Log.debug log (Error.format err)
+        Log.info log (Error.message err)
+        pure (ExitFailure 1)
+      Nothing -> pure ExitSuccess
+  exitWith code
+
+run ::
+  Args.Args ->
+  Control.Monad.Component.ComponentM a ->
+  (a -> IO b) ->
+  IO b
+run args component f
+  | Args.debug args =
+    Control.Monad.Component.runComponentM1
+      (runSimpleApp . logInfo . display)
+      "purty"
+      component
+      f
+  | otherwise = Control.Monad.Component.runComponentM "purty" component f

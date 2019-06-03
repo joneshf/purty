@@ -1,163 +1,67 @@
-module Purty where
+module Purty
+  ( format
+  , run
+  ) where
 
-import "rio" RIO hiding (ask)
-
-import "freer-simple" Control.Monad.Freer
-    ( Eff
-    , Member
-    , Members
-    )
-import "freer-simple" Control.Monad.Freer.Error              (Error)
-import "freer-simple" Control.Monad.Freer.Reader             (Reader, ask)
-import "freer-simple" Data.OpenUnion                         ((:++:))
-import "prettyprinter" Data.Text.Prettyprint.Doc
-    ( LayoutOptions
-    , SimpleDocStream
-    , layoutSmart
-    )
-import "prettyprinter" Data.Text.Prettyprint.Doc.Render.Text (putDoc)
-import "dhall" Dhall                                         (embed, inject)
-import "dhall" Dhall.Pretty                                  (prettyExpr)
-import "path" Path                                           (Abs, File, Path)
-import "parsec" Text.Parsec                                  (ParseError)
-
-import "this" Args (Args(Args, Defaults, filePath))
-import "this" Env
-    ( Formatting(Dynamic, Static)
-    , Output(InPlace, StdOut)
-    , PurtyFilePath
-    , defaultConfig
-    )
+import "rio" RIO hiding (log)
 
 import qualified "this" Annotation
-import qualified "this" Declaration.Class
-import qualified "this" Declaration.DataType
-import qualified "this" Declaration.Fixity
-import qualified "this" Declaration.Instance
-import qualified "this" Declaration.Value
-import qualified "this" Exit
-import qualified "this" Export
-import qualified "this" File
-import qualified "this" Kind
+import qualified "this" Args
+import qualified "this" Error
+import qualified "this" Format
+import qualified "purescript" Language.PureScript.CST
 import qualified "this" Log
-import qualified "this" Module
-import qualified "this" Name
-import qualified "this" Output
-import qualified "this" Type
 
-fromAbsFile ::
-  ( Members Declaration.Class.Errors e
-  , Members Declaration.DataType.Errors e
-  , Members Declaration.Fixity.Errors e
-  , Members Declaration.Instance.Errors e
-  , Members Declaration.Value.Errors e
-  , Members Export.Errors e
-  , Members Kind.Errors e
-  , Members Name.Errors e
-  , Members Type.Errors e
-  , Member (Error ParseError) e
-  , Member File.File e
-  , Member Log.Log e
-  , Member (Reader Formatting) e
-  , Member (Reader LayoutOptions) e
-  ) =>
-  Path Abs File ->
-  Eff e (SimpleDocStream Annotation.Sorted)
-fromAbsFile filePath = do
-  formatting <- ask
-  Log.debug "Formatting:"
-  Log.inspect formatting
-  layoutOptions <- ask
-  Log.debug "LayoutOptions:"
-  Log.inspect layoutOptions
-  m <- Module.parse filePath
-  Log.debug "Parsed module:"
-  Log.inspect m
-  ast <- Module.fromPureScript m
-  let doc = format normalized
-      format = case formatting of
-        Dynamic -> Module.dynamic
-        Static  -> Module.static
-      normalized = Module.normalize sorted
-      sorted = Module.sortImports (Module.sortExports ast)
-      stream = layoutSmart layoutOptions doc
-  Log.debug "Converted AST:"
-  Log.inspect ast
-  Log.debug "Sorted AST:"
-  Log.inspect sorted
-  Log.debug "Normalized AST:"
-  Log.inspect normalized
-  Log.debug "Doc:"
-  Log.inspect doc
-  Log.debug "Stream:"
-  Log.inspect stream
-  pure stream
+format :: Log.Handle -> LByteString -> IO (Either Error.Error Utf8Builder)
+format log contents' = do
+  Log.debug log "Decoding to file contents to `Text`."
+  case decodeUtf8' (toStrictBytes contents') of
+    Left err ->
+      pure (Left $ Error.new $ "Error decoding file contents" <> displayShow err)
+    Right decoded -> do
+      Log.debug log ("Parsing file. Contents: " <> display decoded)
+      case Language.PureScript.CST.parse decoded of
+        Left err' ->
+          pure
+            ( Left
+              $ Error.new
+              $ "Error parsing file:"
+              <> foldMap
+                (\err ->
+                  newline
+                    <> indentation
+                    <> fromString (Language.PureScript.CST.prettyPrintError err)
+                )
+                err'
+            )
+        Right parsed -> do
+          Log.debug log ("Parsed file: " <> displayShow parsed)
+          Log.debug log "Annotating module"
+          annotated <- Annotation.module' log parsed
+          Log.debug log ("Annotated module" <> displayShow annotated)
+          Log.debug log "Formatting module"
+          formatted <- Format.module' log indentation annotated
+          Log.debug log ("Formatted module" <> display formatted)
+          pure (Right formatted)
 
-fromPurtyFilePath ::
-  ( Members Declaration.Class.Errors e
-  , Members Declaration.DataType.Errors e
-  , Members Declaration.Fixity.Errors e
-  , Members Declaration.Instance.Errors e
-  , Members Declaration.Value.Errors e
-  , Members Export.Errors e
-  , Members Kind.Errors e
-  , Members Name.Errors e
-  , Members Type.Errors e
-  , Member (Error ParseError) e
-  , Member File.File e
-  , Member Log.Log e
-  , Member Output.Output e
-  , Member (Reader Formatting) e
-  , Member (Reader LayoutOptions) e
-  , Member (Reader Output) e
-  ) =>
-  PurtyFilePath ->
-  Eff e ()
-fromPurtyFilePath filePath = do
-  output <- ask
-  Log.debug "Output:"
-  Log.inspect output
-  Log.debug "Converting the following file path to an absolute path:"
-  Log.inspect filePath
-  absPath <- File.absolute filePath
-  Log.debug "Converted file to absolute:"
-  Log.inspect absPath
-  Log.debug "Running main `purty` program"
-  stream <- Purty.fromAbsFile absPath
-  Log.debug "Successfully created stream for rendering"
-  Log.inspect (void stream)
-  case output of
-    InPlace -> do
-      Log.debug "Replacing file"
-      Output.inPlace absPath stream
-    StdOut -> do
-      Log.debug "Printing to stdout"
-      Output.stdOut stream
+indentation :: Utf8Builder
+indentation = "  "
 
-program ::
-  Args ->
-  Eff
-    ( Declaration.Class.Errors
-    :++: Declaration.DataType.Errors
-    :++: Declaration.Fixity.Errors
-    :++: Declaration.Instance.Errors
-    :++: Declaration.Value.Errors
-    :++: Export.Errors
-    :++: Kind.Errors
-    :++: Name.Errors
-    :++: Type.Errors
-    :++: '[ Error ParseError
-          , Exit.Exit
-          , File.File
-          , Log.Log
-          , Output.Output
-          , Reader Formatting
-          , Reader LayoutOptions
-          , Reader Output
-          , IO
-          ]
-    )
-    ()
-program = \case
-  Args { filePath } -> Purty.fromPurtyFilePath filePath
-  Defaults -> liftIO (putDoc $ prettyExpr $ embed inject defaultConfig)
+newline :: Utf8Builder
+newline = "\n"
+
+run :: Log.Handle -> Args.Args -> IO (Maybe Error.Error)
+run log args = case args of
+  Args.Defaults defaults -> do
+    Log.debug log "Outputting defaults"
+    Args.writeDefaults log defaults
+    pure Nothing
+  Args.Format format' -> do
+    Log.debug log "Formatting file"
+    results <- Args.withInput log format' (format log)
+    case results of
+      Left err -> pure (Just $ Error.wrap "Error formatting file" err)
+      Right formatted -> do
+        Log.debug log "Writing formatted file."
+        Args.write log format' formatted
+        pure Nothing
