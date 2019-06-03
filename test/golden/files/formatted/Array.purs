@@ -50,11 +50,19 @@ j =
     ]
   ]
 
-k :: Array (Identity Int)
+k :: Array (Array Int)
 k =
   [ identity
       [ 1
       , 2
       , 3
       ]
+  , [ 4
+    , 5
+    , 6
+    ]
+      `const`
+        [ 7
+        , 8
+        ]
   ]

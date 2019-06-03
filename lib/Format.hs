@@ -169,9 +169,9 @@ caseOf log span indentation indent' caseOf' = case caseOf' of
       <> pure space
       <> separated
         log
+        (Span.separated SourceRange.expr head)
         indent
         space
-        SourceRange.expr
         (expr log indentation indent)
         head
       <> pure space
@@ -181,9 +181,9 @@ caseOf log span indentation indent' caseOf' = case caseOf' of
           pure prefix
             <> separated
               log
+              (Span.separated SourceRange.binder binders)
               indent
               space
-              SourceRange.binder
               (binder log indentation indent)
               binders
             <> guarded log indentation indent guarded'
@@ -253,9 +253,9 @@ classHead log span indentation indent' classHead' = case classHead' of
             <> pure space
             <> separated
               log
+              (Span.separated SourceRange.classFundep classFundeps)
               indent
               space
-              SourceRange.classFundep
               (classFundep log indent)
               classFundeps
         )
@@ -288,7 +288,7 @@ commentTrailing ::
 commentTrailing log f prefix comment'' = case comment'' of
   Language.PureScript.CST.Comment comment' -> do
     debug log "Comment" comment'' (Span.comment f comment'')
-    pure (prefix <> display comment')
+    pure (prefix <> space <> display comment')
   Language.PureScript.CST.Line _ -> do
     Log.debug log "Not formatting `Line`"
     pure blank
@@ -366,7 +366,8 @@ dataCtor log indentation indent' dataCtor' = case dataCtor' of
         Span.SingleLine ->
           (indent', space)
     debug log "DataCtor" dataCtor' span
-    name log indent' space name'
+    pure space
+      <> name log indent' blank name'
       <> foldMap
         (\type'' ->
           pure prefix
@@ -466,9 +467,9 @@ declaration log indentation indent' declaration' = case declaration' of
             <> sourceToken log indent blank equals
             <> separated
               log
+              Span.MultipleLines
               indent
               blank
-              SourceRange.dataCtor
               (dataCtor log indentation indent)
               dataCtors
         )
@@ -501,9 +502,9 @@ declaration log indentation indent' declaration' = case declaration' of
     debug log "DeclInstanceChain" declaration' span
     separated
       log
+      (Span.separated SourceRange.instance' instances)
       indent'
       space
-      SourceRange.instance'
       (instance' log indentation indent')
       instances
       <> pure newline
@@ -578,7 +579,11 @@ delimited ::
   IO Utf8Builder
 delimited log indent f g delimited' = do
   debug log "Delimited" delimited' (Span.wrapped delimited')
-  wrapped log indent (foldMap $ separated log indent space f g) delimited'
+  wrapped
+    log
+    indent
+    (foldMap (\as -> separated log (Span.separated f as) indent space g as))
+    delimited'
 
 delimitedNonEmpty ::
   (Show a) =>
@@ -590,7 +595,11 @@ delimitedNonEmpty ::
   IO Utf8Builder
 delimitedNonEmpty log indent f g delimitedNonEmpty' = do
   debug log "DelimitedNonEmpty" delimitedNonEmpty' (Span.wrapped delimitedNonEmpty')
-  wrapped log indent (separated log indent space f g) delimitedNonEmpty'
+  wrapped
+    log
+    indent
+    (\as -> separated log (Span.separated f as) indent space g as)
+    delimitedNonEmpty'
 
 doBlock ::
   Log.Handle ->
@@ -781,16 +790,20 @@ expr log indentation indent'' expr'' = case expr'' of
     ifThenElse log span indentation indent'' ifThenElse'
   Language.PureScript.CST.ExprInfix span expr1 wrapped' expr2 -> do
     let
-      (indent, indent', prefix) = case span of
+      (indent, indent', prefix, prefix') = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, indent'' <> indentation, newline <> indent')
+          ( indent' <> indentation
+          , indent'' <> indentation
+          , newline <> indent
+          , newline <> indent'
+          )
         Span.SingleLine ->
-          (indent', indent'', space)
+          (indent', indent'', space, space)
     debug log "ExprInfix" expr'' span
     expr log indentation indent'' expr1
-      <> pure prefix
+      <> pure prefix'
       <> wrapped log indent (expr log indentation indent') wrapped'
-      <> pure space
+      <> pure prefix
       <> expr log indentation indent expr2
   Language.PureScript.CST.ExprLambda span lambda' -> do
     debug log "ExprLambda" expr'' span
@@ -1048,9 +1061,9 @@ guardedExpr log indentation indent' guardedExpr' = case guardedExpr' of
     sourceToken log indent' blank bar
       <> separated
         log
+        (Span.separated SourceRange.patternGuard patternGuards)
         indent'
         blank
-        SourceRange.patternGuard
         (patternGuard log indentation indent)
         patternGuards
       <> pure space
@@ -1594,9 +1607,9 @@ recordAccessor log span indentation indent' recordAccessor' = case recordAccesso
       <> sourceToken log indent blank dot
       <> separated
         log
+        (Span.separated SourceRange.label path)
         indent
         blank
-        SourceRange.label
         (label log indent' blank)
         path
 
@@ -1685,12 +1698,17 @@ row log span indentation indent' row' = case row' of
           (indent', space)
     debug log "Row" row' span
     foldMap
-      ( separated
+      (\labels ->
+        separated
           log
+          ( Span.separated
+            (SourceRange.labeled SourceRange.label SourceRange.type')
+            labels
+          )
           indent'
           space
-          (SourceRange.labeled SourceRange.label SourceRange.type')
           (labeledLabelType log indentation indent)
+          labels
       )
       labels'
       <> foldMap
@@ -1706,16 +1724,16 @@ separated ::
   forall a.
   (Show a) =>
   Log.Handle ->
+  Span.Span ->
   Indent ->
   Prefix ->
-  (a -> Language.PureScript.CST.SourceRange) ->
   (a -> IO Utf8Builder) ->
   Language.PureScript.CST.Separated a ->
   IO Utf8Builder
-separated log indent prefix' f g separated' = case separated' of
+separated log span indent prefix' f separated' = case separated' of
   Language.PureScript.CST.Separated head tail -> do
     debug log "Separated" separated' span
-    g head
+    f head
       <> foldMap go tail
   where
   go :: (Language.PureScript.CST.SourceToken, a) -> IO Utf8Builder
@@ -1730,9 +1748,7 @@ separated log indent prefix' f g separated' = case separated' of
       pure prefix
         <> sourceToken log indent blank separator
         <> pure prefix'
-        <> g value
-  span :: Span.Span
-  span = Span.separated f separated'
+        <> f value
 
 sourceToken ::
   Log.Handle ->
