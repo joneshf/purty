@@ -1053,11 +1053,12 @@ guardedExpr log indentation indent' guardedExpr' = case guardedExpr' of
       indent = indent' <> indentation
     debug log "GuardedExpr" guardedExpr' (Span.guardedExpr guardedExpr')
     sourceToken log indent' blank bar
+      <> pure space
       <> separated
         log
         (Span.separated SourceRange.patternGuard patternGuards)
         indent'
-        blank
+        space
         (patternGuard log indentation indent)
         patternGuards
       <> pure space
@@ -1554,13 +1555,13 @@ patternGuard ::
 patternGuard log indentation indent' patternGuard' = case patternGuard' of
   Language.PureScript.CST.PatternGuard binder'' expr' -> do
     debug log "PatternGuard" patternGuard' (Span.patternGuard patternGuard')
-    foldMap
-      (\(binder', arrow) ->
+    case binder'' of
+      Just (binder', arrow) ->
         binder log indentation indent' binder'
           <> sourceToken log indent' space arrow
-      )
-      binder''
-      <> exprPrefix log indentation indent' expr'
+          <> exprPrefix log indentation indent' expr'
+      Nothing ->
+        expr log indentation indent' expr'
 
 qualifiedName ::
   Log.Handle ->
