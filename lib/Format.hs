@@ -740,16 +740,9 @@ expr log indentation indent'' expr'' = case expr'' of
     debug log "ExprAdo" expr'' span
     adoBlock log span indentation indent'' adoBlock'
   Language.PureScript.CST.ExprApp span expr1 expr2 -> do
-    let
-      (indent', prefix) = case span of
-        Span.MultipleLines ->
-          (indent'' <> indentation, newline <> indent')
-        Span.SingleLine ->
-          (indent'', space)
     debug log "ExprApp" expr'' span
     expr log indentation indent'' expr1
-      <> pure prefix
-      <> expr log indentation indent' expr2
+      <> exprPrefix log indentation indent'' expr2
   Language.PureScript.CST.ExprArray span delimited' -> do
     let
       indent' = case span of
@@ -1435,12 +1428,6 @@ lambda ::
   IO Utf8Builder
 lambda log span indentation indent' lambda' = case lambda' of
   Language.PureScript.CST.Lambda reverseSolidus binders arrow expr' -> do
-    let
-      (indent, prefix) = case span of
-        Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent)
-        Span.SingleLine ->
-          (indent', space)
     debug log "Lambda" lambda' span
     sourceToken log indent' blank reverseSolidus
       <> foldMap
@@ -1450,8 +1437,7 @@ lambda log span indentation indent' lambda' = case lambda' of
         )
         binders
       <> sourceToken log indent' blank arrow
-      <> pure prefix
-      <> expr log indentation indent expr'
+      <> exprPrefix log indentation indent' expr'
 
 letBinding ::
   Log.Handle ->
