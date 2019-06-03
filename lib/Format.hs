@@ -479,6 +479,7 @@ declaration log indentation indent' declaration' = case declaration' of
     debug log "DeclDerive" declaration' span
     sourceToken log indent' blank derive
       <> foldMap (sourceToken log indent' space) newtype'
+      <> pure space
       <> instanceHead log indentation indent' instanceHead'
       <> pure newline
   Language.PureScript.CST.DeclFixity span fixityFields' -> do
