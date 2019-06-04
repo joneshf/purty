@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.0.1
+
+A quick bug fix for formatting string literals.
+
+### Additions
+
+### Changes
+
+* [Fix newlines in string literals](https://gitlab.com/joneshf/purty/issues/101)
+
+### Deletions
+
 ## 4.0.0
 
 First release in a while. We've moved over to interactive formatting!
