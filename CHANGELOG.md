@@ -1,5 +1,76 @@
 # Changelog
 
+## 4.0.0
+
+First release in a while. We've moved over to interactive formatting!
+
+We're now based off of the 0.13.x version of the `purescript` package.
+That means we've got a parser that gives us as close to source code as possible.
+Using the newer version, we can format a module much more carefully.
+
+Interactive formatting is something that `elm-format` does.
+It's not clear if there's an official name for it.
+It could also be called VonderHaar-style formatting (after the author of `elm-format`).
+The way it works is by taking hints from the structure of the file to direct the formatting.
+If you have some syntactic construct that could be put on one line,
+and there are no line breaks in the construct, `purty` will format it on one line.
+If you have some syntactic construct that could be put on one line,
+and there is at least one line break in the construct,
+`purty` will format the entire construct as multiple lines.
+The formatting does not reach beneath the construct but may reach above it.
+
+For example:
+```PureScript
+foo = [[1, 2, 3], [4,
+  5, 6, 7]]
+```
+
+would be formatted as:
+```PureScript
+foo =
+  [ [1, 2, 3]
+  , [ 4
+    , 5
+    , 6
+    , 7
+    ]
+  ]
+```
+
+The array `[1, 2, 3]` was formatted on a single line,
+since it was initially all on one line.
+The array `[4, 5, 6, 7]` was formatted over multiple lines,
+as it had at least one line break.
+Finally, the overall array `[[1, 2, 3], [4, 5, 6, 7]]` was formatted over multiple lines,
+as it also had at least one line break.
+
+The long and short of the changes here are that the control of formatting is given more to the author of the code.
+This should still keep with the idea of formatting that works nicely,
+but it should also give a bit of freedom to people to structure the code a little bit differently if need be.
+
+Bear in mind, almost all of the code is re-written so it's likely to contain a new set of bugs.
+Please feel free to report any bugs you find.
+
+### Additions
+
+* [Support interactive formatting](https://gitlab.com/joneshf/purty/issues/39)
+
+### Changes
+
+* [Update stack to 1.9.3](https://gitlab.com/joneshf/purty/merge_requests/93)
+* [Remove duplicate comments in most expressions](https://gitlab.com/joneshf/purty/issues/61)
+* [Format multi-line guards better](https://gitlab.com/joneshf/purty/issues/78)
+* [Retain comments at end of file](https://gitlab.com/joneshf/purty/issues/94)
+* [Retail lines over infix values](https://gitlab.com/joneshf/purty/issues/95)
+* [Retain comments in data declarations](https://gitlab.com/joneshf/purty/issues/96)
+* [Fix file path handling](https://gitlab.com/joneshf/purty/issues/98)
+* [Fix derived instance formatting](https://gitlab.com/joneshf/purty/issues/99)
+* [Add some more tests](https://gitlab.com/joneshf/purty/merge_requests/94)
+
+### Deletions
+
+* [Drop support for dynamic/static formatting](https://gitlab.com/joneshf/purty/issues/39)
+
 ## 3.0.7
 
 Re-publishing to npm. There was a problem with the previous version.
