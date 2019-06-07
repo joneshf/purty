@@ -1679,14 +1679,14 @@ row ::
   Indent ->
   Language.PureScript.CST.Row Span.Span ->
   IO Utf8Builder
-row log span indentation indent' row' = case row' of
+row log span indentation indent row' = case row' of
   Language.PureScript.CST.Row labels' tail -> do
     let
-      (indent, prefix) = case span of
+      prefix = case span of
         Span.MultipleLines ->
-          (indent', newline <> indent')
+          newline <> indent
         Span.SingleLine ->
-          (indent', space)
+          space
     debug log "Row" row' span
     foldMap
       (\labels ->
@@ -1696,7 +1696,7 @@ row log span indentation indent' row' = case row' of
             (SourceRange.labeled SourceRange.label SourceRange.type')
             labels
           )
-          indent'
+          indent
           space
           (labeledLabelType log indentation indent)
           labels
@@ -1705,7 +1705,7 @@ row log span indentation indent' row' = case row' of
       <> foldMap
         (\(bar, type'') ->
           pure prefix
-            <> sourceToken log indent' blank bar
+            <> sourceToken log indent blank bar
             <> pure space
             <> type' log indentation indent type''
         )
