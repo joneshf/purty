@@ -439,19 +439,19 @@ declaration ::
   Indent ->
   Language.PureScript.CST.Declaration Span.Span ->
   IO Utf8Builder
-declaration log indentation indent' declaration' = case declaration' of
+declaration log indentation indent'' declaration' = case declaration' of
   Language.PureScript.CST.DeclClass span classHead' members -> do
     let
-      indent = indent' <> indentation
+      indent' = indent'' <> indentation
     debug log "DeclClass" declaration' span
-    classHead log span indentation indent' classHead'
+    classHead log span indentation indent'' classHead'
       <> foldMap
         (\(where'', labeleds) ->
-          sourceToken log indent' space where''
+          sourceToken log indent'' space where''
             <> foldMap
               (\labeled' ->
-                pure (newline <> indent)
-                  <> labeledNameType log indentation indent labeled'
+                pure (newline <> indent')
+                  <> labeledNameType log indentation indent' labeled'
               )
               labeleds
         )
@@ -459,55 +459,55 @@ declaration log indentation indent' declaration' = case declaration' of
       <> pure newline
   Language.PureScript.CST.DeclData span dataHead' dataCtors' -> do
     let
-      indent = indent' <> indentation
+      indent' = indent'' <> indentation
     debug log "DeclData" declaration' span
-    dataHead log indentation indent' dataHead'
+    dataHead log indentation indent'' dataHead'
       <> foldMap
         (\(equals, dataCtors) ->
-          pure (newline <> indent)
-            <> sourceToken log indent blank equals
+          pure (newline <> indent')
+            <> sourceToken log indent' blank equals
             <> separated
               log
               Span.MultipleLines
-              indent
+              indent'
               blank
-              (dataCtor log indentation indent)
+              (dataCtor log indentation indent')
               dataCtors
         )
         dataCtors'
       <> pure newline
   Language.PureScript.CST.DeclDerive span derive newtype' instanceHead' -> do
     debug log "DeclDerive" declaration' span
-    sourceToken log indent' blank derive
-      <> foldMap (sourceToken log indent' space) newtype'
+    sourceToken log indent'' blank derive
+      <> foldMap (sourceToken log indent'' space) newtype'
       <> pure space
-      <> instanceHead log indentation indent' instanceHead'
+      <> instanceHead log indentation indent'' instanceHead'
       <> pure newline
   Language.PureScript.CST.DeclFixity span fixityFields' -> do
     debug log "DeclFixity" declaration' span
-    fixityFields log indent' fixityFields'
+    fixityFields log indent'' fixityFields'
       <> pure newline
   Language.PureScript.CST.DeclForeign span foreign'' import'' foreign''' -> do
     let
-      (indent, prefix) = case span of
+      (indent', prefix) = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent)
+          (indent'' <> indentation, newline <> indent')
         Span.SingleLine ->
-          (indent', space)
+          (indent'', space)
     debug log "DeclForeign" declaration' span
-    sourceToken log indent' blank foreign''
-      <> sourceToken log indent' space import''
+    sourceToken log indent'' blank foreign''
+      <> sourceToken log indent'' space import''
       <> pure prefix
-      <> foreign' log span indentation indent foreign'''
+      <> foreign' log span indentation indent' foreign'''
       <> pure newline
   Language.PureScript.CST.DeclInstanceChain span instances -> do
     debug log "DeclInstanceChain" declaration' span
     separated
       log
       (Span.separated SourceRange.instance' instances)
-      indent'
+      indent''
       space
-      (instance' log indentation indent')
+      (instance' log indentation indent'')
       instances
       <> pure newline
   Language.PureScript.CST.DeclNewtype span dataHead' equals name' type'' -> do
@@ -517,38 +517,38 @@ declaration log indentation indent' declaration' = case declaration' of
           (SourceRange.name name')
           (SourceRange.type' type'')
 
-      indent = indent' <> indentation
+      indent' = indent'' <> indentation
 
       prefix = case constructorSpan of
         Span.MultipleLines ->
-          newline <> indent
+          newline <> indent'
         Span.SingleLine ->
           space
     debug log "DeclNewtype" declaration' span
-    dataHead log indentation indent' dataHead'
-      <> pure (newline <> indent)
-      <> sourceToken log indent blank equals
+    dataHead log indentation indent'' dataHead'
+      <> pure (newline <> indent')
+      <> sourceToken log indent' blank equals
       <> pure space
-      <> name log indent blank name'
+      <> name log indent' blank name'
       <> pure prefix
-      <> type' log indentation indent type''
+      <> type' log indentation indent' type''
       <> pure newline
   Language.PureScript.CST.DeclSignature span labeled' -> do
     debug log "DeclSignature" declaration' span
-    labeledNameType log indentation indent' labeled'
+    labeledNameType log indentation indent'' labeled'
   Language.PureScript.CST.DeclType span dataHead' equals type'' -> do
     let
-      indent = indent' <> indentation
+      indent' = indent'' <> indentation
     debug log "DeclType" declaration' span
-    dataHead log indentation indent' dataHead'
-      <> pure (newline <> indent)
-      <> sourceToken log indent blank equals
+    dataHead log indentation indent'' dataHead'
+      <> pure (newline <> indent')
+      <> sourceToken log indent' blank equals
       <> pure space
-      <> type' log indentation indent type''
+      <> type' log indentation indent' type''
       <> pure newline
   Language.PureScript.CST.DeclValue span valueBindingFields' -> do
     debug log "DeclValue" declaration' span
-    valueBindingFields log indentation indent' valueBindingFields'
+    valueBindingFields log indentation indent'' valueBindingFields'
       <> pure newline
 
 declarations ::
