@@ -539,12 +539,14 @@ declaration log indentation indent'' declaration' = case declaration' of
   Language.PureScript.CST.DeclType span dataHead' equals type'' -> do
     let
       indent' = indent'' <> indentation
+
+      indent = indent' <> indentation
     debug log "DeclType" declaration' span
     dataHead log indentation indent'' dataHead'
       <> pure (newline <> indent')
       <> sourceToken log indent' blank equals
       <> pure space
-      <> type' log indentation indent' type''
+      <> type' log indentation indent type''
       <> pure newline
   Language.PureScript.CST.DeclValue span valueBindingFields' -> do
     debug log "DeclValue" declaration' span
@@ -1682,7 +1684,7 @@ row log span indentation indent' row' = case row' of
     let
       (indent, prefix) = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent')
+          (indent', newline <> indent')
         Span.SingleLine ->
           (indent', space)
     debug log "Row" row' span
