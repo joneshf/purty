@@ -51,6 +51,22 @@ adoBlock log span indentation indent' adoBlock' = case adoBlock' of
       <> pure space
       <> expr log indentation indent expr'
 
+array ::
+  (Show a) =>
+  Log.Handle ->
+  Indent ->
+  (a -> Language.PureScript.CST.SourceRange) ->
+  (a -> IO Utf8Builder) ->
+  Language.PureScript.CST.Delimited a ->
+  IO Utf8Builder
+array log indent f g array' = do
+  debug log "Delimited" array' (Span.wrapped array')
+  wrapped
+    log
+    indent
+    (foldMap (\as -> separated log (Span.separated f as) indent space g as))
+    array'
+
 blank :: Utf8Builder
 blank = ""
 
@@ -63,7 +79,7 @@ binder ::
 binder log indentation indent' binder'' = case binder'' of
   Language.PureScript.CST.BinderArray span delimited' -> do
     debug log "BinderArray" binder'' span
-    delimited
+    array
       log
       indent'
       SourceRange.binder
@@ -756,7 +772,7 @@ expr log indentation indent'' expr'' = case expr'' of
         Span.SingleLine ->
           indent''
     debug log "ExprArray" expr'' span
-    delimited
+    array
       log
       indent''
       SourceRange.expr
