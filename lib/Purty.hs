@@ -7,6 +7,7 @@ import "rio" RIO hiding (log)
 
 import qualified "this" Annotation
 import qualified "this" Args
+import qualified "componentm" Control.Monad.Component
 import qualified "this" Error
 import qualified "this" Format
 import qualified "purescript" Language.PureScript.CST
@@ -50,8 +51,39 @@ indentation = "  "
 newline :: Utf8Builder
 newline = "\n"
 
-run :: Log.Handle -> Args.Args -> IO (Maybe Error.Error)
-run log args = case args of
+run :: Args.Args -> IO ExitCode
+run args =
+  runComponent (Log.handle config) $ \log -> do
+    result <- run' log args
+    case result of
+      Just err -> do
+        Log.debug log (Error.format err)
+        Log.info log (Error.message err)
+        pure (ExitFailure 1)
+      Nothing -> pure ExitSuccess
+  where
+  config :: Log.Config
+  config =
+    Log.Config
+      { Log.name = "Log - main program"
+      , Log.verbose = Args.debug args
+      }
+
+  runComponent ::
+    Control.Monad.Component.ComponentM a ->
+    (a -> IO ExitCode) ->
+    IO ExitCode
+  runComponent component f
+    | Args.debug args =
+      Control.Monad.Component.runComponentM1
+        (runSimpleApp . logInfo . display)
+        "purty"
+        component
+        f
+    | otherwise = Control.Monad.Component.runComponentM "purty" component f
+
+run' :: Log.Handle -> Args.Args -> IO (Maybe Error.Error)
+run' log args = case args of
   Args.Defaults defaults -> do
     Log.debug log "Outputting defaults"
     Args.writeDefaults log defaults
