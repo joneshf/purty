@@ -34,5 +34,5 @@ baz =
 qux :: DOM.HTML
 qux =
   DOM.button
-    [DOM.onClick mempty]
+    [ DOM.onClick mempty ]
     []

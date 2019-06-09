@@ -51,6 +51,55 @@ adoBlock log span indentation indent' adoBlock' = case adoBlock' of
       <> pure space
       <> expr log indentation indent expr'
 
+array ::
+  (Show a) =>
+  Log.Handle ->
+  Indent ->
+  (a -> Language.PureScript.CST.SourceRange) ->
+  (a -> IO Utf8Builder) ->
+  Language.PureScript.CST.Delimited a ->
+  IO Utf8Builder
+array log indent f g array'' = case array'' of
+  Language.PureScript.CST.Wrapped open Nothing close -> do
+    debug log "Delimited" array'' (Span.wrapped array'')
+    sourceToken log indent blank open
+      <> sourceToken log indent blank close
+  Language.PureScript.CST.Wrapped open (Just array') close ->
+    arrayNonEmpty
+      log
+      indent
+      f
+      g
+      (Language.PureScript.CST.Wrapped open array' close)
+
+arrayNonEmpty ::
+  (Show a) =>
+  Log.Handle ->
+  Indent ->
+  (a -> Language.PureScript.CST.SourceRange) ->
+  (a -> IO Utf8Builder) ->
+  Language.PureScript.CST.DelimitedNonEmpty a ->
+  IO Utf8Builder
+arrayNonEmpty log indent f g array' = do
+  let
+    (before, after) = case span of
+      Span.MultipleLines ->
+        (blank, blank)
+      Span.SingleLine ->
+        (space, space)
+
+    span = Span.wrapped array'
+  debug log "DelimitedNonEmpty" array' span
+  wrapped
+    log
+    indent
+    (\separated' ->
+      pure before
+        <> separated log (Span.separated f separated') indent space g separated'
+        <> pure after
+    )
+    array'
+
 blank :: Utf8Builder
 blank = ""
 
@@ -63,7 +112,7 @@ binder ::
 binder log indentation indent' binder'' = case binder'' of
   Language.PureScript.CST.BinderArray span delimited' -> do
     debug log "BinderArray" binder'' span
-    delimited
+    array
       log
       indent'
       SourceRange.binder
@@ -116,7 +165,7 @@ binder log indentation indent' binder'' = case binder'' of
     wrapped log indent' (binder log indentation indent') wrapped'
   Language.PureScript.CST.BinderRecord span delimited' -> do
     debug log "BinderRecord" binder'' span
-    delimited
+    record
       log
       indent'
       (SourceRange.recordLabeled SourceRange.binder)
@@ -756,7 +805,7 @@ expr log indentation indent'' expr'' = case expr'' of
         Span.SingleLine ->
           indent''
     debug log "ExprArray" expr'' span
-    delimited
+    array
       log
       indent''
       SourceRange.expr
@@ -842,7 +891,7 @@ expr log indentation indent'' expr'' = case expr'' of
         Span.SingleLine ->
           indent''
     debug log "ExprRecord" expr'' span
-    delimited
+    record
       log
       indent''
       (SourceRange.recordLabeled SourceRange.expr)
@@ -867,7 +916,7 @@ expr log indentation indent'' expr'' = case expr'' of
     debug log "ExprRecordUpdate" expr'' span
     expr log indentation indent'' expr'
       <> pure prefix
-      <> delimitedNonEmpty
+      <> recordNonEmpty
         log
         indent'
         SourceRange.recordUpdate
@@ -1580,6 +1629,55 @@ qualifiedName log indent prefix qualifiedName'' = case qualifiedName'' of
     debug log "QualifiedName" qualifiedName' (Span.qualifiedName qualifiedName'')
     sourceToken log indent prefix qualifiedName'
 
+record ::
+  (Show a) =>
+  Log.Handle ->
+  Indent ->
+  (a -> Language.PureScript.CST.SourceRange) ->
+  (a -> IO Utf8Builder) ->
+  Language.PureScript.CST.Delimited a ->
+  IO Utf8Builder
+record log indent f g record'' = case record'' of
+  Language.PureScript.CST.Wrapped open Nothing close -> do
+    debug log "Delimited" record'' (Span.wrapped record'')
+    sourceToken log indent blank open
+      <> sourceToken log indent blank close
+  Language.PureScript.CST.Wrapped open (Just record') close ->
+    recordNonEmpty
+      log
+      indent
+      f
+      g
+      (Language.PureScript.CST.Wrapped open record' close)
+
+recordNonEmpty ::
+  (Show a) =>
+  Log.Handle ->
+  Indent ->
+  (a -> Language.PureScript.CST.SourceRange) ->
+  (a -> IO Utf8Builder) ->
+  Language.PureScript.CST.DelimitedNonEmpty a ->
+  IO Utf8Builder
+recordNonEmpty log indent f g record' = do
+  let
+    (before, after) = case span of
+      Span.MultipleLines ->
+        (blank, blank)
+      Span.SingleLine ->
+        (space, space)
+
+    span = Span.wrapped record'
+  debug log "DelimitedNonEmpty" record' span
+  wrapped
+    log
+    indent
+    (\separated' ->
+      pure before
+        <> separated log (Span.separated f separated') indent space g separated'
+        <> pure after
+    )
+    record'
+
 recordAccessor ::
   Log.Handle ->
   Span.Span ->
@@ -1654,7 +1752,7 @@ recordUpdate log indentation indent' recordUpdate' = case recordUpdate' of
     debug log "RecordUpdateBranch" recordUpdate' span
     label log indent' blank label'
       <> pure prefix
-      <> delimitedNonEmpty
+      <> recordNonEmpty
         log
         indent
         SourceRange.recordUpdate
@@ -1683,36 +1781,66 @@ row ::
   Language.PureScript.CST.Row Span.Span ->
   IO Utf8Builder
 row log span indentation indent row' = case row' of
-  Language.PureScript.CST.Row labels' tail -> do
-    let
-      prefix = case span of
-        Span.MultipleLines ->
-          newline <> indent
-        Span.SingleLine ->
-          space
+  Language.PureScript.CST.Row Nothing Nothing -> do
     debug log "Row" row' span
-    foldMap
-      (\labels ->
-        separated
-          log
-          ( Span.separated
-            (SourceRange.labeled SourceRange.label SourceRange.type')
-            labels
-          )
-          indent
-          space
-          (labeledLabelType log indentation indent)
+    pure blank
+  Language.PureScript.CST.Row (Just labels) Nothing -> do
+    let
+      (before, after) = case span of
+        Span.MultipleLines ->
+          (blank, blank)
+        Span.SingleLine ->
+          (space, space)
+    debug log "Row" row' span
+    pure before
+      <> separated
+        log
+        ( Span.separated
+          (SourceRange.labeled SourceRange.label SourceRange.type')
           labels
-      )
-      labels'
-      <> foldMap
-        (\(bar, type'') ->
-          pure prefix
-            <> sourceToken log indent blank bar
-            <> pure space
-            <> type' log indentation indent type''
         )
-        tail
+        indent
+        space
+        (labeledLabelType log indentation indent)
+        labels
+      <> pure after
+  Language.PureScript.CST.Row Nothing (Just (bar, type'')) -> do
+    let
+      (before, after) = case span of
+        Span.MultipleLines ->
+          (newline <> indent, blank)
+        Span.SingleLine ->
+          (space, space)
+    debug log "Row" row' span
+    pure before
+      <> sourceToken log indent blank bar
+      <> pure space
+      <> type' log indentation indent type''
+      <> pure after
+  Language.PureScript.CST.Row (Just labels) (Just (bar, type'')) -> do
+    let
+      (before, after, prefix) = case span of
+        Span.MultipleLines ->
+          (blank, blank, newline <> indent)
+        Span.SingleLine ->
+          (space, space, space)
+    debug log "Row" row' span
+    pure before
+      <> separated
+        log
+        ( Span.separated
+          (SourceRange.labeled SourceRange.label SourceRange.type')
+          labels
+        )
+        indent
+        space
+        (labeledLabelType log indentation indent)
+        labels
+      <> pure prefix
+      <> sourceToken log indent blank bar
+      <> pure space
+      <> type' log indentation indent type''
+      <> pure after
 
 separated ::
   forall a.

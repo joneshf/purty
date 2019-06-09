@@ -1,12 +1,12 @@
 module Array where
 
-f :: Array {x :: Int, y :: Boolean}
+f :: Array { x :: Int, y :: Boolean }
 f =
   [ { x: 1
     , y:
       true
     }
-  , {x: 10, y: false}
+  , { x: 10, y: false }
   , { x: 0
     , y: true
     }
@@ -24,7 +24,7 @@ g =
   ]
 
 h :: Array Int
-h = [1, 2, 3, 4, 5, 6]
+h = [ 1, 2, 3, 4, 5, 6 ]
 
 i :: Array String
 i =
@@ -38,9 +38,9 @@ there"""
 
 j :: Array (Array (Array Int))
 j =
-  [ [[1, 2, 3, 4, 5], [6, 7]]
-  , [ [8]
-    , [9, 10]
+  [ [ [ 1, 2, 3, 4, 5 ], [ 6, 7 ] ]
+  , [ [ 8 ]
+    , [ 9, 10 ]
     ]
   , [ [ 11
       , 12
