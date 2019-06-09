@@ -59,32 +59,46 @@ array ::
   (a -> IO Utf8Builder) ->
   Language.PureScript.CST.Delimited a ->
   IO Utf8Builder
-array log indent f g array' = case array' of
+array log indent f g array'' = case array'' of
   Language.PureScript.CST.Wrapped open Nothing close -> do
-    debug log "Delimited" array' (Span.wrapped array')
+    debug log "Delimited" array'' (Span.wrapped array'')
     sourceToken log indent blank open
       <> sourceToken log indent blank close
-  _ -> do
-    let
-      (before, after) = case span of
-        Span.MultipleLines ->
-          (blank, blank)
-        Span.SingleLine ->
-          (space, space)
-
-      span = Span.wrapped array'
-    debug log "Delimited" array' span
-    wrapped
+  Language.PureScript.CST.Wrapped open (Just array') close ->
+    arrayNonEmpty
       log
       indent
-      (\separated' ->
-        pure before
-          <> foldMap
-          (\as -> separated log (Span.separated f as) indent space g as)
-          separated'
-          <> pure after
-      )
-      array'
+      f
+      g
+      (Language.PureScript.CST.Wrapped open array' close)
+
+arrayNonEmpty ::
+  (Show a) =>
+  Log.Handle ->
+  Indent ->
+  (a -> Language.PureScript.CST.SourceRange) ->
+  (a -> IO Utf8Builder) ->
+  Language.PureScript.CST.DelimitedNonEmpty a ->
+  IO Utf8Builder
+arrayNonEmpty log indent f g array' = do
+  let
+    (before, after) = case span of
+      Span.MultipleLines ->
+        (blank, blank)
+      Span.SingleLine ->
+        (space, space)
+
+    span = Span.wrapped array'
+  debug log "DelimitedNonEmpty" array' span
+  wrapped
+    log
+    indent
+    (\separated' ->
+      pure before
+        <> separated log (Span.separated f separated') indent space g separated'
+        <> pure after
+    )
+    array'
 
 blank :: Utf8Builder
 blank = ""
