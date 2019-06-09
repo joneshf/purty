@@ -1126,24 +1126,24 @@ ifThenElse ::
   Indent ->
   Language.PureScript.CST.IfThenElse Span.Span ->
   IO Utf8Builder
-ifThenElse log span indentation indent' ifThenElse' = case ifThenElse' of
+ifThenElse log span indentation indent ifThenElse' = case ifThenElse' of
   Language.PureScript.CST.IfThenElse if' cond then' true else' false -> do
     let
-      (indent, prefix) = case span of
+      prefix = case span of
         Span.MultipleLines ->
-          (indent', newline <> indent')
+          newline <> indent
         Span.SingleLine ->
-          (indent', space)
+          space
     debug log "IfThenElse" ifThenElse' span
-    sourceToken log indent' blank if'
+    sourceToken log indent blank if'
       <> pure space
       <> expr log indentation indent cond
       <> pure space
-      <> sourceToken log indent' blank then'
-      <> exprPrefix log span indentation indent' true
+      <> sourceToken log indent blank then'
+      <> exprPrefix log span indentation indent true
       <> pure prefix
-      <> sourceToken log indent' blank else'
-      <> exprPrefix log span indentation indent' false
+      <> sourceToken log indent blank else'
+      <> exprPrefix log span indentation indent false
 
 import' ::
   Log.Handle ->
