@@ -1131,19 +1131,19 @@ ifThenElse log span indentation indent' ifThenElse' = case ifThenElse' of
     let
       (indent, prefix) = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent)
+          (indent', newline <> indent')
         Span.SingleLine ->
           (indent', space)
     debug log "IfThenElse" ifThenElse' span
     sourceToken log indent' blank if'
       <> pure space
       <> expr log indentation indent cond
-      <> pure prefix
+      <> pure space
       <> sourceToken log indent' blank then'
-      <> exprPrefix log (Span.expr true) indentation indent true
+      <> exprPrefix log span indentation indent' true
       <> pure prefix
       <> sourceToken log indent' blank else'
-      <> exprPrefix log (Span.expr false) indentation indent false
+      <> exprPrefix log span indentation indent' false
 
 import' ::
   Log.Handle ->
