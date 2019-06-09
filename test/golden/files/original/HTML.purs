@@ -15,3 +15,16 @@ bar = DOM.span
       [DOM.className
        "bar"] [DOM.literal "Here's some more",
   DOM.literal "And more even"]
+
+baz :: DOM.HTML
+baz =
+  DOM.button
+    [ DOM.onClick mempty
+    ]
+    []
+
+qux :: DOM.HTML
+qux =
+  DOM.button
+    [ DOM.onClick mempty]
+    []
