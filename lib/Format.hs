@@ -1781,36 +1781,66 @@ row ::
   Language.PureScript.CST.Row Span.Span ->
   IO Utf8Builder
 row log span indentation indent row' = case row' of
-  Language.PureScript.CST.Row labels' tail -> do
-    let
-      prefix = case span of
-        Span.MultipleLines ->
-          newline <> indent
-        Span.SingleLine ->
-          space
+  Language.PureScript.CST.Row Nothing Nothing -> do
     debug log "Row" row' span
-    foldMap
-      (\labels ->
-        separated
-          log
-          ( Span.separated
-            (SourceRange.labeled SourceRange.label SourceRange.type')
-            labels
-          )
-          indent
-          space
-          (labeledLabelType log indentation indent)
+    pure blank
+  Language.PureScript.CST.Row (Just labels) Nothing -> do
+    let
+      (before, after) = case span of
+        Span.MultipleLines ->
+          (blank, blank)
+        Span.SingleLine ->
+          (space, space)
+    debug log "Row" row' span
+    pure before
+      <> separated
+        log
+        ( Span.separated
+          (SourceRange.labeled SourceRange.label SourceRange.type')
           labels
-      )
-      labels'
-      <> foldMap
-        (\(bar, type'') ->
-          pure prefix
-            <> sourceToken log indent blank bar
-            <> pure space
-            <> type' log indentation indent type''
         )
-        tail
+        indent
+        space
+        (labeledLabelType log indentation indent)
+        labels
+      <> pure after
+  Language.PureScript.CST.Row Nothing (Just (bar, type'')) -> do
+    let
+      (before, after) = case span of
+        Span.MultipleLines ->
+          (newline <> indent, blank)
+        Span.SingleLine ->
+          (space, space)
+    debug log "Row" row' span
+    pure before
+      <> sourceToken log indent blank bar
+      <> pure space
+      <> type' log indentation indent type''
+      <> pure after
+  Language.PureScript.CST.Row (Just labels) (Just (bar, type'')) -> do
+    let
+      (before, after, prefix) = case span of
+        Span.MultipleLines ->
+          (blank, blank, newline <> indent)
+        Span.SingleLine ->
+          (space, space, space)
+    debug log "Row" row' span
+    pure before
+      <> separated
+        log
+        ( Span.separated
+          (SourceRange.labeled SourceRange.label SourceRange.type')
+          labels
+        )
+        indent
+        space
+        (labeledLabelType log indentation indent)
+        labels
+      <> pure prefix
+      <> sourceToken log indent blank bar
+      <> pure space
+      <> type' log indentation indent type''
+      <> pure after
 
 separated ::
   forall a.
