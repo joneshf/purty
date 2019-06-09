@@ -6,18 +6,11 @@ import qualified "purty" Args
 import qualified "componentm" Control.Monad.Component
 import qualified "purty" Error
 import qualified "purty" Log
-import qualified "optparse-applicative" Options.Applicative
 import qualified "purty" Purty
 
 main :: IO ()
 main = do
-  args' <- Options.Applicative.execParser Args.info
-  let config' =
-        Log.Config
-          { Log.name = "Log - config parser"
-          , Log.verbose = Args.debug args'
-          }
-  args <- run args' (Log.handle config') $ \log -> Args.withConfig log args'
+  args <- Args.parse
   let config =
         Log.Config
           { Log.name = "Log - main program"
