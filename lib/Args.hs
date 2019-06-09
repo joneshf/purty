@@ -265,21 +265,20 @@ parse = do
           { Log.name = "Log - config parser"
           , Log.verbose = debug args'
           }
-  runComponent args' (Log.handle config') $ \log -> withConfig log args'
+  runComponent (debug args') "purty" (Log.handle config') $ \log ->
+    withConfig log args'
   where
   runComponent ::
-    Args ->
+    Bool ->
+    Text ->
     Control.Monad.Component.ComponentM a ->
     (a -> IO Args) ->
     IO Args
-  runComponent args' component f
-    | debug args' =
-      Control.Monad.Component.runComponentM1
-        (runSimpleApp . logInfo . display)
-        "purty"
-        component
-        f
-    | otherwise = Control.Monad.Component.runComponentM "purty" component f
+  runComponent debug'
+    | debug' =
+      Control.Monad.Component.runComponentM1 (runSimpleApp . logInfo . display)
+    | otherwise =
+      Control.Monad.Component.runComponentM
 
 verbose :: Options.Applicative.Parser Verbose
 verbose = Options.Applicative.flag NotVerbose Verbose meta

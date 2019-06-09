@@ -53,7 +53,7 @@ newline = "\n"
 
 run :: Args.Args -> IO ExitCode
 run args =
-  runComponent (Log.handle config) $ \log -> do
+  runComponent (Args.debug args) "purty" (Log.handle config) $ \log -> do
     result <- run' log args
     case result of
       Just err -> do
@@ -70,17 +70,16 @@ run args =
       }
 
   runComponent ::
+    Bool ->
+    Text ->
     Control.Monad.Component.ComponentM a ->
     (a -> IO ExitCode) ->
     IO ExitCode
-  runComponent component f
-    | Args.debug args =
-      Control.Monad.Component.runComponentM1
-        (runSimpleApp . logInfo . display)
-        "purty"
-        component
-        f
-    | otherwise = Control.Monad.Component.runComponentM "purty" component f
+  runComponent debug
+    | debug =
+      Control.Monad.Component.runComponentM1 (runSimpleApp . logInfo . display)
+    | otherwise =
+      Control.Monad.Component.runComponentM
 
 run' :: Log.Handle -> Args.Args -> IO (Maybe Error.Error)
 run' log args = case args of
