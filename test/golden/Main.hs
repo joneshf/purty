@@ -22,10 +22,10 @@ main = do
           { Log.name = "Log"
           , Log.verbose = False
           }
-  result <-
-    Control.Monad.Component.runComponentM "golden" (Log.handle config) $ \log -> do
+  result <- Control.Monad.Component.runComponentM "golden" (Log.handle config) $
+    \log -> try $ do
       tests <- goldenTests log
-      try (Test.Tasty.defaultMain tests)
+      Test.Tasty.defaultMain tests
   case result of
     Left ExitSuccess -> exitSuccess
     Left code        -> exitWith code

@@ -2,6 +2,7 @@ module Args
   ( Args(..)
   , debug
   , info
+  , parse
   , withConfig
   , withInput
   , write
@@ -10,6 +11,7 @@ module Args
 
 import "rio" RIO hiding (log)
 
+import qualified "componentm" Control.Monad.Component
 import qualified "bytestring" Data.ByteString.Builder
 import qualified "dhall" Dhall
 import qualified "dhall" Dhall.Core
@@ -254,6 +256,29 @@ outputType = Dhall.Type { Dhall.expected, Dhall.extract }
     Dhall.Core.Field union "Write"
       | union == expected -> Just Write
     _ -> Nothing
+
+parse :: IO Args
+parse = do
+  args' <- Options.Applicative.execParser info
+  let config' =
+        Log.Config
+          { Log.name = "Log - config parser"
+          , Log.verbose = debug args'
+          }
+  runComponent (debug args') "purty" (Log.handle config') $ \log ->
+    withConfig log args'
+  where
+  runComponent ::
+    Bool ->
+    Text ->
+    Control.Monad.Component.ComponentM a ->
+    (a -> IO Args) ->
+    IO Args
+  runComponent debug'
+    | debug' =
+      Control.Monad.Component.runComponentM1 (runSimpleApp . logInfo . display)
+    | otherwise =
+      Control.Monad.Component.runComponentM
 
 verbose :: Options.Applicative.Parser Verbose
 verbose = Options.Applicative.flag NotVerbose Verbose meta
