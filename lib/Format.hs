@@ -637,10 +637,11 @@ doStatement ::
   IO Utf8Builder
 doStatement log indentation indent' doStatement' = case doStatement' of
   Language.PureScript.CST.DoBind binder' arrow expr' -> do
-    debug log "DoBind" doStatement' (Span.doStatement doStatement')
+    let span = Span.doStatement doStatement'
+    debug log "DoBind" doStatement' span
     binder log indentation indent' binder'
       <> sourceToken log indent' space arrow
-      <> exprPrefix log indentation indent' expr'
+      <> exprPrefix log span indentation indent' expr'
   Language.PureScript.CST.DoDiscard expr' -> do
     debug log "DoDiscard" doStatement' (Span.doStatement doStatement')
     expr log indentation indent' expr'
@@ -746,7 +747,7 @@ expr log indentation indent'' expr'' = case expr'' of
   Language.PureScript.CST.ExprApp span expr1 expr2 -> do
     debug log "ExprApp" expr'' span
     expr log indentation indent'' expr1
-      <> exprPrefix log indentation indent'' expr2
+      <> exprPrefix log span indentation indent'' expr2
   Language.PureScript.CST.ExprArray span delimited' -> do
     let
       indent' = case span of
@@ -893,11 +894,12 @@ expr log indentation indent'' expr'' = case expr'' of
 
 exprPrefix ::
   Log.Handle ->
+  Span.Span ->
   Indentation ->
   Indent ->
   Language.PureScript.CST.Expr Span.Span ->
   IO Utf8Builder
-exprPrefix log indentation indent' expr' =
+exprPrefix log span indentation indent' expr' =
     pure prefix
       <> expr log indentation indent expr'
   where
@@ -958,7 +960,7 @@ exprPrefix log indentation indent' expr' =
     Language.PureScript.CST.ExprTyped{}          -> newline <> indent
 
   prefix :: Utf8Builder
-  prefix = case fold expr' of
+  prefix = case span of
     Span.MultipleLines ->
       multiLine
     Span.SingleLine ->
@@ -1089,10 +1091,10 @@ ifThenElse log span indentation indent' ifThenElse' = case ifThenElse' of
       <> expr log indentation indent cond
       <> pure prefix
       <> sourceToken log indent' blank then'
-      <> exprPrefix log indentation indent true
+      <> exprPrefix log (Span.expr true) indentation indent true
       <> pure prefix
       <> sourceToken log indent' blank else'
-      <> exprPrefix log indentation indent false
+      <> exprPrefix log (Span.expr false) indentation indent false
 
 import' ::
   Log.Handle ->
@@ -1442,7 +1444,7 @@ lambda log span indentation indent' lambda' = case lambda' of
         )
         binders
       <> sourceToken log indent' blank arrow
-      <> exprPrefix log indentation indent' expr'
+      <> exprPrefix log span indentation indent' expr'
 
 letBinding ::
   Log.Handle ->
@@ -1557,12 +1559,13 @@ patternGuard ::
   IO Utf8Builder
 patternGuard log indentation indent' patternGuard' = case patternGuard' of
   Language.PureScript.CST.PatternGuard binder'' expr' -> do
-    debug log "PatternGuard" patternGuard' (Span.patternGuard patternGuard')
+    let span = Span.patternGuard patternGuard'
+    debug log "PatternGuard" patternGuard' span
     case binder'' of
       Just (binder', arrow) ->
         binder log indentation indent' binder'
           <> sourceToken log indent' space arrow
-          <> exprPrefix log indentation indent' expr'
+          <> exprPrefix log span indentation indent' expr'
       Nothing ->
         expr log indentation indent' expr'
 
@@ -1940,7 +1943,7 @@ where' log indentation indent' where''' = case where''' of
     let
       indent = indent' <> indentation
     debug log "Where" where''' (Span.where' where''')
-    exprPrefix log indentation indent' expr'
+    exprPrefix log (Span.expr expr') indentation indent' expr'
       <> foldMap
         (\(where'', letBindings') ->
           pure (newline <> indent)
