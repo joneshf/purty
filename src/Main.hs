@@ -1,9 +1,9 @@
 module Main where
 
 import qualified "purty" Args
+import qualified "purty" Purty
 import qualified "base" System.Exit
 import qualified "base" System.IO
-import qualified "purty" Purty
 
 main :: System.IO.IO ()
 main = do
