@@ -165,7 +165,7 @@ binder log indentation indent' binder'' = case binder'' of
     wrapped log indent' (binder log indentation indent') wrapped'
   Language.PureScript.CST.BinderRecord span delimited' -> do
     debug log "BinderRecord" binder'' span
-    delimited
+    record
       log
       indent'
       (SourceRange.recordLabeled SourceRange.binder)
@@ -891,7 +891,7 @@ expr log indentation indent'' expr'' = case expr'' of
         Span.SingleLine ->
           indent''
     debug log "ExprRecord" expr'' span
-    delimited
+    record
       log
       indent''
       (SourceRange.recordLabeled SourceRange.expr)
@@ -916,7 +916,7 @@ expr log indentation indent'' expr'' = case expr'' of
     debug log "ExprRecordUpdate" expr'' span
     expr log indentation indent'' expr'
       <> pure prefix
-      <> delimitedNonEmpty
+      <> recordNonEmpty
         log
         indent'
         SourceRange.recordUpdate
@@ -1629,6 +1629,55 @@ qualifiedName log indent prefix qualifiedName'' = case qualifiedName'' of
     debug log "QualifiedName" qualifiedName' (Span.qualifiedName qualifiedName'')
     sourceToken log indent prefix qualifiedName'
 
+record ::
+  (Show a) =>
+  Log.Handle ->
+  Indent ->
+  (a -> Language.PureScript.CST.SourceRange) ->
+  (a -> IO Utf8Builder) ->
+  Language.PureScript.CST.Delimited a ->
+  IO Utf8Builder
+record log indent f g record'' = case record'' of
+  Language.PureScript.CST.Wrapped open Nothing close -> do
+    debug log "Delimited" record'' (Span.wrapped record'')
+    sourceToken log indent blank open
+      <> sourceToken log indent blank close
+  Language.PureScript.CST.Wrapped open (Just record') close ->
+    recordNonEmpty
+      log
+      indent
+      f
+      g
+      (Language.PureScript.CST.Wrapped open record' close)
+
+recordNonEmpty ::
+  (Show a) =>
+  Log.Handle ->
+  Indent ->
+  (a -> Language.PureScript.CST.SourceRange) ->
+  (a -> IO Utf8Builder) ->
+  Language.PureScript.CST.DelimitedNonEmpty a ->
+  IO Utf8Builder
+recordNonEmpty log indent f g record' = do
+  let
+    (before, after) = case span of
+      Span.MultipleLines ->
+        (blank, blank)
+      Span.SingleLine ->
+        (space, space)
+
+    span = Span.wrapped record'
+  debug log "DelimitedNonEmpty" record' span
+  wrapped
+    log
+    indent
+    (\separated' ->
+      pure before
+        <> separated log (Span.separated f separated') indent space g separated'
+        <> pure after
+    )
+    record'
+
 recordAccessor ::
   Log.Handle ->
   Span.Span ->
@@ -1703,7 +1752,7 @@ recordUpdate log indentation indent' recordUpdate' = case recordUpdate' of
     debug log "RecordUpdateBranch" recordUpdate' span
     label log indent' blank label'
       <> pure prefix
-      <> delimitedNonEmpty
+      <> recordNonEmpty
         log
         indent
         SourceRange.recordUpdate
