@@ -18,6 +18,7 @@ import qualified "dhall" Dhall.Core
 import qualified "dhall" Dhall.Map
 import qualified "dhall" Dhall.Parser
 import qualified "dhall" Dhall.TypeCheck
+import qualified "this" Error
 import qualified "this" Log
 import qualified "optparse-applicative" Options.Applicative
 import qualified "rio" RIO.Directory
@@ -347,15 +348,24 @@ withConfig log args' = case args' of
         Log.debug log ("Defaulted with config values " <> display format')
         pure (Format format')
 
-withInput :: Log.Handle -> Format -> (LByteString -> IO a) -> IO a
+withInput ::
+  Log.Handle ->
+  Format ->
+  (LByteString -> IO a) ->
+  IO (Either Error.Error a)
 withInput log format' f = case format' of
   Format' (InputFile file) _ _ -> do
     Log.debug log ("Reading " <> displayShow file <> ".")
-    withLazyFile file $ \contents -> do
+    result' <- tryIO $ withLazyFile file $ \contents -> do
       Log.debug log "Got the file contents"
       result <- f contents
       Log.debug log "Finished with the file"
       pure result
+    case result' of
+      Left err ->
+        pure (Left $ Error.new $ "Error reading file: " <> displayShow err)
+      Right result ->
+        pure (Right result)
 
 write :: Log.Handle -> Format -> Utf8Builder -> IO ()
 write log format' formatted = case format' of
