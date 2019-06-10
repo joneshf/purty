@@ -222,7 +222,7 @@ input =
   input' :: Options.Applicative.ReadM Input
   input' = Options.Applicative.maybeReader $ \str -> case str of
     "-" -> Just InputSTDIN
-    _ -> Just (InputFile str)
+    _   -> Just (InputFile str)
 
 output :: Options.Applicative.Parser Output
 output = Options.Applicative.flag STDOUT Write meta
