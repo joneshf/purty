@@ -18,8 +18,10 @@ import qualified "dhall" Dhall.Core
 import qualified "dhall" Dhall.Map
 import qualified "dhall" Dhall.Parser
 import qualified "dhall" Dhall.TypeCheck
+import qualified "this" Error
 import qualified "this" Log
 import qualified "optparse-applicative" Options.Applicative
+import qualified "rio" RIO.ByteString.Lazy
 import qualified "rio" RIO.Directory
 import qualified "rio" RIO.File
 
@@ -59,8 +61,9 @@ instance Display Format where
         <> display verbose'
         <> " }"
 
-newtype Input
+data Input
   = InputFile FilePath
+  | InputSTDIN
 
 instance Display Input where
   display input' = case input' of
@@ -68,6 +71,9 @@ instance Display Input where
       "InputFile {"
         <> " filePath = "
         <> displayShow file
+        <> " }"
+    InputSTDIN ->
+      "InputSTDIN {"
         <> " }"
 
 data Output
@@ -205,12 +211,18 @@ info = Options.Applicative.info (Options.Applicative.helper <*> args) descriptio
       <> Options.Applicative.header "purty - A PureScript pretty-printer"
 
 input :: Options.Applicative.Parser Input
-input = fmap InputFile (Options.Applicative.strArgument meta)
+input =
+  Options.Applicative.argument input' meta
   where
-  meta :: Options.Applicative.Mod Options.Applicative.ArgumentFields FilePath
+  meta :: Options.Applicative.Mod Options.Applicative.ArgumentFields a
   meta =
-    Options.Applicative.help "PureScript file to format"
+    Options.Applicative.help "PureScript file to format or `-` for STDIN"
       <> Options.Applicative.metavar "FILE"
+
+  input' :: Options.Applicative.ReadM Input
+  input' = Options.Applicative.maybeReader $ \str -> case str of
+    "-" -> Just InputSTDIN
+    _   -> Just (InputFile str)
 
 output :: Options.Applicative.Parser Output
 output = Options.Applicative.flag STDOUT Write meta
@@ -347,15 +359,34 @@ withConfig log args' = case args' of
         Log.debug log ("Defaulted with config values " <> display format')
         pure (Format format')
 
-withInput :: Log.Handle -> Format -> (LByteString -> IO a) -> IO a
+withInput ::
+  Log.Handle ->
+  Format ->
+  (LByteString -> IO a) ->
+  IO (Either Error.Error a)
 withInput log format' f = case format' of
   Format' (InputFile file) _ _ -> do
     Log.debug log ("Reading " <> displayShow file <> ".")
-    withLazyFile file $ \contents -> do
+    result' <- tryIO $ withLazyFile file $ \contents -> do
       Log.debug log "Got the file contents"
       result <- f contents
       Log.debug log "Finished with the file"
       pure result
+    case result' of
+      Left err ->
+        pure (Left $ Error.new $ "Error reading file: " <> displayShow err)
+      Right result ->
+        pure (Right result)
+  Format' InputSTDIN _ _ -> do
+    Log.debug log "Reading STDIN."
+    result' <- tryIO RIO.ByteString.Lazy.getContents
+    case result' of
+      Left err ->
+        pure (Left $ Error.new $ "Error reading STDIN: " <> displayShow err)
+      Right contents -> do
+        Log.debug log "Got STDIN contents"
+        result <- f contents
+        pure (Right result)
 
 write :: Log.Handle -> Format -> Utf8Builder -> IO ()
 write log format' formatted = case format' of
@@ -374,6 +405,10 @@ write log format' formatted = case format' of
         $ getUtf8Builder formatted
       )
     Log.debug log "Wrote formatted file in-place"
+  Format' InputSTDIN _ _ -> do
+    Log.debug log "Writing formatted STDIN to STDOUT"
+    hPutBuilder stdout (getUtf8Builder formatted)
+    Log.debug log "Wrote formatted STDIN to STDOUT"
 
 writeDefaults :: Log.Handle -> Defaults -> IO ()
 writeDefaults log defaults'' = case defaults'' of
