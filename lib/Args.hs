@@ -382,7 +382,7 @@ withInput log format' f = case format' of
     result' <- tryIO RIO.ByteString.Lazy.getContents
     case result' of
       Left err ->
-        pure (Left $ Error.new $ "Error reading file: " <> displayShow err)
+        pure (Left $ Error.new $ "Error reading STDIN: " <> displayShow err)
       Right contents -> do
         Log.debug log "Got STDIN contents"
         result <- f contents
