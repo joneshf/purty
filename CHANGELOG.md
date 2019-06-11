@@ -2,6 +2,14 @@
 
 ## 4.1.0
 
+Some cleanup to formatting.
+Thanks for all the feedback from the last big release.
+
+We also add support for reading over STDIN.
+If the binary is invoked with `-`, it will read data over STDIN instead of expecting a file.
+E.g. `purty -` will read input over STDIN.
+Hopefully, this is useful for other tools and integrations to use.
+
 ### Additions
 
 * [Support STDIN](https://gitlab.com/joneshf/purty/issues/43)
