@@ -14,8 +14,9 @@ stages:
 
 Build purty:
   before_script:
+    - curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
     - apt-get update
-    - apt-get install --yes haskell-stack
+    - apt-get install --yes haskell-stack nodejs
     - stack upgrade --binary-only
     - export PATH=$HOME/.local/bin:$PATH
     - stack setup
