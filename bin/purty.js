@@ -20,8 +20,12 @@ switch (process.platform) {
     break;
 };
 
-const purty = childProcess.spawn(purtyPath, process.argv.slice(2));
+const purty = childProcess.spawn(
+  purtyPath,
+  process.argv.slice(2),
+  {
+    stdio: 'inherit',
+  },
+);
 
-purty.stdout.on('data', function(data) { process.stdout.write(data); });
-purty.stderr.on('data', function(data) { process.stderr.write(data); });
 purty.on('close', function(code) { process.exit(code); });
