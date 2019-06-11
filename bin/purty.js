@@ -3,6 +3,7 @@
 const childProcess = require('child_process');
 const path = require('path');
 
+const args = process.argv.slice(2);
 let purtyPath;
 
 switch (process.platform) {
@@ -20,12 +21,6 @@ switch (process.platform) {
     break;
 };
 
-const purty = childProcess.spawn(
-  purtyPath,
-  process.argv.slice(2),
-  {
-    stdio: 'inherit',
-  },
-);
+const purty = childProcess.spawn(purtyPath, args, { stdio: 'inherit' });
 
 purty.on('close', function(code) { process.exit(code); });
