@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.1.1
+
+Quick bug fix to get STDIN working over the npm interface.
+
+### Additions
+
+### Changes
+
+* [Fix STDIN for npm package](https://gitlab.com/joneshf/purty/issues/115)
+
+### Deletions
+
 ## 4.1.0
 
 Some cleanup to formatting.
