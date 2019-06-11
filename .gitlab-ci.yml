@@ -1,4 +1,4 @@
-image: buildpack-deps:18.04
+image: node:10.16.0@sha256:7cae3b2b42bde73b68e82fbd949cfff5b43546c2daabba3e95c8a603a04eec09
 
 cache:
   key: purty
