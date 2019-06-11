@@ -1,5 +1,21 @@
 # Changelog
 
+## 4.1.0
+
+### Additions
+
+* [Support STDIN](https://gitlab.com/joneshf/purty/issues/43)
+
+### Changes
+
+* [Fix record indentation](https://gitlab.com/joneshf/purty/issues/104)
+* [Cleanup the program runners](https://gitlab.com/joneshf/purty/merge_requests/102)
+* [Preserve span in application of expressions](https://gitlab.com/joneshf/purty/issues/106)
+* [Insert spaces around all arrays and records](https://gitlab.com/joneshf/purty/issues/109)
+* [Revert changes to conditional formatting](https://gitlab.com/joneshf/purty/issues/108)
+
+### Deletions
+
 ## 4.0.1
 
 A quick bug fix for formatting string literals.
