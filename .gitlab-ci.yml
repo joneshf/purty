@@ -1,7 +1,7 @@
-image: buildpack-deps:18.04
+image: node:10.16.0@sha256:7cae3b2b42bde73b68e82fbd949cfff5b43546c2daabba3e95c8a603a04eec09
 
 cache:
-  key: purty
+  key: purty-v1
   paths:
     - .stack-root
     - .stack-work
@@ -14,15 +14,21 @@ stages:
 
 Build purty:
   before_script:
-    - apt-get update
-    - apt-get install --yes haskell-stack
-    - stack upgrade --binary-only
+    - echo '8a2b15430fbe20bf04d32f9bc2e7fa91b7909ba71cf246de794d36e5c94dbf80  get-stack.sh' > SHA256SUM
+    - curl --location --output get-stack.sh --show-error --silent https://get.haskellstack.org/
+    - shasum --check SHA256SUM
+    - chmod 0755 get-stack.sh
+    - ./get-stack.sh
     - export PATH=$HOME/.local/bin:$PATH
     - stack setup
   script:
     - ci/lint/stylish-haskell.sh --verbose
     - ci/lint/hlint.sh --verbose
     - stack build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
+    - stack build --copy-bins --coverage --local-bin-path bin/linux --no-run-tests --test
     - stack build --coverage --test
+    - echo Testing binary interface
     - test/acceptance.sh --verbose
+    - echo Testing npm interface
+    - test/acceptance.sh --purty $(pwd)/bin/purty.js --verbose
   stage: build
