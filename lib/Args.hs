@@ -2,6 +2,7 @@ module Args
   ( Args(..)
   , debug
   , info
+  , input
   , parse
   , withConfig
   , withInput
@@ -49,10 +50,10 @@ data Format
 
 instance Display Format where
   display format' = case format' of
-    Format' input' output' verbose' ->
+    Format' input'' output' verbose' ->
       "Format {"
         <> " input = "
-        <> display input'
+        <> display input''
         <> ","
         <> " output = "
         <> display output'
@@ -66,7 +67,7 @@ data Input
   | InputSTDIN
 
 instance Display Input where
-  display input' = case input' of
+  display input'' = case input'' of
     InputFile file ->
       "InputFile {"
         <> " filePath = "
@@ -197,7 +198,7 @@ defaults =
 format :: Options.Applicative.Parser Format
 format =
   pure Format'
-    <*> input
+    <*> input'
     <*> output
     <*> verbose
 
@@ -210,17 +211,22 @@ info = Options.Applicative.info (Options.Applicative.helper <*> args) descriptio
       <> Options.Applicative.progDesc "Pretty print a PureScript file"
       <> Options.Applicative.header "purty - A PureScript pretty-printer"
 
-input :: Options.Applicative.Parser Input
-input =
-  Options.Applicative.argument input' meta
+input :: Format -> Utf8Builder
+input format' = case format' of
+  Format' InputSTDIN _ _ -> "STDIN"
+  Format' (InputFile file) _ _ -> displayShow file
+
+input' :: Options.Applicative.Parser Input
+input' =
+  Options.Applicative.argument input'' meta
   where
   meta :: Options.Applicative.Mod Options.Applicative.ArgumentFields a
   meta =
     Options.Applicative.help "PureScript file to format or `-` for STDIN"
       <> Options.Applicative.metavar "FILE"
 
-  input' :: Options.Applicative.ReadM Input
-  input' = Options.Applicative.maybeReader $ \str -> case str of
+  input'' :: Options.Applicative.ReadM Input
+  input'' = Options.Applicative.maybeReader $ \str -> case str of
     "-" -> Just InputSTDIN
     _   -> Just (InputFile str)
 
@@ -342,7 +348,7 @@ withConfig log args' = case args' of
   Defaults defaults' -> do
     Log.debug log "Defaults were asked for, not parsing the config file."
     pure (Defaults defaults')
-  Format (Format' input' output'' verbose'') -> do
+  Format (Format' input'' output'' verbose'') -> do
     let file = "./.purty.dhall"
     Log.debug log ("Parsing " <> displayShow file <> ".")
     result <- tryAny (Dhall.inputFile configType file)
@@ -351,11 +357,11 @@ withConfig log args' = case args' of
         Log.debug
           log
           ("Could not parse " <> displayShow file <> ". " <> displayShow err)
-        pure (Format $ Format' input' output'' verbose'')
+        pure (Format $ Format' input'' output'' verbose'')
       Right config'@(Config output' verbose') -> do
         Log.debug log ("Parsed " <> displayShow file <> ". " <> display config')
         let format' =
-              Format' input' (output' <> output'') (verbose' <> verbose'')
+              Format' input'' (output' <> output'') (verbose' <> verbose'')
         Log.debug log ("Defaulted with config values " <> display format')
         pure (Format format')
 

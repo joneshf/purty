@@ -91,7 +91,8 @@ run' log args = case args of
     Log.debug log "Formatting input"
     results <- Args.withInput log format' (format log)
     case join results of
-      Left err -> pure (Just $ Error.wrap "Error formatting input" err)
+      Left err ->
+        pure (Just $ Error.wrap ("Error formatting " <> Args.input format') err)
       Right formatted -> do
         Log.debug log "Writing formatted module."
         Args.write log format' formatted
