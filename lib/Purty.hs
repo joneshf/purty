@@ -15,18 +15,18 @@ import qualified "this" Log
 
 format :: Log.Handle -> LByteString -> IO (Either Error.Error Utf8Builder)
 format log contents' = do
-  Log.debug log "Decoding to file contents to `Text`."
+  Log.debug log "Decoding contents to `Text`."
   case decodeUtf8' (toStrictBytes contents') of
     Left err ->
-      pure (Left $ Error.new $ "Error decoding file contents" <> displayShow err)
+      pure (Left $ Error.new $ "Error decoding contents" <> displayShow err)
     Right decoded -> do
-      Log.debug log ("Parsing file. Contents: " <> display decoded)
+      Log.debug log ("Parsing contents: " <> display decoded)
       case Language.PureScript.CST.parse decoded of
         Left err' ->
           pure
             ( Left
               $ Error.new
-              $ "Error parsing file:"
+              $ "Error parsing contents:"
               <> foldMap
                 (\err ->
                   newline
@@ -36,7 +36,7 @@ format log contents' = do
                 err'
             )
         Right parsed -> do
-          Log.debug log ("Parsed file: " <> displayShow parsed)
+          Log.debug log ("Parsed contents: " <> displayShow parsed)
           Log.debug log "Annotating module"
           annotated <- Annotation.module' log parsed
           Log.debug log ("Annotated module" <> displayShow annotated)
@@ -88,11 +88,12 @@ run' log args = case args of
     Args.writeDefaults log defaults
     pure Nothing
   Args.Format format' -> do
-    Log.debug log "Formatting file"
+    Log.debug log "Formatting input"
     results <- Args.withInput log format' (format log)
     case join results of
-      Left err -> pure (Just $ Error.wrap "Error formatting file" err)
+      Left err ->
+        pure (Just $ Error.wrap ("Error formatting " <> Args.input format') err)
       Right formatted -> do
-        Log.debug log "Writing formatted file."
+        Log.debug log "Writing formatted module."
         Args.write log format' formatted
         pure Nothing
