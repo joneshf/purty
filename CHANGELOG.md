@@ -1,5 +1,19 @@
 # Changelog
 
+## 4.2.0
+
+Small change to display the file name when reporting errors.
+
+### Additions
+
+* [Display file name in errors](https://gitlab.com/joneshf/purty/issues/121)
+
+### Changes
+
+* [Lock down version of `stack` for GitLab CI](https://gitlab.com/joneshf/purty/merge_requests/113)
+
+### Deletions
+
 ## 4.1.1
 
 Quick bug fix to get STDIN working over the npm interface.
