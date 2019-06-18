@@ -14,8 +14,8 @@ stages:
 
 Build purty:
   before_script:
-    - echo '8a2b15430fbe20bf04d32f9bc2e7fa91b7909ba71cf246de794d36e5c94dbf80  get-stack.sh' > SHA256SUM
-    - curl --location --output get-stack.sh --show-error --silent https://get.haskellstack.org/
+    - echo '55db464778cba4fe5aa10bdfd7ae7f283b5e646539a7086776785a7fae41a8b9  get-stack.sh' > SHA256SUM
+    - curl --location --output get-stack.sh --show-error --silent https://raw.githubusercontent.com/commercialhaskell/stack/d36d8136a8b4d3384fd0082191737eaa517fddfb/etc/scripts/get-stack.sh
     - shasum --check SHA256SUM
     - chmod 0755 get-stack.sh
     - ./get-stack.sh
