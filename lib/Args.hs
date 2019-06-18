@@ -213,7 +213,7 @@ info = Options.Applicative.info (Options.Applicative.helper <*> args) descriptio
 
 input :: Format -> Utf8Builder
 input format' = case format' of
-  Format' InputSTDIN _ _ -> "STDIN"
+  Format' InputSTDIN _ _       -> "STDIN"
   Format' (InputFile file) _ _ -> displayShow file
 
 input' :: Options.Applicative.Parser Input
