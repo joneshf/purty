@@ -404,8 +404,14 @@ constraint log indentation indent' constraint' = case constraint' of
         )
         types
   Language.PureScript.CST.ConstraintParens span wrapped' -> do
+    let
+      indent = case span of
+        Span.MultipleLines ->
+          indent' <> indentation
+        Span.SingleLine ->
+          indent'
     debug log "ConstraintParens" constraint' span
-    wrapped log indent' (constraint log indentation indent') wrapped'
+    wrapped log indent' (constraint log indentation indent) wrapped'
 
 dataCtor ::
   Log.Handle ->
