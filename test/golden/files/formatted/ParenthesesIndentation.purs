@@ -39,3 +39,11 @@ bar x = case x of
   ( Right
       z
   ) -> z
+
+baz ::
+  forall f.
+  ( Applicative
+      f
+  ) =>
+  f Boolean
+baz = pure true

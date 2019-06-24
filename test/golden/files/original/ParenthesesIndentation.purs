@@ -21,3 +21,7 @@ bar x = case x of
     y) -> y
   (Right
     z) -> z
+
+baz :: forall f. (Applicative
+                 f) => f Boolean
+baz = pure true
