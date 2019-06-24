@@ -14,8 +14,9 @@ stages:
 
 Build purty:
   before_script:
-    - ci/install-stack.sh --verbose
+    - mkdir --parents $HOME/.local/bin
     - export PATH=$HOME/.local/bin:$PATH
+    - ci/install-stack.sh --verbose
     - stack setup
   script:
     - ci/lint/stylish-haskell.sh --verbose
