@@ -17,9 +17,9 @@ g =
   [ ( true || false && true
     )
   , ( true
-      || true
-      && true
-      || false
+        || true
+        && true
+        || false
     )
   ]
 
