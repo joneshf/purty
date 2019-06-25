@@ -1,5 +1,18 @@
 # Changelog
 
+## 4.3.0
+
+A fix to the formatting of parenthesized expressions.
+
+### Additions
+
+### Changes
+
+* [Use `install-stack.sh` in GitLab CI](https://gitlab.com/joneshf/purty/merge_requests/115)
+* [Indent multiline parenthesized expressions properly](https://gitlab.com/joneshf/purty/issues/125)
+
+### Deletions
+
 ## 4.2.0
 
 Small change to display the file name when reporting errors.
