@@ -189,7 +189,7 @@ binder log indentation indent' binder'' = case binder'' of
           (indent', space)
     debug log "BinderTyped" binder'' span
     binder log indentation indent' binder'
-      <> sourceToken log indent' blank colons
+      <> sourceToken log indent' space colons
       <> pure prefix
       <> type' log indentation indent type''
   Language.PureScript.CST.BinderVar span name' -> do
