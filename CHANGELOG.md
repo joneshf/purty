@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.4.0
+
+A fix to the formatting of type annotations.
+
+### Additions
+
+### Changes
+
+* [Fix spaces in type annotations](https://gitlab.com/joneshf/purty/issues/128)
+
+### Deletions
+
 ## 4.3.0
 
 A fix to the formatting of parenthesized expressions.
