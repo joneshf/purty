@@ -1229,7 +1229,7 @@ importDecl log indentation indent'' importDecl' = case importDecl' of
           let
             prefix = case span of
               Span.MultipleLines ->
-                newline <> indent''
+                newline <> indent'
               Span.SingleLine ->
                 space
           pure prefix
