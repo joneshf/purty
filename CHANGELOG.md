@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.4.1
+
+A bug fix for the formatting of multi-line renamed imports.
+
+### Additions
+
+### Changes
+
+* [Fix formatting of multiline renamed imports](https://gitlab.com/joneshf/purty/issues/131)
+
+### Deletions
+
 ## 4.4.0
 
 A fix to the formatting of type annotations.
