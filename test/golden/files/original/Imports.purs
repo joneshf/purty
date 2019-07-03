@@ -21,4 +21,8 @@ import Prelude
   , (~>)
   )
 
+import Data.Array (head
+ , tail) as Array
 import Data.List as List
+import Data.Maybe
+             as Maybe
