@@ -9,3 +9,9 @@ foo = case _ of
   -- '\NUL' -> '\\'
   _ ->
     'a'
+
+bar :: Char
+bar = '❌'
+
+baz :: Char
+baz = '\x2019'
