@@ -66,7 +66,7 @@ library:
     - componentm == 0.0.0.2
     - dhall == 1.23.0
     - optparse-applicative == 0.14.3.0
-    - purescript == 0.13.0
+    - purescript == 0.13.2
     - rio == 0.1.9.2
     - text == 1.2.3.1
   source-dirs: lib
