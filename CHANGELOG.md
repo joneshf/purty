@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.4.2
+
+A bug fix for the formatting of unicode and escape characters.
+
+### Additions
+
+### Changes
+
+* [Fix emoji and escaped characters](https://gitlab.com/joneshf/purty/issues/118)
+
+### Deletions
+
 ## 4.4.1
 
 A bug fix for the formatting of multi-line renamed imports.
