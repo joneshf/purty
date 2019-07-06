@@ -6,7 +6,6 @@ import "rio" RIO hiding (log, span)
 
 import qualified "base" Data.List.NonEmpty
 import qualified "purescript" Language.PureScript.CST
-import qualified "purescript" Language.PureScript.PSString
 import qualified "this" Log
 import qualified "this" SourceRange
 import qualified "this" Span
@@ -1888,16 +1887,7 @@ sourceToken log indent prefix sourceToken' = case sourceToken' of
   Language.PureScript.CST.SourceToken ann token ->
     tokenAnn log indent prefix ann $ do
       debug log "SourceToken" sourceToken' (Span.sourceToken sourceToken')
-      pure (prefix <> printToken token)
-  where
-  printToken :: Language.PureScript.CST.Token -> Utf8Builder
-  printToken token = case token of
-    -- `Language.PureScript.CST.printToken` prints an extra reverse solidus
-    -- Use the underlying `Char` for displaying.
-    Language.PureScript.CST.TokChar _ char -> displayShow char
-    Language.PureScript.CST.TokString _ string ->
-      display (Language.PureScript.PSString.prettyPrintString string)
-    _ -> display (Language.PureScript.CST.printToken token)
+      pure (prefix <> display (Language.PureScript.CST.printToken token))
 
 space :: Utf8Builder
 space = " "
