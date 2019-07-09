@@ -14,6 +14,11 @@
 
 (require 'reformatter)
 
+(defgroup purty-format nil
+  "Minor mode for formatting PureScript buffers with purty."
+  :group 'languages
+  :link '(url-link "https://gitlab.com/joneshf/purty/purty-format.el"))
+
 (defcustom purty-format-command "purty"
   "The name of the `purty-format` command."
   :group 'purty-format
