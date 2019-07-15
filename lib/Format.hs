@@ -1314,6 +1314,12 @@ instanceHead log indentation indent'' instanceHead' = case instanceHead' of
           (indent'', indent'', space)
 
       span = Span.instanceHead instanceHead'
+
+      typePrefix = case listToMaybe types of
+        Just type'' -> case Span.betweenSourceRanges (SourceRange.qualifiedName className) (SourceRange.type' type'') of
+          Span.MultipleLines -> newline <> indent
+          Span.SingleLine    -> space
+        Nothing -> space
     debug log "InstanceHead" instanceHead' span
     sourceToken log indent'' blank instance''
       <> name log indent'' space name'
@@ -1333,8 +1339,8 @@ instanceHead log indentation indent'' instanceHead' = case instanceHead' of
       <> qualifiedName log indent' prefix className
       <> foldMap
         (\type'' ->
-          pure space
-            <> type' log indentation indent' type''
+          pure typePrefix
+            <> type' log indentation indent type''
         )
         types
 

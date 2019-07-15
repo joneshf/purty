@@ -19,6 +19,7 @@ module SourceRange
   , name
   , oneOrDelimited
   , patternGuard
+  , qualifiedName
   , recordAccessor
   , recordLabeled
   , recordUpdate
@@ -209,6 +210,13 @@ patternGuard patternGuard' = case patternGuard' of
     Language.PureScript.CST.Positions.widen
       (maybe (expr expr') (binder . fst) binder')
       (expr expr')
+
+qualifiedName ::
+  Language.PureScript.CST.QualifiedName a ->
+  Language.PureScript.CST.SourceRange
+qualifiedName =
+  Language.PureScript.CST.Positions.toSourceRange
+    . Language.PureScript.CST.Positions.qualRange
 
 recordAccessor ::
   Language.PureScript.CST.RecordAccessor a ->
