@@ -957,7 +957,7 @@ exprPrefix log span indentation indent' expr' =
     Language.PureScript.CST.ExprDo{}             -> indent'
     Language.PureScript.CST.ExprHole{}           -> indent' <> indentation
     Language.PureScript.CST.ExprIdent{}          -> indent' <> indentation
-    Language.PureScript.CST.ExprIf{}             -> indent'
+    Language.PureScript.CST.ExprIf{}             -> indent' <> indentation
     Language.PureScript.CST.ExprInfix{}          -> indent' <> indentation
     Language.PureScript.CST.ExprLambda{}         -> indent'
     Language.PureScript.CST.ExprLet{}            -> indent' <> indentation
@@ -985,7 +985,7 @@ exprPrefix log span indentation indent' expr' =
     Language.PureScript.CST.ExprDo{}             -> space
     Language.PureScript.CST.ExprHole{}           -> newline <> indent
     Language.PureScript.CST.ExprIdent{}          -> newline <> indent
-    Language.PureScript.CST.ExprIf{}             -> space
+    Language.PureScript.CST.ExprIf{}             -> newline <> indent
     Language.PureScript.CST.ExprInfix{}          -> newline <> indent
     Language.PureScript.CST.ExprLambda{}         -> space
     Language.PureScript.CST.ExprLet{}            -> newline <> indent
