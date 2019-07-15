@@ -1318,7 +1318,7 @@ instanceHead log indentation indent'' instanceHead' = case instanceHead' of
       typePrefix = case listToMaybe types of
         Just type'' -> case Span.betweenSourceRanges (SourceRange.qualifiedName className) (SourceRange.type' type'') of
           Span.MultipleLines -> newline <> indent
-          Span.SingleLine -> space
+          Span.SingleLine    -> space
         Nothing -> space
     debug log "InstanceHead" instanceHead' span
     sourceToken log indent'' blank instance''
