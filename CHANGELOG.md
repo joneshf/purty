@@ -1,5 +1,21 @@
 # Changelog
 
+## 4.5.0
+
+A couple of formatting changes and a bit of documentation.
+The formatting changes should make the output a bit more compatible with compilers older than 0.13.0.
+
+### Additions
+
+* [Document the factors behind formatting](https://gitlab.com/joneshf/purty/issues/113)
+
+### Changes
+
+* [Fix conditional formatting](https://gitlab.com/joneshf/purty/issues/136)
+* [Fix instance head formating](https://gitlab.com/joneshf/purty/merge_requests/126)
+
+### Deletions
+
 ## 4.4.2
 
 A bug fix for the formatting of unicode and escape characters.
