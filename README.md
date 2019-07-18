@@ -7,9 +7,7 @@
 
 ## What is it?
 
-A WIP pretty printer for PureScript modules.
-
-It's not all that pretty just yet.
+A source code formatter for PureScript.
 
 ## Installation
 
@@ -27,13 +25,22 @@ Binaries are available from [Bintray](https://bintray.com/joneshf/generic/purty/
 
 ## Usage
 
-You can pretty print a file by invoking `purty` with the path to the file.
+You can format a file by invoking `purty` with the path to the file.
 
 For instance, if you had a `Main` module in a `src` directory, you could say:
 
 ```sh
 purty src/Main.purs
 ```
+
+This will write the formatted module to STDOUT.
+If you'd like to format the module and write it back to the same file, you can use the `--write` option:
+
+```sh
+purty --write src/Main.purs
+```
+
+This will write the formatted module to `src/Main.purs`.
 
 A listing of all available options can be shown with the `--help` option
 
@@ -52,10 +59,10 @@ You can reference any other [Dhall][] file on the internet, you can compute the 
 
 For more information about [Dhall][] and what it provides, see the [Dhall tutorial][].
 
-## How does it print?
+## How does it format?
 
-For examples of how `purty` prints, see the [golden tests][].
+For examples of how `purty` formats, see the [golden tests][].
 
 [Dhall]: https://dhall-lang.org
-[Dhall tutorial]: https://hackage.haskell.org/package/dhall-1.13.1/docs/Dhall-Tutorial.html
+[Dhall tutorial]: https://hackage.haskell.org/package/dhall-1.23.0/docs/Dhall-Tutorial.html
 [golden tests]: ./test/golden/files
