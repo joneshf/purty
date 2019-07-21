@@ -6,7 +6,8 @@ ACCEPTANCE_SCRIPTFLAGS := --verbose
 PURTY_JS := $(CURDIR)/bin/purty.js
 STACK := stack
 STACKFLAGS :=
-STACK_TESTFLAGS :=
+STACK_BUILDFLAGS :=
+STACK_BUILD := $(STACK) $(STACKFLAGS) build $(STACK_BUILDFLAGS)
 
 .DEFAULT_GOAL := test
 
@@ -28,4 +29,4 @@ test-acceptance-npm: $(ACCEPTANCE_SCRIPT)
 
 .PHONY: test-golden
 test-golden:
-	$(STACK) $(STACKFLAGS) build --test $(STACK_TESTFLAGS) purty:test:golden
+	$(STACK_BUILD) --test purty:test:golden
