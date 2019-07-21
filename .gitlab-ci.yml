@@ -24,6 +24,5 @@ Build purty:
     - ci/lint/hlint.sh --verbose
     - stack build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
     - stack build --copy-bins --coverage --local-bin-path bin/linux --no-run-tests --test
-    - stack build --coverage --test
     - make test
   stage: build

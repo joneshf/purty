@@ -49,5 +49,4 @@ sudo: false
 script:
   - "[ dependencies = ${BUILD_TYPE} ] || stack build --copy-bins --local-bin-path bin --no-run-tests --test"
   - "[ dependencies = ${BUILD_TYPE} ] || stack build --copy-bins --local-bin-path bin/${TRAVIS_OS_NAME} --no-run-tests --test"
-  - "[ dependencies = ${BUILD_TYPE} ] || stack build --test"
   - "[ dependencies = ${BUILD_TYPE} ] || make test"

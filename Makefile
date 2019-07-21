@@ -12,7 +12,7 @@ STACK_TEST := $(STACK) $(STACKFLAGS) build --test $(STACK_TESTFLAGS)
 .DEFAULT_GOAL := test
 
 .PHONY: test
-test: test-acceptance
+test: test-acceptance test-golden
 
 .PHONY: test-acceptance
 test-acceptance: test-acceptance-binary test-acceptance-npm
@@ -26,3 +26,7 @@ test-acceptance-binary: $(ACCEPTANCE_SCRIPT)
 test-acceptance-npm: $(ACCEPTANCE_SCRIPT)
 	$(info Testing npm interface)
 	$(ACCEPTANCE_SCRIPT) $(ACCEPTANCE_SCRIPTFLAGS) --purty $(PURTY_JS)
+
+.PHONY: test-golden
+test-golden:
+	$(STACK_TEST) $(STACK_TESTFLAGS) purty:test:golden
