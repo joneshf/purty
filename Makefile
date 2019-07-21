@@ -7,7 +7,6 @@ PURTY_JS := $(CURDIR)/bin/purty.js
 STACK := stack
 STACKFLAGS :=
 STACK_TESTFLAGS :=
-STACK_TEST := $(STACK) $(STACKFLAGS) build --test $(STACK_TESTFLAGS)
 
 .DEFAULT_GOAL := test
 
@@ -29,4 +28,4 @@ test-acceptance-npm: $(ACCEPTANCE_SCRIPT)
 
 .PHONY: test-golden
 test-golden:
-	$(STACK_TEST) $(STACK_TESTFLAGS) purty:test:golden
+	$(STACK) $(STACKFLAGS) build --test $(STACK_TESTFLAGS) purty:test:golden
