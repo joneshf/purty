@@ -4,8 +4,7 @@ before_deploy:
 
 build_script:
   - stack setup
-  - stack build --copy-bins --local-bin-path bin --no-run-tests --test
-  - make test-golden
+  - make test-golden BINARY=purty.exe
 
 cache:
   - .stack-root

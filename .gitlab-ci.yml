@@ -22,7 +22,5 @@ Build purty:
   script:
     - ci/lint/stylish-haskell.sh --verbose
     - ci/lint/hlint.sh --verbose
-    - stack build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
-    - stack build --copy-bins --coverage --local-bin-path bin/linux --no-run-tests --test
     - make test STACK_BUILDFLAGS=--coverage
   stage: build
