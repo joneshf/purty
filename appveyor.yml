@@ -4,8 +4,7 @@ before_deploy:
 
 build_script:
   - stack setup
-  - stack build --copy-bins --local-bin-path bin --no-run-tests --test
-  - stack build --test
+  - make test-golden BINARY=purty.exe
 
 cache:
   - .stack-root
@@ -32,5 +31,6 @@ environment:
 
 install:
   - chocolatey install haskell-stack --version 1.9.3 --yes
+  - chocolatey install make --version 4.2.1 --yes
 
 version: '{build}'

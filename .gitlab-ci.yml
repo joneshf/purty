@@ -22,11 +22,5 @@ Build purty:
   script:
     - ci/lint/stylish-haskell.sh --verbose
     - ci/lint/hlint.sh --verbose
-    - stack build --copy-bins --coverage --local-bin-path bin --no-run-tests --test
-    - stack build --copy-bins --coverage --local-bin-path bin/linux --no-run-tests --test
-    - stack build --coverage --test
-    - echo Testing binary interface
-    - test/acceptance.sh --verbose
-    - echo Testing npm interface
-    - test/acceptance.sh --purty $(pwd)/bin/purty.js --verbose
+    - make test STACK_BUILDFLAGS=--coverage
   stage: build
