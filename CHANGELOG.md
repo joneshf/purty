@@ -1,5 +1,20 @@
 # Changelog
 
+## 4.5.1
+
+Mostly infrastructure changes.
+There should be no breaking changes or formatting changes in this version
+
+### Additions
+
+* [Create a Makefile](https://gitlab.com/joneshf/purty/issues/90)
+
+### Changes
+
+* [Update copy in the README](https://gitlab.com/joneshf/purty/merge_requests/129)
+
+### Deletions
+
 ## 4.5.0
 
 A couple of formatting changes and a bit of documentation.
