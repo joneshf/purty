@@ -1,5 +1,22 @@
 # Changelog
 
+## 4.5.2
+
+We've started working on the emacs integration.
+So far, there's a elisp file that allows formatting on save.
+In the coming releases, we hope to make installing and using it easier.
+
+We're not officially supporting the emacs integration, but we're starting work on it!
+
+### Additions
+
+* [Add `purty-format` Emacs minor-mode](https://gitlab.com/joneshf/purty/merge_requests/124)
+* [Run CI for !124](https://gitlab.com/joneshf/purty/merge_requests/132)
+
+### Changes
+
+### Deletions
+
 ## 4.5.1
 
 Mostly infrastructure changes.
