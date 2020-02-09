@@ -1370,8 +1370,15 @@ kind log indentation indent' kind'' = case kind'' of
     debug log "KindParens" kind'' span
     parens log span indentation indent' (kind log indentation) wrapped'
   Language.PureScript.CST.KindRow span sourceToken' kind' -> do
+    let
+      prefix = case span of
+        Span.MultipleLines ->
+          newline <> indent'
+        Span.SingleLine ->
+          space
     debug log "KindRow" kind'' span
     sourceToken log indent' blank sourceToken'
+      <> pure prefix
       <> kind log indentation indent' kind'
 
 label ::
