@@ -173,7 +173,7 @@ binder log indentation indent' binder'' = case binder'' of
         indentation
         indent'
         SourceRange.binder
-        (binder log indentation indent')
+        (binder log indentation)
       )
       delimited'
   Language.PureScript.CST.BinderString span string _ -> do
@@ -877,12 +877,6 @@ expr log indentation indent'' expr'' = case expr'' of
     debug log "ExprParens" expr'' span
     parens log span indentation  indent'' (expr log indentation) wrapped'
   Language.PureScript.CST.ExprRecord span delimited' -> do
-    let
-      indent' = case span of
-        Span.MultipleLines ->
-          indent'' <> indentation
-        Span.SingleLine ->
-          indent''
     debug log "ExprRecord" expr'' span
     record
       log
@@ -893,7 +887,7 @@ expr log indentation indent'' expr'' = case expr'' of
         indentation
         indent''
         SourceRange.expr
-        (expr log indentation indent')
+        (expr log indentation)
       )
       delimited'
   Language.PureScript.CST.ExprRecordAccessor span recordAccessor' -> do
@@ -1729,7 +1723,7 @@ recordLabeled ::
   Indentation ->
   Indent ->
   (a -> Language.PureScript.CST.SourceRange) ->
-  (a -> IO Utf8Builder) ->
+  (Indent -> a -> IO Utf8Builder) ->
   Language.PureScript.CST.RecordLabeled a ->
   IO Utf8Builder
 recordLabeled log indentation indent' f g recordLabeled' = case recordLabeled' of
@@ -1742,14 +1736,14 @@ recordLabeled log indentation indent' f g recordLabeled' = case recordLabeled' o
 
       (indent, prefix) = case span of
         Span.MultipleLines ->
-          (indent' <> indentation, newline <> indent)
+          (indent' <> indentation <> indentation, newline <> indent)
         Span.SingleLine ->
           (indent', space)
     debug log "RecordField" recordLabeled' span
     label log indent' blank label'
       <> sourceToken log indent' blank colon
       <> pure prefix
-      <> g a
+      <> g indent a
 
 recordUpdate ::
   Log.Handle ->
@@ -1798,17 +1792,17 @@ row ::
   Indent ->
   Language.PureScript.CST.Row Span.Span ->
   IO Utf8Builder
-row log span indentation indent row' = case row' of
+row log span indentation indent' row' = case row' of
   Language.PureScript.CST.Row Nothing Nothing -> do
     debug log "Row" row' span
     pure blank
   Language.PureScript.CST.Row (Just labels) Nothing -> do
     let
-      (before, after) = case span of
+      (before, indent, after) = case span of
         Span.MultipleLines ->
-          (blank, blank)
+          (blank, indent' <> indentation, blank)
         Span.SingleLine ->
-          (space, space)
+          (space, indent', space)
     debug log "Row" row' span
     pure before
       <> separated
@@ -1817,7 +1811,7 @@ row log span indentation indent row' = case row' of
           (SourceRange.labeled SourceRange.label SourceRange.type')
           labels
         )
-        indent
+        indent'
         space
         (labeledLabelType log indentation indent)
         labels
@@ -1826,22 +1820,22 @@ row log span indentation indent row' = case row' of
     let
       (before, after) = case span of
         Span.MultipleLines ->
-          (newline <> indent, blank)
+          (newline <> indent', blank)
         Span.SingleLine ->
           (space, space)
     debug log "Row" row' span
     pure before
-      <> sourceToken log indent blank bar
+      <> sourceToken log indent' blank bar
       <> pure space
-      <> type' log indentation indent type''
+      <> type' log indentation indent' type''
       <> pure after
   Language.PureScript.CST.Row (Just labels) (Just (bar, type'')) -> do
     let
-      (before, after, prefix) = case span of
+      (before, indent, after, prefix) = case span of
         Span.MultipleLines ->
-          (blank, blank, newline <> indent)
+          (blank, indent' <> indentation, blank, newline <> indent')
         Span.SingleLine ->
-          (space, space, space)
+          (space, indent', space, space)
     debug log "Row" row' span
     pure before
       <> separated
@@ -1850,14 +1844,14 @@ row log span indentation indent row' = case row' of
           (SourceRange.labeled SourceRange.label SourceRange.type')
           labels
         )
-        indent
+        indent'
         space
         (labeledLabelType log indentation indent)
         labels
       <> pure prefix
-      <> sourceToken log indent blank bar
+      <> sourceToken log indent' blank bar
       <> pure space
-      <> type' log indentation indent type''
+      <> type' log indentation indent' type''
       <> pure after
 
 separated ::
