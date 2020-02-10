@@ -6,10 +6,20 @@ type T
 type U
   = { foo :: Int
     , bar ::
-      { baz :: Int
-      , qux ::
-        { lhs :: Int, rhs :: Int }
-      }
+        { baz :: Int
+        , qux ::
+            { lhs :: Int, rhs :: Int }
+        }
+    }
+
+type V v
+  = { foo :: Int
+    , bar ::
+        { baz :: Int
+        , qux ::
+            { lhs :: Int, rhs :: Int }
+        }
+    | v
     }
 
 t :: T
@@ -19,8 +29,8 @@ u :: T
 u =
   { foo: 1
   , bar:
-    { baz: 2
-    , qux:
-      { lhs: 3, rhs: 4 }
-    }
+      { baz: 2
+      , qux:
+          { lhs: 3, rhs: 4 }
+      }
   }
