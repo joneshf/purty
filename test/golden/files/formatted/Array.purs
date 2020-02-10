@@ -4,7 +4,7 @@ f :: Array { x :: Int, y :: Boolean }
 f =
   [ { x: 1
     , y:
-      true
+        true
     }
   , { x: 10, y: false }
   , { x: 0

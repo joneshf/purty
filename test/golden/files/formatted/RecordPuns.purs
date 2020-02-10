@@ -20,6 +20,6 @@ qux { age } = { age: Foo.age, name }
 gar :: { age :: Int } -> { age :: Int, name :: String }
 gar { age } =
   { age:
-    Foo.age
+      Foo.age
   , name
   }
