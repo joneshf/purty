@@ -1,5 +1,26 @@
 # Changelog
 
+## 4.6.0
+
+There's been a process change.
+We're not accepting external merge requests for the time being.
+
+This decision has been a long time coming, and it's almost entirely an internally motivated change.
+This long and short is that I'm burned out from open source work, and would like to try a different approach to developing this project.
+There's more details in the [issue](https://gitlab.com/joneshf/purty/issues/151).
+
+In other news, we've got a couple of small fixes to formatting.
+
+### Additions
+
+### Changes
+
+* [Fix row kind formatting](https://gitlab.com/joneshf/purty/issues/139)
+* [Fix indentation in record values](https://gitlab.com/joneshf/purty/issues/142)
+* [Disable external merge requests for now](https://gitlab.com/joneshf/purty/issues/151)
+
+### Deletions
+
 ## 4.5.2
 
 We've started working on the emacs integration.
