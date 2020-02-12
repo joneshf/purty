@@ -10,7 +10,8 @@ import qualified "this" Args
 import qualified "componentm" Control.Monad.Component
 import qualified "this" Error
 import qualified "this" Format
-import qualified "purescript" Language.PureScript.CST
+import qualified "purescript" Language.PureScript.CST.Errors
+import qualified "purescript" Language.PureScript.CST.Parser
 import qualified "this" Log
 
 format :: Log.Handle -> LByteString -> IO (Either Error.Error Utf8Builder)
@@ -21,7 +22,7 @@ format log contents' = do
       pure (Left $ Error.new $ "Error decoding contents" <> displayShow err)
     Right decoded -> do
       Log.debug log ("Parsing contents: " <> display decoded)
-      case Language.PureScript.CST.parse decoded of
+      case Language.PureScript.CST.Parser.parse decoded of
         Left err' ->
           pure
             ( Left
@@ -31,7 +32,7 @@ format log contents' = do
                 (\err ->
                   newline
                     <> indentation
-                    <> fromString (Language.PureScript.CST.prettyPrintError err)
+                    <> fromString (Language.PureScript.CST.Errors.prettyPrintError err)
                 )
                 err'
             )
