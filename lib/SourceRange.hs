@@ -31,8 +31,8 @@ module SourceRange
 import "rio" RIO
 
 import qualified "base" Data.List.NonEmpty
-import qualified "purescript" Language.PureScript.CST.Positions
-import qualified "purescript" Language.PureScript.CST.Types
+import qualified "purescript-cst" Language.PureScript.CST.Positions
+import qualified "purescript-cst" Language.PureScript.CST.Types
 
 adoBlock ::
   Language.PureScript.CST.Types.AdoBlock a ->

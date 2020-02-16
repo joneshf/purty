@@ -52,8 +52,8 @@ module Span
 import "rio" RIO
 
 import qualified "text" Data.Text
-import qualified "purescript" Language.PureScript.CST.Positions
-import qualified "purescript" Language.PureScript.CST.Types
+import qualified "purescript-cst" Language.PureScript.CST.Positions
+import qualified "purescript-cst" Language.PureScript.CST.Types
 import qualified "this" SourceRange
 
 data Span

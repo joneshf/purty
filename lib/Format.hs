@@ -5,8 +5,8 @@ module Format
 import "rio" RIO hiding (log, span)
 
 import qualified "base" Data.List.NonEmpty
-import qualified "purescript" Language.PureScript.CST.Print
-import qualified "purescript" Language.PureScript.CST.Types
+import qualified "purescript-cst" Language.PureScript.CST.Print
+import qualified "purescript-cst" Language.PureScript.CST.Types
 import qualified "this" Log
 import qualified "this" SourceRange
 import qualified "this" Span

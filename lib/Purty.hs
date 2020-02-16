@@ -10,8 +10,8 @@ import qualified "this" Args
 import qualified "componentm" Control.Monad.Component
 import qualified "this" Error
 import qualified "this" Format
-import qualified "purescript" Language.PureScript.CST.Errors
-import qualified "purescript" Language.PureScript.CST.Parser
+import qualified "purescript-cst" Language.PureScript.CST.Errors
+import qualified "purescript-cst" Language.PureScript.CST.Parser
 import qualified "this" Log
 
 format :: Log.Handle -> LByteString -> IO (Either Error.Error Utf8Builder)
