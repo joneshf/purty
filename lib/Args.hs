@@ -5,7 +5,6 @@ module Args
   , input
   , parse
   , withInput
-  , write
   ) where
 
 import "rio" RIO hiding (log)
@@ -161,50 +160,54 @@ verbose = Options.Applicative.flag NotVerbose Verbose meta
 withInput ::
   Log.Handle ->
   Format ->
-  (LByteString -> IO a) ->
-  IO (Either Error.Error a)
+  (LByteString -> IO (Either Error.Error Utf8Builder)) ->
+  IO (Maybe Error.Error)
 withInput log format' f = case format' of
-  Format' (InputFile file) _ _ -> do
-    Log.debug log ("Reading " <> displayShow file <> ".")
-    result' <- tryIO $ withLazyFile file $ \contents -> do
+  Format' (InputFile file') output' _ -> do
+    Log.debug log ("Reading " <> displayShow file' <> ".")
+    result' <- tryIO $ withLazyFile file' $ \contents -> do
       Log.debug log "Got the file contents"
       result <- f contents
       Log.debug log "Finished with the file"
       pure result
     case result' of
       Left err ->
-        pure (Left $ Error.new $ "Error reading file: " <> displayShow err)
-      Right result ->
-        pure (Right result)
+        pure (Just $ Error.new $ "Error reading file: " <> displayShow err)
+      Right result -> case result of
+        Left err ->
+          pure (Just (Error.wrap ("Error formatting " <> displayShow file') err))
+        Right formatted -> case output' of
+          STDOUT -> do
+            Log.debug log "Writing formatted file to STDOUT"
+            hPutBuilder stdout (getUtf8Builder formatted)
+            Log.debug log "Wrote formatted file to STDOUT"
+            pure Nothing
+          Write -> do
+            Log.debug log ("Converting file " <> displayShow file' <> " to absolute.")
+            file <- RIO.Directory.makeAbsolute file'
+            Log.debug log ("Writing formatted file " <> displayShow file <> " in-place.")
+            RIO.File.writeBinaryFileDurableAtomic
+              file
+              ( toStrictBytes
+                $ Data.ByteString.Builder.toLazyByteString
+                $ getUtf8Builder formatted
+              )
+            Log.debug log "Wrote formatted file in-place"
+            pure Nothing
   Format' InputSTDIN _ _ -> do
     Log.debug log "Reading STDIN."
     result' <- tryIO RIO.ByteString.Lazy.getContents
     case result' of
       Left err ->
-        pure (Left $ Error.new $ "Error reading STDIN: " <> displayShow err)
+        pure (Just $ Error.new $ "Error reading STDIN: " <> displayShow err)
       Right contents -> do
         Log.debug log "Got STDIN contents"
         result <- f contents
-        pure (Right result)
-
-write :: Log.Handle -> Format -> Utf8Builder -> IO ()
-write log format' formatted = case format' of
-  Format' _ STDOUT _ -> do
-    Log.debug log "Writing formatted file to STDOUT"
-    hPutBuilder stdout (getUtf8Builder formatted)
-    Log.debug log "Wrote formatted file to STDOUT"
-  Format' (InputFile file') Write _ -> do
-    Log.debug log ("Converting file " <> displayShow file' <> " to absolute.")
-    file <- RIO.Directory.makeAbsolute file'
-    Log.debug log ("Writing formatted file " <> displayShow file <> " in-place.")
-    RIO.File.writeBinaryFileDurableAtomic
-      file
-      ( toStrictBytes
-        $ Data.ByteString.Builder.toLazyByteString
-        $ getUtf8Builder formatted
-      )
-    Log.debug log "Wrote formatted file in-place"
-  Format' InputSTDIN _ _ -> do
-    Log.debug log "Writing formatted STDIN to STDOUT"
-    hPutBuilder stdout (getUtf8Builder formatted)
-    Log.debug log "Wrote formatted STDIN to STDOUT"
+        case result of
+          Left err ->
+            pure (Just (Error.wrap "Error formatting STDIN" err))
+          Right formatted -> do
+            Log.debug log "Writing formatted STDIN to STDOUT"
+            hPutBuilder stdout (getUtf8Builder formatted)
+            Log.debug log "Wrote formatted STDIN to STDOUT"
+            pure Nothing
