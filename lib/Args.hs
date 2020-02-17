@@ -18,7 +18,7 @@ import qualified "rio" RIO.ByteString.Lazy
 import qualified "rio" RIO.Directory
 import qualified "rio" RIO.File
 
-data Args
+newtype Args
   = Format Format
 
 data Format
@@ -148,8 +148,7 @@ output = Options.Applicative.flag STDOUT Write meta
       <> Options.Applicative.long "write"
 
 parse :: IO Args
-parse = do
-  Options.Applicative.execParser info
+parse = Options.Applicative.execParser info
 
 verbose :: Options.Applicative.Parser Verbose
 verbose = Options.Applicative.flag NotVerbose Verbose meta
