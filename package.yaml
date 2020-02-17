@@ -43,11 +43,25 @@ default-extensions:
   - ViewPatterns
 executables:
   purty:
+    cc-options:
+      - -static
     dependencies:
       - base == 4.12.0.0
       - purty
+    ghc-options:
+      - -O2
+      - -rtsopts
+      - -static
+      - -threaded
+      - -with-rtsopts=-N
+    ld-options:
+      - -pthread
     main: Main.hs
     source-dirs: src
+    when:
+      - condition: '!os(darwin)'
+        ld-options:
+          - -static
 extra-source-files:
   - README.md
 ghc-options:
