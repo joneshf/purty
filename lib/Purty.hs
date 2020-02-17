@@ -5,6 +5,7 @@ module Purty
 
 import "rio" RIO hiding (log)
 
+import qualified "rio" RIO.NonEmpty
 import qualified "this" Annotation
 import qualified "this" Args
 import qualified "componentm" Control.Monad.Component
@@ -56,10 +57,11 @@ run :: Args.Args -> IO ExitCode
 run args =
   runComponent (Args.debug args) "purty" (Log.handle config) $ \log -> do
     result <- run' log args
-    case result of
-      Just err -> do
-        Log.debug log (Error.format err)
-        Log.info log (Error.message err)
+    case RIO.NonEmpty.nonEmpty result of
+      Just errs -> do
+        for_ errs $ \err -> do
+          Log.debug log (Error.format err)
+          Log.info log (Error.message err)
         pure (ExitFailure 1)
       Nothing -> pure ExitSuccess
   where
@@ -82,7 +84,7 @@ run args =
     | otherwise =
       Control.Monad.Component.runComponentM
 
-run' :: Log.Handle -> Args.Args -> IO (Maybe Error.Error)
+run' :: Log.Handle -> Args.Args -> IO [Error.Error]
 run' log args = case args of
   Args.Format format' -> do
     Log.debug log "Formatting input"

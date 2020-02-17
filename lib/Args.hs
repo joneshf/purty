@@ -161,29 +161,32 @@ withInput ::
   Log.Handle ->
   Format ->
   (LByteString -> IO (Either Error.Error Utf8Builder)) ->
-  IO (Maybe Error.Error)
+  IO [Error.Error]
 withInput log format' f = case format' of
   Format' (InputFile file') output' _ -> do
     Log.debug log ("Converting file " <> displayShow file' <> " to absolute.")
     file <- RIO.Directory.makeAbsolute file'
-    write log f output' file
+    err' <- write log f output' file
+    case err' of
+      Just err -> pure [err]
+      Nothing -> pure []
   Format' InputSTDIN _ _ -> do
     Log.debug log "Reading STDIN."
     result' <- tryIO RIO.ByteString.Lazy.getContents
     case result' of
       Left err ->
-        pure (Just $ Error.new $ "Error reading STDIN: " <> displayShow err)
+        pure [Error.new ("Error reading STDIN: " <> displayShow err)]
       Right contents -> do
         Log.debug log "Got STDIN contents"
         result <- f contents
         case result of
           Left err ->
-            pure (Just (Error.wrap "Error formatting STDIN" err))
+            pure [Error.wrap "Error formatting STDIN" err]
           Right formatted -> do
             Log.debug log "Writing formatted STDIN to STDOUT"
             hPutBuilder stdout (getUtf8Builder formatted)
             Log.debug log "Wrote formatted STDIN to STDOUT"
-            pure Nothing
+            pure []
 
 write ::
   Log.Handle ->
