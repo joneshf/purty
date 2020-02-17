@@ -30,9 +30,9 @@ module SourceRange
 
 import "rio" RIO
 
-import qualified "base" Data.List.NonEmpty
 import qualified "purescript-cst" Language.PureScript.CST.Positions
 import qualified "purescript-cst" Language.PureScript.CST.Types
+import qualified "rio" RIO.NonEmpty
 
 adoBlock ::
   Language.PureScript.CST.Types.AdoBlock a ->
@@ -57,7 +57,7 @@ caseOf caseOf' = case caseOf' of
   Language.PureScript.CST.Types.CaseOf case' _ _ branches ->
     Language.PureScript.CST.Positions.widen
       (Language.PureScript.CST.Positions.srcRange case')
-      (guarded $ snd $ Data.List.NonEmpty.last branches)
+      (guarded $ snd $ RIO.NonEmpty.last branches)
 
 constraint ::
   Language.PureScript.CST.Types.Constraint a ->
@@ -92,7 +92,7 @@ doBlock doBlock' = case doBlock' of
   Language.PureScript.CST.Types.DoBlock do' doStatements ->
     Language.PureScript.CST.Positions.widen
       (Language.PureScript.CST.Positions.srcRange do')
-      (doStatement $ Data.List.NonEmpty.last doStatements)
+      (doStatement $ RIO.NonEmpty.last doStatements)
 
 doStatement ::
   Language.PureScript.CST.Types.DoStatement a ->
