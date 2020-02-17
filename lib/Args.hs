@@ -9,6 +9,8 @@ module Args
 
 import "rio" RIO hiding (log)
 
+import qualified "path" Path
+import qualified "path-io" Path.IO
 import qualified "bytestring" Data.ByteString.Builder
 import qualified "this" Error
 import qualified "this" Log
@@ -16,6 +18,7 @@ import qualified "optparse-applicative" Options.Applicative
 import qualified "rio" RIO.ByteString.Lazy
 import qualified "rio" RIO.Directory
 import qualified "rio" RIO.File
+import qualified "rio" RIO.FilePath
 
 newtype Args
   = Format Format
@@ -166,10 +169,17 @@ withInput log format' f = case format' of
   Format' (InputFile file') output' _ -> do
     Log.debug log ("Converting file " <> displayShow file' <> " to absolute.")
     file <- RIO.Directory.makeAbsolute file'
-    err' <- write log f output' file
-    case err' of
-      Just err -> pure [err]
-      Nothing -> pure []
+    directoryExists <- RIO.Directory.doesDirectoryExist file
+    if directoryExists then case Path.parseAbsDir file of
+      Just directory -> do
+        Log.debug log ("Parsed " <> displayShow directory <> " as an absolute directory")
+        Path.IO.walkDirAccum Nothing (\_ _ files -> writeFiles log f output' files) directory
+      Nothing -> pure [Error.new ("Error reading directory: " <> displayShow file)]
+    else do
+      err' <- write log f output' file
+      case err' of
+        Just err -> pure [err]
+        Nothing -> pure []
   Format' InputSTDIN _ _ -> do
     Log.debug log "Reading STDIN."
     result' <- tryIO RIO.ByteString.Lazy.getContents
@@ -223,3 +233,27 @@ write log f output' file = do
             )
           Log.debug log "Wrote formatted file in-place"
           pure Nothing
+
+writeFiles ::
+  Log.Handle ->
+  (LByteString -> IO (Either Error.Error Utf8Builder)) ->
+  Output ->
+  [Path.Path Path.Abs Path.File] ->
+  IO [Error.Error]
+writeFiles log f output' files = do
+  errors <- traverse go files
+  pure (catMaybes errors)
+  where
+  go ::
+    Path.Path Path.Abs Path.File ->
+    IO (Maybe Error.Error)
+  go file' = case pureScriptFile file' of
+    Just file -> write log f output' file
+    Nothing -> pure Nothing
+
+  pureScriptFile ::
+    Path.Path Path.Abs Path.File ->
+    Maybe FilePath
+  pureScriptFile file
+    | RIO.FilePath.isExtensionOf "purs" (Path.toFilePath file) = Just (Path.toFilePath file)
+    | otherwise = Nothing
