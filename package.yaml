@@ -46,6 +46,8 @@ executables:
     dependencies:
       - base == 4.12.0.0
       - purty
+    ld-options:
+      - -static
     main: Main.hs
     source-dirs: src
 extra-source-files:
