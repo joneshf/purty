@@ -56,9 +56,12 @@ executables:
       - -with-rtsopts=-N
     ld-options:
       - -pthread
-      - -static
     main: Main.hs
     source-dirs: src
+    when:
+      - condition: '!os(darwin)'
+        ld-options:
+          - -static
 extra-source-files:
   - README.md
 ghc-options:
