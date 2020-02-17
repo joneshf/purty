@@ -4,10 +4,10 @@ module Format
 
 import "rio" RIO hiding (log, span)
 
-import qualified "base" Data.List.NonEmpty
 import qualified "purescript-cst" Language.PureScript.CST.Print
 import qualified "purescript-cst" Language.PureScript.CST.Types
 import qualified "this" Log
+import qualified "rio" RIO.NonEmpty
 import qualified "this" SourceRange
 import qualified "this" Span
 
@@ -695,14 +695,14 @@ doStatement log indentation indent' doStatement' = case doStatement' of
     sourceToken log indent' blank let'
       <> foldMap
         (letBinding log indentation indent (newline <> indent) newline)
-        (Data.List.NonEmpty.init letBindings)
+        (RIO.NonEmpty.init letBindings)
       <> letBinding
         log
         indentation
         indent
         (newline <> indent)
         blank
-        (Data.List.NonEmpty.last letBindings)
+        (RIO.NonEmpty.last letBindings)
 
 export ::
   Log.Handle ->
@@ -1535,14 +1535,14 @@ letIn log span indentation indent' letIn' = case letIn' of
     sourceToken log indent' blank let'
       <> foldMap
         (letBinding log indentation indent prefix newline)
-        (Data.List.NonEmpty.init letBindings)
+        (RIO.NonEmpty.init letBindings)
       <> letBinding
         log
         indentation
         indent
         prefix
         blank
-        (Data.List.NonEmpty.last letBindings)
+        (RIO.NonEmpty.last letBindings)
       <> pure inPrefix
       <> sourceToken log indent' blank in'
       <> pure prefix
@@ -2082,14 +2082,14 @@ where' log indentation indent' where''' = case where''' of
             <> sourceToken log indent blank where''
             <> foldMap
               (letBinding log indentation indent (newline <> indent) newline)
-              (Data.List.NonEmpty.init letBindings')
+              (RIO.NonEmpty.init letBindings')
             <> letBinding
               log
               indentation
               indent
               (newline <> indent)
               blank
-              (Data.List.NonEmpty.last letBindings')
+              (RIO.NonEmpty.last letBindings')
         )
         letBindings''
 
