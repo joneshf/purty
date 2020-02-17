@@ -113,12 +113,6 @@ debug 'Testing if paths with .. work'
 "${PURTY}" "../test/acceptance/Test.purs" > /dev/null
 info 'Paths with .. work'
 
-debug 'Writing default config to a file'
-"${PURTY}" "--defaults" > .purty.dhall
-debug 'Testing if absolute paths work'
-"${PURTY}" "$(pwd)/acceptance/Test.purs" > /dev/null
-info 'Absolute file paths work with a config file'
-
 debug 'Testing if STDIN works'
 "${PURTY}" - < "$(pwd)/acceptance/Test.purs" > /dev/null
 info 'STDIN works'
