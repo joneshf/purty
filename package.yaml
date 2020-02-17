@@ -49,8 +49,12 @@ executables:
       - base == 4.12.0.0
       - purty
     ghc-options:
+      - -rtsopts
       - -static
+      - -threaded
+      - -with-rtsopts=-N
     ld-options:
+      - -pthread
       - -static
     main: Main.hs
     source-dirs: src
