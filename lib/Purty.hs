@@ -84,10 +84,6 @@ run args =
 
 run' :: Log.Handle -> Args.Args -> IO (Maybe Error.Error)
 run' log args = case args of
-  Args.Defaults defaults -> do
-    Log.debug log "Outputting defaults"
-    Args.writeDefaults log defaults
-    pure Nothing
   Args.Format format' -> do
     Log.debug log "Formatting input"
     results <- Args.withInput log format' (format log)

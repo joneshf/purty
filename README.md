@@ -48,21 +48,8 @@ A listing of all available options can be shown with the `--help` option
 purty --help
 ```
 
-## Configuration
-
-You can configure most options with a [Dhall][] file.
-
-The file must be named `.purty.dhall` and it must be in the directory where you're invoking `purty`.
-
-Since the configuration is a [Dhall][] file, all of the guarantees and power of [Dhall][] is available.
-You can reference any other [Dhall][] file on the internet, you can compute the values, you can type the configuration, etc.
-
-For more information about [Dhall][] and what it provides, see the [Dhall tutorial][].
-
 ## How does it format?
 
 For examples of how `purty` formats, see the [golden tests][].
 
-[Dhall]: https://dhall-lang.org
-[Dhall tutorial]: https://hackage.haskell.org/package/dhall-1.23.0/docs/Dhall-Tutorial.html
 [golden tests]: ./test/golden/files
