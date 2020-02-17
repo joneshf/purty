@@ -43,9 +43,13 @@ default-extensions:
   - ViewPatterns
 executables:
   purty:
+    cc-options:
+      - -static
     dependencies:
       - base == 4.12.0.0
       - purty
+    ghc-options:
+      - -static
     ld-options:
       - -static
     main: Main.hs
