@@ -13,6 +13,7 @@ import qualified "this" Format
 import qualified "purescript-cst" Language.PureScript.CST.Errors
 import qualified "purescript-cst" Language.PureScript.CST.Parser
 import qualified "this" Log
+import qualified "rio" RIO.NonEmpty
 
 format :: Log.Handle -> LByteString -> IO (Either Error.Error Utf8Builder)
 format log contents' = do
@@ -56,10 +57,11 @@ run :: Args.Args -> IO ExitCode
 run args =
   runComponent (Args.debug args) "purty" (Log.handle config) $ \log -> do
     result <- run' log args
-    case result of
-      Just err -> do
-        Log.debug log (Error.format err)
-        Log.info log (Error.message err)
+    case RIO.NonEmpty.nonEmpty result of
+      Just errs -> do
+        for_ errs $ \err -> do
+          Log.debug log (Error.format err)
+          Log.info log (Error.message err)
         pure (ExitFailure 1)
       Nothing -> pure ExitSuccess
   where
@@ -82,15 +84,8 @@ run args =
     | otherwise =
       Control.Monad.Component.runComponentM
 
-run' :: Log.Handle -> Args.Args -> IO (Maybe Error.Error)
+run' :: Log.Handle -> Args.Args -> IO [Error.Error]
 run' log args = case args of
   Args.Format format' -> do
     Log.debug log "Formatting input"
-    results <- Args.withInput log format' (format log)
-    case join results of
-      Left err ->
-        pure (Just $ Error.wrap ("Error formatting " <> Args.input format') err)
-      Right formatted -> do
-        Log.debug log "Writing formatted module."
-        Args.write log format' formatted
-        pure Nothing
+    Args.withInput log format' (format log)

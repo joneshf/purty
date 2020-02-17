@@ -116,3 +116,7 @@ info 'Paths with .. work'
 debug 'Testing if STDIN works'
 "${PURTY}" - < "$(pwd)/acceptance/Test.purs" > /dev/null
 info 'STDIN works'
+
+debug 'Testing if directories work'
+"${PURTY}" "$(pwd)/acceptance/directories" > /dev/null
+info 'Directories works'
