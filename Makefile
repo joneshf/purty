@@ -35,6 +35,9 @@ BINTRAY_DHALL := $(CIDIR)/bintray.dhall
 BINTRAY_JSON := $(BUILDDIR)/$(OS)/bintray.json
 DHALL_TO_JSON := $(BUILDDIR)/$(OS)/dhall-to-json
 DHALL_TO_JSON_TAR := $(BUILDDIR)/$(OS)/dhall-json-$(VERSION_DHALL_TO_JSON).tar.bz2
+NPM_PACKAGE_CONFIG_DHALL := $(BUILDDIR)/npm-package-config.dhall
+NPM_PACKAGE_DHALL := $(CIDIR)/npm/package.dhall
+PACKAGE_JSON := package.json
 PURTY_TAR := $(BUILDDIR)/$(OS)/purty-$(VERSION_PURTY).tar.gz
 RELEASE_DATE := $(BUILDDIR)/release-date
 
@@ -74,6 +77,13 @@ $(DHALL_TO_JSON): $(DHALL_TO_JSON_TAR) | $(BUILDDIR)/$(OS)
 	@tar --extract --file $< --directory $(dir $@) --bzip2 --strip-components $(DHALL_TO_JSON_ARCHIVE_STRIP) $(DHALL_TO_JSON_ARCHIVE_FILE)
 	@touch $@
 
+$(NPM_PACKAGE_CONFIG_DHALL): | $(BUILDDIR)
+	@$(file > $@,{version = "$(VERSION_PURTY)"})
+
+$(PACKAGE_JSON): $(DHALL_TO_JSON) $(NPM_PACKAGE_CONFIG_DHALL) $(NPM_PACKAGE_DHALL)
+	$(info Generating $@ file)
+	@$(DHALL_TO_JSON) <<< './ci/npm/package.dhall ./$(NPM_PACKAGE_CONFIG_DHALL)' > $@
+
 $(PURTY_TAR): $(BINDIR)/$(OS)/purty | $(BUILDDIR)/$(OS)
 	$(info Creating $@ tarball)
 	@tar --create --file $@ --directory $(BINDIR)/$(OS) --gzip purty
@@ -90,7 +100,14 @@ bintray-artifacts: $(BINTRAY_JSON) $(PURTY_TAR)
 clean:
 	$(info Removing $(BUILDDIR))
 	@rm -fr $(BUILDDIR)
+	$(info Removing $(PACKAGE_JSON))
+	@rm $(PACKAGE_JSON)
 	@$(GIT) clean -X --force $(BINDIR)/*
+
+.PHONY: npm-publish
+npm-publish: $(PACKAGE_JSON)
+	$(info Publishing to npm)
+	npm publish
 
 .PHONY: test
 test: test-acceptance test-golden
