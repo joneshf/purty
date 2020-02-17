@@ -164,8 +164,10 @@ withInput ::
   IO (Maybe Error.Error)
 withInput log format' f = case format' of
   Format' (InputFile file') output' _ -> do
-    Log.debug log ("Reading " <> displayShow file' <> ".")
-    result' <- tryIO $ withLazyFile file' $ \contents -> do
+    Log.debug log ("Converting file " <> displayShow file' <> " to absolute.")
+    file <- RIO.Directory.makeAbsolute file'
+    Log.debug log ("Reading " <> displayShow file <> ".")
+    result' <- tryIO $ withLazyFile file $ \contents -> do
       Log.debug log "Got the file contents"
       result <- f contents
       Log.debug log "Finished with the file"
@@ -175,7 +177,7 @@ withInput log format' f = case format' of
         pure (Just $ Error.new $ "Error reading file: " <> displayShow err)
       Right result -> case result of
         Left err ->
-          pure (Just (Error.wrap ("Error formatting " <> displayShow file') err))
+          pure (Just (Error.wrap ("Error formatting " <> displayShow file) err))
         Right formatted -> case output' of
           STDOUT -> do
             Log.debug log "Writing formatted file to STDOUT"
@@ -183,8 +185,6 @@ withInput log format' f = case format' of
             Log.debug log "Wrote formatted file to STDOUT"
             pure Nothing
           Write -> do
-            Log.debug log ("Converting file " <> displayShow file' <> " to absolute.")
-            file <- RIO.Directory.makeAbsolute file'
             Log.debug log ("Writing formatted file " <> displayShow file <> " in-place.")
             RIO.File.writeBinaryFileDurableAtomic
               file
