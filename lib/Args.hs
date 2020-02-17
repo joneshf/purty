@@ -9,12 +9,12 @@ module Args
 
 import "rio" RIO hiding (log)
 
-import qualified "path" Path
-import qualified "path-io" Path.IO
 import qualified "bytestring" Data.ByteString.Builder
 import qualified "this" Error
 import qualified "this" Log
 import qualified "optparse-applicative" Options.Applicative
+import qualified "path" Path
+import qualified "path-io" Path.IO
 import qualified "rio" RIO.ByteString.Lazy
 import qualified "rio" RIO.Directory
 import qualified "rio" RIO.File
@@ -179,7 +179,7 @@ withInput log format' f = case format' of
       err' <- write log f output' file
       case err' of
         Just err -> pure [err]
-        Nothing -> pure []
+        Nothing  -> pure []
   Format' InputSTDIN _ _ -> do
     Log.debug log "Reading STDIN."
     result' <- tryIO RIO.ByteString.Lazy.getContents
@@ -249,7 +249,7 @@ writeFiles log f output' files = do
     IO (Maybe Error.Error)
   go file' = case pureScriptFile file' of
     Just file -> write log f output' file
-    Nothing -> pure Nothing
+    Nothing   -> pure Nothing
 
   pureScriptFile ::
     Path.Path Path.Abs Path.File ->

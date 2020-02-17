@@ -5,7 +5,6 @@ module Purty
 
 import "rio" RIO hiding (log)
 
-import qualified "rio" RIO.NonEmpty
 import qualified "this" Annotation
 import qualified "this" Args
 import qualified "componentm" Control.Monad.Component
@@ -14,6 +13,7 @@ import qualified "this" Format
 import qualified "purescript-cst" Language.PureScript.CST.Errors
 import qualified "purescript-cst" Language.PureScript.CST.Parser
 import qualified "this" Log
+import qualified "rio" RIO.NonEmpty
 
 format :: Log.Handle -> LByteString -> IO (Either Error.Error Utf8Builder)
 format log contents' = do
