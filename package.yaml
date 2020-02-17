@@ -66,7 +66,7 @@ library:
     - componentm == 0.0.0.2
     - optparse-applicative == 0.14.3.0
     - purescript-cst == 0.13.6
-    - rio == 0.1.9.2
+    - rio == 0.1.14.0
     - text == 1.2.3.1
   source-dirs: lib
 license: BSD3
@@ -79,7 +79,7 @@ tests:
       - bytestring == 0.10.8.2
       - componentm == 0.0.0.2
       - purty
-      - rio == 0.1.9.2
+      - rio == 0.1.14.0
       - tasty == 1.2
       - tasty-golden == 2.3.2
       - tasty-hunit == 0.10.0.1
