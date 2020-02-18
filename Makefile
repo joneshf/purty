@@ -63,7 +63,8 @@ $(BINDIR)/$(OS)/$(BINARY): $(BINDIR)/$(BINARY) | $(BINDIR)/$(OS)
 	@$(CP) $< $@
 
 $(BINTRAY_CONFIG_DHALL): $(RELEASE_DATE) | $(BUILDDIR)/$(OS)
-	@$(file > $@,{date = "$(file < $(RELEASE_DATE))", tarFile = "$(PURTY_TAR)", version = "$(VERSION)"})
+	$(info Generating $@ file)
+	@echo '{date = "$(shell cat $(RELEASE_DATE))", tarFile = "$(PURTY_TAR)", version = "$(VERSION)"}' > $@
 
 $(BINTRAY_JSON): $(BINTRAY_CONFIG_DHALL) $(BINTRAY_DHALL) $(DHALL_TO_JSON) | $(BUILDDIR)/$(OS)
 	$(info Generating $@ file)
@@ -78,7 +79,8 @@ $(DHALL_TO_JSON): $(DHALL_TO_JSON_TAR) | $(BUILDDIR)/$(OS)
 	@touch $@
 
 $(NPM_PACKAGE_CONFIG_DHALL): | $(BUILDDIR)
-	@$(file > $@,{version = "$(VERSION_PURTY)"})
+	$(info Generating $@ file)
+	@echo '{version = "$(VERSION_PURTY)"}' > $@
 
 $(PACKAGE_JSON): $(DHALL_TO_JSON) $(NPM_PACKAGE_CONFIG_DHALL) $(NPM_PACKAGE_DHALL)
 	$(info Generating $@ file)
