@@ -1,6 +1,3 @@
-before_deploy:
-  - make --jobs bintray-artifacts OS=${TRAVIS_OS_NAME} VERSION_PURTY=${TRAVIS_TAG}
-
 before_install:
   - ci/install-stack.sh --os ${TRAVIS_OS_NAME} --verbose
 
@@ -45,4 +42,4 @@ os:
 sudo: false
 
 script:
-  - "[ dependencies = ${BUILD_TYPE} ] || make test OS=${TRAVIS_OS_NAME}"
+  - "[ dependencies = ${BUILD_TYPE} ] || make --jobs bintray-artifacts test OS=${TRAVIS_OS_NAME} VERSION_PURTY=${TRAVIS_TAG}"
