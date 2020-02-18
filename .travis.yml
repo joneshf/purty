@@ -42,4 +42,4 @@ os:
 sudo: false
 
 script:
-  - "[ dependencies = ${BUILD_TYPE} ] || make --jobs bintray-artifacs test OS=${TRAVIS_OS_NAME} VERSION_PURTY=${TRAVIS_TAG}"
+  - "[ dependencies = ${BUILD_TYPE} ] || make --jobs bintray-artifacts test OS=${TRAVIS_OS_NAME} VERSION_PURTY=${TRAVIS_TAG}"
