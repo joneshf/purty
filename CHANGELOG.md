@@ -35,6 +35,8 @@ There were some other minor changes for dependencies in this release as well.
 * [Use minimal PureScript parser package](https://gitlab.com/joneshf/purty/issues/156)
 * [Update `rio`](https://gitlab.com/joneshf/purty/issues/158)
 * [Compile static binaries](https://gitlab.com/joneshf/purty/issues/80)
+* [Fix Bintray deploy on TravisCI](https://gitlab.com/joneshf/purty/issues/161)
+* [Fix uploaded filename for Bintray deployment](https://gitlab.com/joneshf/purty/issues/162)
 
 ### Deletions
 
