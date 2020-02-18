@@ -30,12 +30,12 @@ VERSION_DHALL_HASKELL := 1.30.0
 VERSION_DHALL_TO_JSON := 1.6.2
 VERSION_PURTY :=
 
-BINTRAY_CONFIG_DHALL := $(BUILDDIR)/$(OS)/bintray-config.dhall
 BINTRAY_DHALL := $(CIDIR)/bintray.dhall
 BINTRAY_JSON := $(BUILDDIR)/$(OS)/bintray.json
+CONFIGURED_BINTRAY_DHALL := $(BUILDDIR)/$(OS)/bintray-configured.dhall
+CONFIGURED_PACKAGE_DHALL := $(BUILDDIR)/package-configured.dhall
 DHALL_TO_JSON := $(BUILDDIR)/$(OS)/dhall-to-json
 DHALL_TO_JSON_TAR := $(BUILDDIR)/$(OS)/dhall-json-$(VERSION_DHALL_TO_JSON).tar.bz2
-NPM_PACKAGE_CONFIG_DHALL := $(BUILDDIR)/npm-package-config.dhall
 NPM_PACKAGE_DHALL := $(CIDIR)/npm/package.dhall
 PACKAGE_JSON := package.json
 PURTY_TAR := $(BUILDDIR)/$(OS)/purty-$(VERSION_PURTY).tar.gz
@@ -62,13 +62,15 @@ $(BINDIR)/$(OS) $(BUILDDIR) $(BUILDDIR)/$(OS):
 $(BINDIR)/$(OS)/$(BINARY): $(BINDIR)/$(BINARY) | $(BINDIR)/$(OS)
 	@$(CP) $< $@
 
-$(BINTRAY_CONFIG_DHALL): $(RELEASE_DATE) | $(BUILDDIR)/$(OS)
+$(BINTRAY_JSON): $(CONFIGURED_BINTRAY_DHALL) $(DHALL_TO_JSON) | $(BUILDDIR)/$(OS)
 	$(info Generating $@ file)
-	@echo '{date = "$(shell cat $(RELEASE_DATE))", tarFile = "$(PURTY_TAR)", version = "$(VERSION)"}' > $@
+	@$(DHALL_TO_JSON) --file $< --output $@
 
-$(BINTRAY_JSON): $(BINTRAY_CONFIG_DHALL) $(BINTRAY_DHALL) $(DHALL_TO_JSON) | $(BUILDDIR)/$(OS)
-	$(info Generating $@ file)
-	@$(DHALL_TO_JSON) <<< './ci/bintray.dhall ./$(BINTRAY_CONFIG_DHALL)' > $@
+$(CONFIGURED_BINTRAY_DHALL): $(BINTRAY_DHALL) $(RELEASE_DATE) $(PURTY_TAR) | $(BUILDDIR)/$(OS)
+	echo '$(CURDIR)/$< {date = "$(shell cat $(RELEASE_DATE))", tarFile = "$(PURTY_TAR)", version = "$(VERSION_PURTY)"}' > $@
+
+$(CONFIGURED_PACKAGE_DHALL): $(NPM_PACKAGE_DHALL) | $(BUILDDIR)
+	echo '$(CURDIR)/$< {version = "$(VERSION_PURTY)"}' > $@
 
 $(DHALL_TO_JSON_TAR): | $(BUILDDIR)/$(OS)
 	$(info Downloading dhall-to-json binary)
@@ -78,13 +80,9 @@ $(DHALL_TO_JSON): $(DHALL_TO_JSON_TAR) | $(BUILDDIR)/$(OS)
 	@tar --extract --file $< --directory $(dir $@) --bzip2 --strip-components $(DHALL_TO_JSON_ARCHIVE_STRIP) $(DHALL_TO_JSON_ARCHIVE_FILE)
 	@touch $@
 
-$(NPM_PACKAGE_CONFIG_DHALL): | $(BUILDDIR)
+$(PACKAGE_JSON): $(CONFIGURED_PACKAGE_DHALL) $(DHALL_TO_JSON)
 	$(info Generating $@ file)
-	@echo '{version = "$(VERSION_PURTY)"}' > $@
-
-$(PACKAGE_JSON): $(DHALL_TO_JSON) $(NPM_PACKAGE_CONFIG_DHALL) $(NPM_PACKAGE_DHALL)
-	$(info Generating $@ file)
-	@$(DHALL_TO_JSON) <<< './ci/npm/package.dhall ./$(NPM_PACKAGE_CONFIG_DHALL)' > $@
+	@$(DHALL_TO_JSON) --file $< --output $@
 
 $(PURTY_TAR): $(BINDIR)/$(OS)/purty | $(BUILDDIR)/$(OS)
 	$(info Creating $@ tarball)
