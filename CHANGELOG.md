@@ -1,5 +1,45 @@
 # Changelog
 
+## 5.0.0
+
+This is a big one! There are three important differences from previous verions of `purty:
+
+1. Configuration files are no longer supported.
+    The configuration never panned out how it was supposed to.
+    It was never meant to be for altering formatting, but for configuring the CLI.
+    It was also meant to be an example of using Dhall.
+
+1. Binaries are statically linked.
+    The binaries we were creating up until now have been dynamically linked.
+    We were privvy to the same issues that the PureScript compiler runs into from time to time (runtime libraries not existing).
+    We decide to link binaries statically, so we can mitigate runtime issues.
+    We also can do more interesting things (like creating minimal Docker images) with statically linked binaries.
+
+1. Directories are supported.
+    If you've used `purty` on any non-trivial codebase, you've probably run into an issue with trying to format multiple files.
+    Up until now, you've had to script your own way to run all of these files.
+    Depending on how you run `purty`, this could be a slow and tedious process.
+    Now we support formatting all `.purs` recursively in a directory.
+    This should make it easier to use `purty` in larger projects.
+
+There were some other minor changes for dependencies in this release as well.
+
+### Additions
+
+* [Support directories](https://gitlab.com/joneshf/purty/issues/11)
+
+### Changes
+
+* [Update `purescript` to 0.13.6](https://gitlab.com/joneshf/purty/issues/153)
+* [Depend on exact `purescript` modules](https://gitlab.com/joneshf/purty/issues/154)
+* [Use minimal PureScript parser package](https://gitlab.com/joneshf/purty/issues/156)
+* [Update `rio`](https://gitlab.com/joneshf/purty/issues/158)
+* [Compile static binaries](https://gitlab.com/joneshf/purty/issues/80)
+
+### Deletions
+
+* [Drop configuration](https://gitlab.com/joneshf/purty/issues/159)
+
 ## 4.6.0
 
 There's been a process change.
