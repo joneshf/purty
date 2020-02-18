@@ -39,6 +39,7 @@ DHALL_TO_JSON_TAR := $(BUILDDIR)/$(OS)/dhall-json-$(VERSION_DHALL_TO_JSON).tar.b
 NPM_PACKAGE_DHALL := $(CIDIR)/npm/package.dhall
 PACKAGE_JSON := package.json
 PURTY_TAR := $(BUILDDIR)/$(OS)/purty-$(VERSION_PURTY).tar.gz
+PURTY_TAR_UPLOADED_FILENAME := purty-$(VERSION_PURTY)-$(OS).tar.gz
 RELEASE_DATE := $(BUILDDIR)/release-date
 
 ifeq ($(OS),linux)
@@ -67,7 +68,7 @@ $(BINTRAY_JSON): $(CONFIGURED_BINTRAY_DHALL) $(DHALL_TO_JSON) | $(BUILDDIR)/$(OS
 	@$(DHALL_TO_JSON) --file $< --output $@
 
 $(CONFIGURED_BINTRAY_DHALL): $(BINTRAY_DHALL) $(RELEASE_DATE) $(PURTY_TAR) | $(BUILDDIR)/$(OS)
-	echo '$(CURDIR)/$< {date = "$(shell cat $(RELEASE_DATE))", tarFile = "$(PURTY_TAR)", version = "$(VERSION_PURTY)"}' > $@
+	echo '$(CURDIR)/$< {date = "$(shell cat $(RELEASE_DATE))", tarFile = "$(PURTY_TAR)", uploadedFilename = "$(PURTY_TAR_UPLOADED_FILENAME)", version = "$(VERSION_PURTY)"}' > $@
 
 $(CONFIGURED_PACKAGE_DHALL): $(NPM_PACKAGE_DHALL) | $(BUILDDIR)
 	echo '$(CURDIR)/$< {version = "$(VERSION_PURTY)"}' > $@
