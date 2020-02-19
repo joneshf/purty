@@ -9,16 +9,17 @@ module Args
 
 import "rio" RIO hiding (log)
 
+import "rio" RIO.FilePath ((</>))
+
 import qualified "bytestring" Data.ByteString.Builder
 import qualified "this" Error
 import qualified "this" Log
 import qualified "optparse-applicative" Options.Applicative
-import qualified "path" Path
-import qualified "path-io" Path.IO
 import qualified "rio" RIO.ByteString.Lazy
 import qualified "rio" RIO.Directory
 import qualified "rio" RIO.File
 import qualified "rio" RIO.FilePath
+import qualified "pathwalk" System.Directory.PathWalk
 
 newtype Args
   = Format Format
@@ -170,11 +171,9 @@ withInput log format' f = case format' of
     Log.debug log ("Converting file " <> displayShow file' <> " to absolute.")
     file <- RIO.Directory.makeAbsolute file'
     directoryExists <- RIO.Directory.doesDirectoryExist file
-    if directoryExists then case Path.parseAbsDir file of
-      Just directory -> do
-        Log.debug log ("Parsed " <> displayShow directory <> " as an absolute directory")
-        Path.IO.walkDirAccum Nothing (\_ _ files -> writeFiles log f output' files) directory
-      Nothing -> pure [Error.new ("Error reading directory: " <> displayShow file)]
+    if directoryExists then do
+      Log.debug log ("Parsed " <> displayShow file <> " as an absolute directory")
+      System.Directory.PathWalk.pathWalkAccumulate file (\directory _ files -> writeFiles log f output' directory files)
     else do
       err' <- write log f output' file
       case err' of
@@ -238,22 +237,27 @@ writeFiles ::
   Log.Handle ->
   (LByteString -> IO (Either Error.Error Utf8Builder)) ->
   Output ->
-  [Path.Path Path.Abs Path.File] ->
+  FilePath ->
+  [FilePath] ->
   IO [Error.Error]
-writeFiles log f output' files = do
+writeFiles log f output' directory files = do
+  Log.debug log ("Writing the following files: " <> displayShow files <> " in directory: " <> displayShow directory)
   errors <- traverse go files
   pure (catMaybes errors)
   where
   go ::
-    Path.Path Path.Abs Path.File ->
+    FilePath ->
     IO (Maybe Error.Error)
   go file' = case pureScriptFile file' of
-    Just file -> write log f output' file
+    Just file -> do
+      Log.debug log ("Converting file " <> displayShow (directory </> file) <> " to absolute")
+      absoluteFile <- RIO.Directory.makeAbsolute (directory </> file)
+      write log f output' absoluteFile
     Nothing   -> pure Nothing
 
   pureScriptFile ::
-    Path.Path Path.Abs Path.File ->
+    FilePath ->
     Maybe FilePath
   pureScriptFile file
-    | RIO.FilePath.isExtensionOf "purs" (Path.toFilePath file) = Just (Path.toFilePath file)
+    | RIO.FilePath.isExtensionOf "purs" file = Just file
     | otherwise = Nothing
