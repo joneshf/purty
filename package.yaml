@@ -1,46 +1,6 @@
 author: Hardy Jones
 category: Web
 copyright: 2018 Hardy Jones
-default-extensions:
-  - AutoDeriveTypeable
-  - BangPatterns
-  - BinaryLiterals
-  - ConstraintKinds
-  - DataKinds
-  - DefaultSignatures
-  - DeriveDataTypeable
-  - DeriveFoldable
-  - DeriveFunctor
-  - DeriveGeneric
-  - DeriveTraversable
-  - DoAndIfThenElse
-  - EmptyDataDecls
-  - ExistentialQuantification
-  - FlexibleContexts
-  - FlexibleInstances
-  - FunctionalDependencies
-  - GADTs
-  - GeneralizedNewtypeDeriving
-  - InstanceSigs
-  - KindSignatures
-  - MultiParamTypeClasses
-  - MultiWayIf
-  - NamedFieldPuns
-  - NoImplicitPrelude
-  - OverloadedStrings
-  - PackageImports
-  - PartialTypeSignatures
-  - PatternGuards
-  - PolyKinds
-  - RankNTypes
-  - ScopedTypeVariables
-  - StandaloneDeriving
-  - StrictData
-  - TupleSections
-  - TypeFamilies
-  - TypeOperators
-  - TypeSynonymInstances
-  - ViewPatterns
 executables:
   purty:
     cc-options:

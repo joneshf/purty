@@ -219,43 +219,4 @@ newline: native
 # needs to be aware of these, so it can parse the file correctly.
 #
 # No language extensions are enabled by default.
-language_extensions:
-  - AutoDeriveTypeable
-  - BangPatterns
-  - BinaryLiterals
-  - ConstraintKinds
-  - DataKinds
-  - DefaultSignatures
-  - DeriveDataTypeable
-  - DeriveFoldable
-  - DeriveFunctor
-  - DeriveGeneric
-  - DeriveTraversable
-  - DoAndIfThenElse
-  - EmptyDataDecls
-  - ExistentialQuantification
-  - FlexibleContexts
-  - FlexibleInstances
-  - FunctionalDependencies
-  - GADTs
-  - GeneralizedNewtypeDeriving
-  - InstanceSigs
-  - KindSignatures
-  - MultiParamTypeClasses
-  - MultiWayIf
-  - NamedFieldPuns
-  - NoImplicitPrelude
-  - OverloadedStrings
-  - PackageImports
-  - PartialTypeSignatures
-  - PatternGuards
-  - PolyKinds
-  - RankNTypes
-  - ScopedTypeVariables
-  - StandaloneDeriving
-  - StrictData
-  - TupleSections
-  - TypeFamilies
-  - TypeOperators
-  - TypeSynonymInstances
-  - ViewPatterns
+language_extensions: []
