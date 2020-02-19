@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports    #-}
 module Error
   ( Error
   , format

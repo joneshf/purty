@@ -1,4 +1,6 @@
-{-# LANGUAGE ImplicitParams #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ImplicitParams   #-}
+{-# LANGUAGE PackageImports   #-}
 module Log
   ( Config(..)
   , Handle
