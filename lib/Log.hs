@@ -26,7 +26,7 @@ data Handle
     , info'  :: CallStack -> Utf8Builder -> IO ()
     }
 
-debug :: (HasCallStack) => Handle -> Utf8Builder -> IO ()
+debug :: HasCallStack => Handle -> Utf8Builder -> IO ()
 debug handle' = debug' handle' GHC.Stack.callStack
 
 -- | We use a pretty bad hack here to get around the fact that `rio` doesn't
@@ -55,5 +55,5 @@ handle config = do
   release :: (a, IO ()) -> IO ()
   release = snd
 
-info :: (HasCallStack) => Handle -> Utf8Builder -> IO ()
+info :: HasCallStack => Handle -> Utf8Builder -> IO ()
 info handle' = info' handle' GHC.Stack.callStack

@@ -16,7 +16,7 @@ import qualified "base" GHC.Stack
 data Error
   = Error CallStack Utf8Builder
 
-format :: (HasCallStack) => Error -> Utf8Builder
+format :: HasCallStack => Error -> Utf8Builder
 format error' = case error' of
   Error callStack message' ->
     message'
@@ -39,13 +39,13 @@ message :: Error -> Utf8Builder
 message error' = case error' of
   Error _ message' -> message'
 
-new :: (HasCallStack) => Utf8Builder -> Error
+new :: HasCallStack => Utf8Builder -> Error
 new = Error GHC.Stack.callStack
 
 newline :: Utf8Builder
 newline = "\n"
 
-wrap :: (HasCallStack) => Utf8Builder -> Error -> Error
+wrap :: HasCallStack => Utf8Builder -> Error -> Error
 wrap message'' error' = case error' of
   Error callStack message' ->
     Error
