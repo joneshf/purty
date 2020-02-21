@@ -20,6 +20,7 @@ Build purty:
     - ci/install-stack.sh --verbose
     - stack setup
   script:
+    - make bootstrap
     - ci/lint/ormolu.sh --verbose
     - ci/lint/hlint.sh --verbose
     - make test STACK_BUILDFLAGS=--coverage

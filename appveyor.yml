@@ -3,6 +3,7 @@ before_deploy:
   - appveyor PushArtifact purty-%APPVEYOR_REPO_TAG_NAME%-win.tar.gz
 
 build_script:
+  - make bootstrap
   - stack setup
   - make test-golden BINARY=purty.exe
 
