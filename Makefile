@@ -53,7 +53,7 @@ BAZEL := $(BUILDDIR)/bazel
 DHALL_TO_JSON_ARCHIVE_FILE := bin/dhall-to-json
 DHALL_TO_JSON_ARCHIVE_STRIP := 1
 DHALL_TO_JSON_URI := https://github.com/dhall-lang/dhall-haskell/releases/download/$(VERSION_DHALL_HASKELL)/dhall-json-$(VERSION_DHALL_TO_JSON)-x86_64-macos.tar.bz2
-else # windows
+else ifeq ($(OS),windows)
 BAZEL := $(BUILDDIR)/bazel.exe
 endif
 
@@ -69,7 +69,7 @@ else ifeq ($(OS),osx)
 	curl --location --output $@ https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-darwin-x86_64
 	@chmod 0755 $@
 	@touch $@
-else # windows
+else ifeq ($(OS),windows)
 	curl --location --output $@ https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-windows-x86_64.exe
 	@copy /b $@ +,,
 endif
