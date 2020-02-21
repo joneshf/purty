@@ -1,11 +1,8 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports    #-}
+{-# LANGUAGE PackageImports #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Main where
-
-import "rio" RIO hiding (log)
-
-import "rio" RIO.FilePath ((</>))
 
 import qualified "componentm" Control.Monad.Component
 import qualified "bytestring" Data.ByteString.Builder
@@ -13,6 +10,8 @@ import qualified "text" Data.Text
 import qualified "purty" Error
 import qualified "purty" Log
 import qualified "purty" Purty
+import "rio" RIO hiding (log)
+import "rio" RIO.FilePath ((</>))
 import qualified "rio" RIO.FilePath
 import qualified "tasty" Test.Tasty
 import qualified "tasty-golden" Test.Tasty.Golden
@@ -22,8 +21,8 @@ main :: IO ()
 main = do
   let config =
         Log.Config
-          { Log.name = "Log"
-          , Log.verbose = False
+          { Log.name = "Log",
+            Log.verbose = False
           }
   result <- Control.Monad.Component.runComponentM "golden" (Log.handle config) $
     \log -> try $ do
@@ -31,8 +30,8 @@ main = do
       Test.Tasty.defaultMain tests
   case result of
     Left ExitSuccess -> exitSuccess
-    Left code        -> exitWith code
-    Right _          -> exitSuccess
+    Left code -> exitWith code
+    Right _ -> exitSuccess
 
 diff :: FilePath -> FilePath -> [String]
 diff old new = ["diff", "--unified", old, new]
@@ -45,11 +44,11 @@ fileUsed haystack needle =
   Test.Tasty.HUnit.testCase
     needle
     ( Test.Tasty.HUnit.assertBool
-      ( needle
-        <> " is unused."
-        <> "Please add an original version to the `original` directory."
-      )
-      (RIO.FilePath.takeBaseName needle `elem` haystack)
+        ( needle
+            <> " is unused."
+            <> "Please add an original version to the `original` directory."
+        )
+        (RIO.FilePath.takeBaseName needle `elem` haystack)
     )
 
 filesUsedTests :: IO Test.Tasty.TestTree
@@ -72,7 +71,7 @@ golden log original =
     goldenFile
     (test log original)
   where
-  goldenFile = files </> "formatted" </> RIO.FilePath.takeFileName original
+    goldenFile = files </> "formatted" </> RIO.FilePath.takeFileName original
 
 goldenTests :: Log.Handle -> IO Test.Tasty.TestTree
 goldenTests log = do
@@ -81,8 +80,8 @@ goldenTests log = do
   pure $
     Test.Tasty.testGroup
       "golden"
-      [ filesUsed
-      , formatting
+      [ filesUsed,
+        formatting
       ]
 
 psFiles :: FilePath -> IO [FilePath]

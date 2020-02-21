@@ -1,62 +1,63 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports    #-}
-module Span
-  ( Span(..)
-  , adoBlock
-  , betweenSourceRanges
-  , betweenSourceTokens
-  , binder
-  , caseOf
-  , comment
-  , constraint
-  , dataCtor
-  , dataMembers
-  , declaration
-  , delimitedNonEmpty
-  , doBlock
-  , doStatement
-  , export
-  , expr
-  , foreign'
-  , guarded
-  , guardedExpr
-  , ifThenElse
-  , import'
-  , importDecl
-  , instance'
-  , instanceBinding
-  , instanceHead
-  , kind
-  , label
-  , labeled
-  , lambda
-  , lineFeed
-  , letBinding
-  , letIn
-  , name
-  , oneOrDelimited
-  , patternGuard
-  , qualifiedName
-  , recordAccessor
-  , recordLabeled
-  , recordUpdate
-  , row
-  , separated
-  , sourceRange
-  , sourceToken
-  , type'
-  , typeVarBinding
-  , valueBindingFields
-  , where'
-  , wrapped
-  ) where
+{-# LANGUAGE PackageImports #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
-import "rio" RIO
+module Span
+  ( Span (..),
+    adoBlock,
+    betweenSourceRanges,
+    betweenSourceTokens,
+    binder,
+    caseOf,
+    comment,
+    constraint,
+    dataCtor,
+    dataMembers,
+    declaration,
+    delimitedNonEmpty,
+    doBlock,
+    doStatement,
+    export,
+    expr,
+    foreign',
+    guarded,
+    guardedExpr,
+    ifThenElse,
+    import',
+    importDecl,
+    instance',
+    instanceBinding,
+    instanceHead,
+    kind,
+    label,
+    labeled,
+    lambda,
+    lineFeed,
+    letBinding,
+    letIn,
+    name,
+    oneOrDelimited,
+    patternGuard,
+    qualifiedName,
+    recordAccessor,
+    recordLabeled,
+    recordUpdate,
+    row,
+    separated,
+    sourceRange,
+    sourceToken,
+    type',
+    typeVarBinding,
+    valueBindingFields,
+    where',
+    wrapped,
+  )
+where
 
 import qualified "text" Data.Text
 import qualified "purescript-cst" Language.PureScript.CST.Positions
 import qualified "purescript-cst" Language.PureScript.CST.Types
+import "rio" RIO
 import qualified "this" SourceRange
 
 data Span
@@ -67,9 +68,9 @@ data Span
 instance Semigroup Span where
   span1 <> span2 = case (span1, span2) of
     (MultipleLines, MultipleLines) -> MultipleLines
-    (MultipleLines, SingleLine)    -> MultipleLines
-    (SingleLine, MultipleLines)    -> MultipleLines
-    (SingleLine, SingleLine)       -> SingleLine
+    (MultipleLines, SingleLine) -> MultipleLines
+    (SingleLine, MultipleLines) -> MultipleLines
+    (SingleLine, SingleLine) -> SingleLine
 
 instance Monoid Span where
   mempty = SingleLine
@@ -242,7 +243,7 @@ linesBetween start end = case (start, end) of
 
 lineFeed :: Language.PureScript.CST.Types.LineFeed -> Span
 lineFeed lineFeed' = case lineFeed' of
-  Language.PureScript.CST.Types.LF   -> Span.SingleLine
+  Language.PureScript.CST.Types.LF -> Span.SingleLine
   Language.PureScript.CST.Types.CRLF -> Span.SingleLine
 
 letBinding :: Language.PureScript.CST.Types.LetBinding a -> Span
@@ -287,8 +288,8 @@ recordLabeled f recordLabeled' = case recordLabeled' of
   Language.PureScript.CST.Types.RecordField label' _ a ->
     sourceRange
       ( Language.PureScript.CST.Positions.widen
-        (SourceRange.label label')
-        (f a)
+          (SourceRange.label label')
+          (f a)
       )
 
 recordUpdate :: Language.PureScript.CST.Types.RecordUpdate a -> Span
@@ -300,11 +301,11 @@ row row' = case row' of
     (Just labels, Just (_, type'')) ->
       sourceRange
         ( Language.PureScript.CST.Positions.widen
-          ( SourceRange.separated
-            (SourceRange.labeled SourceRange.label SourceRange.type')
-            labels
-          )
-          (SourceRange.type' type'')
+            ( SourceRange.separated
+                (SourceRange.labeled SourceRange.label SourceRange.type')
+                labels
+            )
+            (SourceRange.type' type'')
         )
     (Just labels, Nothing) ->
       separated (SourceRange.labeled SourceRange.label SourceRange.type') labels

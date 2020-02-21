@@ -11,7 +11,7 @@ readonly SCRIPT_NAME="$(basename "${THIS_SCRIPT}")"
 readonly TEMPORARY_DIR="$(mktemp --directory -t "${SCRIPT_NAME}.XXXXXXXXXX")"
 readonly LOG_FILE="$(mktemp -t "${SCRIPT_NAME}.log.XXXXXXXXXX")"
 
-SYSTEM_GHC=''
+STACK_ARGS=()
 VERBOSE=''
 
 log() {
@@ -48,7 +48,7 @@ while [[ $# -gt 0 ]]; do
     option="${1}"
     case "${option}" in
         --help) usage;;
-        --system-ghc) SYSTEM_GHC='true';;
+        --system-ghc) STACK_ARGS+=('--system-ghc');;
         -V|--verbose) VERBOSE='verbose';;
         *)
             error "${THIS_SCRIPT}: unrecognized option '${option}'"
@@ -75,15 +75,7 @@ debug "Created log file: ${LOG_FILE}"
 # End Boilerplate
 
 debug "Building 'hlint'"
-if [[ 'true' = "${SYSTEM_GHC}" ]]; then
-    stack --system-ghc build hlint
-else
-    stack build hlint
-fi
+stack "${STACK_ARGS[@]}" build hlint
 
 info "Running 'hlint'"
-if [[ 'true' = "${SYSTEM_GHC}" ]]; then
-    stack --system-ghc exec hlint .
-else
-    stack exec hlint .
-fi
+stack "${STACK_ARGS[@]}" exec hlint .

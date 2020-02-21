@@ -1,39 +1,40 @@
+{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE PackageImports    #-}
-module SourceRange
-  ( adoBlock
-  , binder
-  , caseOf
-  , constraint
-  , classFundep
-  , dataCtor
-  , doBlock
-  , export
-  , expr
-  , ifThenElse
-  , import'
-  , instance'
-  , kind
-  , label
-  , labeled
-  , lambda
-  , letIn
-  , name
-  , oneOrDelimited
-  , patternGuard
-  , qualifiedName
-  , recordAccessor
-  , recordLabeled
-  , recordUpdate
-  , separated
-  , type'
-  , wrapped
-  ) where
 
-import "rio" RIO
+module SourceRange
+  ( adoBlock,
+    binder,
+    caseOf,
+    constraint,
+    classFundep,
+    dataCtor,
+    doBlock,
+    export,
+    expr,
+    ifThenElse,
+    import',
+    instance',
+    kind,
+    label,
+    labeled,
+    lambda,
+    letIn,
+    name,
+    oneOrDelimited,
+    patternGuard,
+    qualifiedName,
+    recordAccessor,
+    recordLabeled,
+    recordUpdate,
+    separated,
+    type',
+    wrapped,
+  )
+where
 
 import qualified "purescript-cst" Language.PureScript.CST.Positions
 import qualified "purescript-cst" Language.PureScript.CST.Types
+import "rio" RIO
 import qualified "rio" RIO.NonEmpty
 
 adoBlock ::
