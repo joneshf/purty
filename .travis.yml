@@ -4,6 +4,7 @@ before_install:
 cache:
   directories:
     - ${HOME}/.local/bin
+    - ${TRAVIS_BUILD_DIR}/.bazel-cache
     - .stack-root
     - .stack-work
   timeout: 1000
@@ -23,6 +24,7 @@ env:
   global:
     - PATH=/usr/local/opt/coreutils/libexec/gnubin:${PATH}
     - STACK_ROOT=${TRAVIS_BUILD_DIR}/.stack-root
+    - TEST_TMPDIR=${TRAVIS_BUILD_DIR}/.bazel-cache
 
 install:
   - make bootstrap OS=${TRAVIS_OS_NAME}
@@ -43,4 +45,5 @@ os:
 sudo: false
 
 script:
+  - .build/bazel build //:purty-library
   - "[ dependencies = ${BUILD_TYPE} ] || make --jobs bintray-artifacts test OS=${TRAVIS_OS_NAME} VERSION_PURTY=${TRAVIS_TAG}"

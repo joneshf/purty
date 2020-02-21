@@ -3,10 +3,12 @@ before_deploy:
   - appveyor PushArtifact purty-%APPVEYOR_REPO_TAG_NAME%-win.tar.gz
 
 build_script:
+  - .build/bazel.exe build //:purty-library
   - stack setup
   - make test-golden BINARY=purty.exe
 
 cache:
+  - '%APPVEYOR_BUILD_FOLDER%\.bazel-cache'
   - .stack-root
   - .stack-work
   - C:\ProgramData\chocolatey\bin -> appveyor.yml
@@ -28,6 +30,7 @@ deploy:
 
 environment:
   STACK_ROOT: '%APPVEYOR_BUILD_FOLDER%\.stack-root'
+  TEST_TMPDIR: '%APPVEYOR_BUILD_FOLDER%\.bazel-cache'
 
 install:
   - chocolatey install haskell-stack --version 1.9.3 --yes

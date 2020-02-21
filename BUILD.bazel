@@ -1,0 +1,37 @@
+load(
+    "@rules_haskell//haskell:defs.bzl",
+    "haskell_library",
+)
+
+haskell_library(
+    compiler_flags = [
+        "-Wall",
+        "-Wcompat",
+        "-Werror",
+        "-Wincomplete-record-updates",
+        "-Wincomplete-uni-patterns",
+        "-Wmissing-methods",
+        "-Wredundant-constraints",
+    ],
+    deps = [
+        "@stackage//:base",
+        "@stackage//:bytestring",
+        "@stackage//:componentm",
+        "@stackage//:optparse-applicative",
+        "@stackage//:pathwalk",
+        "@stackage//:purescript-cst",
+        "@stackage//:rio",
+        "@stackage//:text",
+    ],
+    name = "purty-library",
+    srcs = [
+        ":lib/Annotation.hs",
+        ":lib/Args.hs",
+        ":lib/Error.hs",
+        ":lib/Format.hs",
+        ":lib/Log.hs",
+        ":lib/Purty.hs",
+        ":lib/SourceRange.hs",
+        ":lib/Span.hs",
+    ],
+)
