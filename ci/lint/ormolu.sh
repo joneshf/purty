@@ -31,7 +31,7 @@ warning()   { log 'WARNING'   "${1}" ; }
 error()     { log 'ERROR'     "${1}" ; }
 emergency() { log 'EMERGENCY' "${1}" ; exit 1 ; }
 
-#/ Install the stack binary at a specific path
+#/ Format Haskell files with ormolu
 #/
 #/ Mandatory arguments to long options are mandatory for short options too.
 #/       --help                 display this help and exit
@@ -74,22 +74,22 @@ debug "Created log file: ${LOG_FILE}"
 
 # End Boilerplate
 
-debug "Building 'stylish-haskell'"
+debug "Building 'ormolu'"
 if [[ 'true' = "${SYSTEM_GHC}" ]]; then
-    stack --system-ghc build stylish-haskell
+    stack --system-ghc build ormolu
 else
-    stack build stylish-haskell
+    stack build ormolu
 fi
 
-info "Running 'stylish-haskell'"
+info "Running 'ormolu'"
 if [[ 'true' = "${SYSTEM_GHC}" ]]; then
     git ls-files -z '*.hs' \
         | xargs -I {} --null \
-                stack --system-ghc exec stylish-haskell -- --inplace {}
+                stack --system-ghc exec ormolu -- --mode inplace {}
 else
     git ls-files -z '*.hs' \
         | xargs -I {} --null \
-                stack exec stylish-haskell -- --inplace {}
+                stack exec ormolu -- --mode inplace {}
 fi
 
 debug 'Checking for changed files'

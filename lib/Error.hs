@@ -1,17 +1,19 @@
-{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports    #-}
-module Error
-  ( Error
-  , format
-  , message
-  , new
-  , wrap
-  ) where
+{-# LANGUAGE PackageImports #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
-import "rio" RIO
+module Error
+  ( Error,
+    format,
+    message,
+    new,
+    wrap,
+  )
+where
 
 import qualified "base" GHC.Stack
+import "rio" RIO
 
 data Error
   = Error CallStack Utf8Builder
@@ -21,15 +23,15 @@ format error' = case error' of
   Error callStack message' ->
     message'
       <> foldMap
-        (\(value, srcLoc) ->
-          newline
-            <> indentation
-            <> fromString value
-            <> " called from "
-            <> fromString (GHC.Stack.prettySrcLoc srcLoc)
+        ( \(value, srcLoc) ->
+            newline
+              <> indentation
+              <> fromString value
+              <> " called from "
+              <> fromString (GHC.Stack.prettySrcLoc srcLoc)
         )
         ( GHC.Stack.getCallStack GHC.Stack.callStack
-          <> GHC.Stack.getCallStack callStack
+            <> GHC.Stack.getCallStack callStack
         )
 
 indentation :: Utf8Builder
@@ -49,8 +51,8 @@ wrap :: HasCallStack => Utf8Builder -> Error -> Error
 wrap message'' error' = case error' of
   Error callStack message' ->
     Error
-      ( GHC.Stack.fromCallSiteList
-        $ GHC.Stack.getCallStack GHC.Stack.callStack
-        <> GHC.Stack.getCallStack callStack
+      ( GHC.Stack.fromCallSiteList $
+          GHC.Stack.getCallStack GHC.Stack.callStack
+            <> GHC.Stack.getCallStack callStack
       )
       (message'' <> ": " <> message')

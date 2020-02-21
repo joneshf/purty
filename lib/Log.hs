@@ -1,30 +1,32 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ImplicitParams   #-}
-{-# LANGUAGE PackageImports   #-}
-module Log
-  ( Config(..)
-  , Handle
-  , debug
-  , handle
-  , info
-  ) where
+{-# LANGUAGE ImplicitParams #-}
+{-# LANGUAGE PackageImports #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
-import "rio" RIO hiding (Handle, handle)
+module Log
+  ( Config (..),
+    Handle,
+    debug,
+    handle,
+    info,
+  )
+where
 
 import qualified "componentm" Control.Monad.Component
 import qualified "base" GHC.Stack
+import "rio" RIO hiding (Handle, handle)
 
 data Config
   = Config
-    { name    :: Text
-    , verbose :: Bool
-    }
+      { name :: Text,
+        verbose :: Bool
+      }
 
 data Handle
   = Handle
-    { debug' :: CallStack -> Utf8Builder -> IO ()
-    , info'  :: CallStack -> Utf8Builder -> IO ()
-    }
+      { debug' :: CallStack -> Utf8Builder -> IO (),
+        info' :: CallStack -> Utf8Builder -> IO ()
+      }
 
 debug :: HasCallStack => Handle -> Utf8Builder -> IO ()
 debug handle' = debug' handle' GHC.Stack.callStack
@@ -40,20 +42,19 @@ handle config = do
   pure
     Handle
       { debug' = \callStack message -> do
-        let ?callStack = callStack
-        runReaderT (logDebug message) logFunc
-      , info' = \callStack message -> do
-        let ?callStack = callStack
-        runReaderT (logInfo message) logFunc
+          let ?callStack = callStack
+          runReaderT (logDebug message) logFunc,
+        info' = \callStack message -> do
+          let ?callStack = callStack
+          runReaderT (logInfo message) logFunc
       }
   where
-  acquire :: IO (LogFunc, IO ())
-  acquire = do
-    options <- logOptionsHandle stderr (verbose config)
-    newLogFunc options
-
-  release :: (a, IO ()) -> IO ()
-  release = snd
+    acquire :: IO (LogFunc, IO ())
+    acquire = do
+      options <- logOptionsHandle stderr (verbose config)
+      newLogFunc options
+    release :: (a, IO ()) -> IO ()
+    release = snd
 
 info :: HasCallStack => Handle -> Utf8Builder -> IO ()
 info handle' = info' handle' GHC.Stack.callStack

@@ -1,15 +1,16 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports    #-}
-module Annotation
-  ( module'
-  ) where
+{-# LANGUAGE PackageImports #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
-import "rio" RIO hiding (log, span)
+module Annotation
+  ( module',
+  )
+where
 
 import qualified "base" Data.Bitraversable
 import qualified "purescript-cst" Language.PureScript.CST.Types
 import qualified "this" Log
+import "rio" RIO hiding (log, span)
 import qualified "this" SourceRange
 import qualified "this" Span
 
@@ -127,11 +128,11 @@ classHead log classHead' = case classHead' of
     typeVarBindings' <- traverse (typeVarBinding log) typeVarBindings''
     pure
       ( Language.PureScript.CST.Types.ClassHead
-        class'
-        super
-        name'
-        typeVarBindings'
-        fundeps
+          class'
+          super
+          name'
+          typeVarBindings'
+          fundeps
       )
 
 constraint ::
@@ -195,12 +196,12 @@ debug log x y z =
   Log.debug
     log
     ( "Annotating `"
-      <> x
-      <> "`: "
-      <> displayShow y
-      <> " as `"
-      <> displayShow z
-      <> "`"
+        <> x
+        <> "`: "
+        <> displayShow y
+        <> " as `"
+        <> displayShow z
+        <> "`"
     )
 
 declaration ::
@@ -345,8 +346,8 @@ export log export' = case export' of
     debug log "ExportValue" name' span
     pure (Language.PureScript.CST.Types.ExportValue span name')
   where
-  span :: Span.Span
-  span = Span.export export'
+    span :: Span.Span
+    span = Span.export export'
 
 expr ::
   (Show a) =>
@@ -573,8 +574,8 @@ import' log import'' = case import'' of
     debug log "ImportValue" name' span
     pure (Language.PureScript.CST.Types.ImportValue span name')
   where
-  span :: Span.Span
-  span = Span.import' import''
+    span :: Span.Span
+    span = Span.import' import''
 
 importDecl ::
   (Show a) =>
@@ -611,12 +612,12 @@ instanceBinding log instanceBinding' = case instanceBinding' of
     let span = Span.instanceBinding instanceBinding'
     debug log "InstanceBindingName" instanceBinding' span
     valueBindingFields' <- valueBindingFields log valueBindingFields''
-    pure ( Language.PureScript.CST.Types.InstanceBindingName span valueBindingFields')
+    pure (Language.PureScript.CST.Types.InstanceBindingName span valueBindingFields')
   Language.PureScript.CST.Types.InstanceBindingSignature _ labeled'' -> do
     let span = Span.instanceBinding instanceBinding'
     debug log "InstanceBindingSignature" instanceBinding' span
     labeled' <- labeledNameType log labeled''
-    pure ( Language.PureScript.CST.Types.InstanceBindingSignature span labeled')
+    pure (Language.PureScript.CST.Types.InstanceBindingSignature span labeled')
 
 instanceHead ::
   (Show a) =>
@@ -632,12 +633,12 @@ instanceHead log instanceHead' = case instanceHead' of
     types <- traverse (type' log) types'
     pure
       ( Language.PureScript.CST.Types.InstanceHead
-        instance''
-        name'
-        colons
-        constraints
-        class'
-        types
+          instance''
+          name'
+          colons
+          constraints
+          class'
+          types
       )
 
 kind ::
@@ -690,8 +691,8 @@ labeledNameKind ::
     (Language.PureScript.CST.Types.Kind b) ->
   IO
     ( Language.PureScript.CST.Types.Labeled
-      (Language.PureScript.CST.Types.Name a)
-      (Language.PureScript.CST.Types.Kind Span.Span)
+        (Language.PureScript.CST.Types.Name a)
+        (Language.PureScript.CST.Types.Kind Span.Span)
     )
 labeledNameKind log = labeled log SourceRange.name SourceRange.kind (kind log)
 
@@ -703,8 +704,8 @@ labeledNameType ::
     (Language.PureScript.CST.Types.Type b) ->
   IO
     ( Language.PureScript.CST.Types.Labeled
-      (Language.PureScript.CST.Types.Name a)
-      (Language.PureScript.CST.Types.Type Span.Span)
+        (Language.PureScript.CST.Types.Name a)
+        (Language.PureScript.CST.Types.Type Span.Span)
     )
 labeledNameType log = labeled log SourceRange.name SourceRange.type' (type' log)
 
@@ -778,14 +779,14 @@ module' log module''' = case module''' of
     declarations <- traverse (declaration log) declarations'
     pure
       ( Language.PureScript.CST.Types.Module
-        span
-        module''
-        name
-        exports
-        where''
-        imports
-        declarations
-        trailing
+          span
+          module''
+          name
+          exports
+          where''
+          imports
+          declarations
+          trailing
       )
 
 patternGuard ::

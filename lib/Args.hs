@@ -1,26 +1,26 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PackageImports    #-}
+{-# LANGUAGE PackageImports #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Args
-  ( Args(..)
-  , debug
-  , info
-  , input
-  , parse
-  , withInput
-  ) where
-
-import "rio" RIO hiding (log)
-
-import "rio" RIO.FilePath ((</>))
+  ( Args (..),
+    debug,
+    info,
+    input,
+    parse,
+    withInput,
+  )
+where
 
 import qualified "bytestring" Data.ByteString.Builder
 import qualified "this" Error
 import qualified "this" Log
 import qualified "optparse-applicative" Options.Applicative
+import "rio" RIO hiding (log)
 import qualified "rio" RIO.ByteString.Lazy
 import qualified "rio" RIO.Directory
 import qualified "rio" RIO.File
+import "rio" RIO.FilePath ((</>))
 import qualified "rio" RIO.FilePath
 import qualified "pathwalk" System.Directory.PathWalk
 
@@ -66,14 +66,14 @@ data Output
 instance Display Output where
   display output' = case output' of
     STDOUT -> "STDOUT"
-    Write  -> "Write"
+    Write -> "Write"
 
 instance Semigroup Output where
   output1 <> output2 = case (output1, output2) of
     (STDOUT, STDOUT) -> STDOUT
-    (STDOUT, Write)  -> Write
-    (Write, STDOUT)  -> Write
-    (Write, Write)   -> Write
+    (STDOUT, Write) -> Write
+    (Write, STDOUT) -> Write
+    (Write, Write) -> Write
 
 data Verbose
   = NotVerbose
@@ -82,14 +82,14 @@ data Verbose
 instance Display Verbose where
   display verbose' = case verbose' of
     NotVerbose -> "NotVerbose"
-    Verbose    -> "Verbose"
+    Verbose -> "Verbose"
 
 instance Semigroup Verbose where
   verbose1 <> verbose2 = case (verbose1, verbose2) of
     (NotVerbose, NotVerbose) -> NotVerbose
-    (NotVerbose, Verbose)    -> Verbose
-    (Verbose, NotVerbose)    -> Verbose
-    (Verbose, Verbose)       -> Verbose
+    (NotVerbose, Verbose) -> Verbose
+    (Verbose, NotVerbose) -> Verbose
+    (Verbose, Verbose) -> Verbose
 
 args :: Options.Applicative.Parser Args
 args =
@@ -99,7 +99,7 @@ args =
 
 debug :: Args -> Bool
 debug args' = case args' of
-  Format format'     -> debugFormat format'
+  Format format' -> debugFormat format'
 
 debugFormat :: Format -> Bool
 debugFormat format' = case format' of
@@ -108,7 +108,7 @@ debugFormat format' = case format' of
 debugVerbose :: Verbose -> Bool
 debugVerbose verbose' = case verbose' of
   NotVerbose -> False
-  Verbose    -> True
+  Verbose -> True
 
 format :: Options.Applicative.Parser Format
 format =
@@ -120,38 +120,37 @@ format =
 info :: Options.Applicative.ParserInfo Args
 info = Options.Applicative.info (Options.Applicative.helper <*> args) description
   where
-  description :: Options.Applicative.InfoMod Args
-  description =
-    Options.Applicative.fullDesc
-      <> Options.Applicative.progDesc "Pretty print a PureScript file"
-      <> Options.Applicative.header "purty - A PureScript pretty-printer"
+    description :: Options.Applicative.InfoMod Args
+    description =
+      Options.Applicative.fullDesc
+        <> Options.Applicative.progDesc "Pretty print a PureScript file"
+        <> Options.Applicative.header "purty - A PureScript pretty-printer"
 
 input :: Format -> Utf8Builder
 input format' = case format' of
-  Format' InputSTDIN _ _       -> "STDIN"
+  Format' InputSTDIN _ _ -> "STDIN"
   Format' (InputFile file) _ _ -> displayShow file
 
 input' :: Options.Applicative.Parser Input
 input' =
   Options.Applicative.argument input'' meta
   where
-  meta :: Options.Applicative.Mod Options.Applicative.ArgumentFields a
-  meta =
-    Options.Applicative.help "PureScript file to format or `-` for STDIN"
-      <> Options.Applicative.metavar "FILE"
-
-  input'' :: Options.Applicative.ReadM Input
-  input'' = Options.Applicative.maybeReader $ \str -> case str of
-    "-" -> Just InputSTDIN
-    _   -> Just (InputFile str)
+    meta :: Options.Applicative.Mod Options.Applicative.ArgumentFields a
+    meta =
+      Options.Applicative.help "PureScript file to format or `-` for STDIN"
+        <> Options.Applicative.metavar "FILE"
+    input'' :: Options.Applicative.ReadM Input
+    input'' = Options.Applicative.maybeReader $ \str -> case str of
+      "-" -> Just InputSTDIN
+      _ -> Just (InputFile str)
 
 output :: Options.Applicative.Parser Output
 output = Options.Applicative.flag STDOUT Write meta
   where
-  meta :: Options.Applicative.Mod Options.Applicative.FlagFields a
-  meta =
-    Options.Applicative.help "Format file in-place"
-      <> Options.Applicative.long "write"
+    meta :: Options.Applicative.Mod Options.Applicative.FlagFields a
+    meta =
+      Options.Applicative.help "Format file in-place"
+        <> Options.Applicative.long "write"
 
 parse :: IO Args
 parse = Options.Applicative.execParser info
@@ -159,10 +158,10 @@ parse = Options.Applicative.execParser info
 verbose :: Options.Applicative.Parser Verbose
 verbose = Options.Applicative.flag NotVerbose Verbose meta
   where
-  meta :: Options.Applicative.Mod Options.Applicative.FlagFields a
-  meta =
-    Options.Applicative.help "Print debugging information to STDERR while running"
-      <> Options.Applicative.long "verbose"
+    meta :: Options.Applicative.Mod Options.Applicative.FlagFields a
+    meta =
+      Options.Applicative.help "Print debugging information to STDERR while running"
+        <> Options.Applicative.long "verbose"
 
 withInput ::
   Log.Handle ->
@@ -174,14 +173,15 @@ withInput log format' f = case format' of
     Log.debug log ("Converting file " <> displayShow file' <> " to absolute.")
     file <- RIO.Directory.makeAbsolute file'
     directoryExists <- RIO.Directory.doesDirectoryExist file
-    if directoryExists then do
-      Log.debug log ("Parsed " <> displayShow file <> " as an absolute directory")
-      System.Directory.PathWalk.pathWalkAccumulate file (\directory _ files -> writeFiles log f output' directory files)
-    else do
-      err' <- write log f output' file
-      case err' of
-        Just err -> pure [err]
-        Nothing  -> pure []
+    if directoryExists
+      then do
+        Log.debug log ("Parsed " <> displayShow file <> " as an absolute directory")
+        System.Directory.PathWalk.pathWalkAccumulate file (\directory _ files -> writeFiles log f output' directory files)
+      else do
+        err' <- write log f output' file
+        case err' of
+          Just err -> pure [err]
+          Nothing -> pure []
   Format' InputSTDIN _ _ -> do
     Log.debug log "Reading STDIN."
     result' <- tryIO RIO.ByteString.Lazy.getContents
@@ -230,8 +230,8 @@ write log f output' file = do
           RIO.File.writeBinaryFileDurableAtomic
             file
             ( toStrictBytes
-              $ Data.ByteString.Builder.toLazyByteString
-              $ getUtf8Builder formatted
+                $ Data.ByteString.Builder.toLazyByteString
+                $ getUtf8Builder formatted
             )
           Log.debug log "Wrote formatted file in-place"
           pure Nothing
@@ -248,19 +248,18 @@ writeFiles log f output' directory files = do
   errors <- traverse go files
   pure (catMaybes errors)
   where
-  go ::
-    FilePath ->
-    IO (Maybe Error.Error)
-  go file' = case pureScriptFile file' of
-    Just file -> do
-      Log.debug log ("Converting file " <> displayShow (directory </> file) <> " to absolute")
-      absoluteFile <- RIO.Directory.makeAbsolute (directory </> file)
-      write log f output' absoluteFile
-    Nothing   -> pure Nothing
-
-  pureScriptFile ::
-    FilePath ->
-    Maybe FilePath
-  pureScriptFile file
-    | RIO.FilePath.isExtensionOf "purs" file = Just file
-    | otherwise = Nothing
+    go ::
+      FilePath ->
+      IO (Maybe Error.Error)
+    go file' = case pureScriptFile file' of
+      Just file -> do
+        Log.debug log ("Converting file " <> displayShow (directory </> file) <> " to absolute")
+        absoluteFile <- RIO.Directory.makeAbsolute (directory </> file)
+        write log f output' absoluteFile
+      Nothing -> pure Nothing
+    pureScriptFile ::
+      FilePath ->
+      Maybe FilePath
+    pureScriptFile file
+      | RIO.FilePath.isExtensionOf "purs" file = Just file
+      | otherwise = Nothing
