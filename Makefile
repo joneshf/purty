@@ -64,15 +64,13 @@ $(BAZEL): | $(BUILDDIR)
 ifeq ($(OS),linux)
 	curl --location --output $@ https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-linux-x86_64
 	@chmod 0755 $@
-	@touch $@
 else ifeq ($(OS),osx)
 	curl --location --output $@ https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-darwin-x86_64
 	@chmod 0755 $@
-	@touch $@
 else ifeq ($(OS),windows)
 	curl --location --output $@ https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-windows-x86_64.exe
-	@copy /b $@ +,,
 endif
+	@touch $@
 	$(BAZEL) version
 
 $(BINDIR)/$(BINARY): $(LIBS) $(SRCS) $(TESTS) package.yaml stack.yaml
