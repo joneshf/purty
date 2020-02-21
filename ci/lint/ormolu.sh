@@ -11,7 +11,7 @@ readonly SCRIPT_NAME="$(basename "${THIS_SCRIPT}")"
 readonly TEMPORARY_DIR="$(mktemp --directory -t "${SCRIPT_NAME}.XXXXXXXXXX")"
 readonly LOG_FILE="$(mktemp -t "${SCRIPT_NAME}.log.XXXXXXXXXX")"
 
-SYSTEM_GHC=''
+STACK_ARGS=()
 VERBOSE=''
 
 log() {
@@ -48,7 +48,7 @@ while [[ $# -gt 0 ]]; do
     option="${1}"
     case "${option}" in
         --help) usage;;
-        --system-ghc) SYSTEM_GHC='true';;
+        --system-ghc) STACK_ARGS+=('--system-ghc');;
         -V|--verbose) VERBOSE='verbose';;
         *)
             error "${THIS_SCRIPT}: unrecognized option '${option}'"
@@ -75,22 +75,12 @@ debug "Created log file: ${LOG_FILE}"
 # End Boilerplate
 
 debug "Building 'ormolu'"
-if [[ 'true' = "${SYSTEM_GHC}" ]]; then
-    stack --system-ghc build ormolu
-else
-    stack build ormolu
-fi
+stack "${STACK_ARGS[@]}" build ormolu
 
 info "Running 'ormolu'"
-if [[ 'true' = "${SYSTEM_GHC}" ]]; then
-    git ls-files -z '*.hs' \
-        | xargs -I {} --null \
-                stack --system-ghc exec ormolu -- --mode inplace {}
-else
-    git ls-files -z '*.hs' \
-        | xargs -I {} --null \
-                stack exec ormolu -- --mode inplace {}
-fi
+git ls-files -z '*.hs' \
+    | xargs -I {} --null \
+            stack "${STACK_ARGS[@]}" exec ormolu -- --mode inplace {}
 
 debug 'Checking for changed files'
 CHANGED_FILES="$(git status --porcelain '*.hs')"
