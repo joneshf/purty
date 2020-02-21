@@ -3,7 +3,6 @@ before_deploy:
   - appveyor PushArtifact purty-%APPVEYOR_REPO_TAG_NAME%-win.tar.gz
 
 build_script:
-  - make bootstrap OS=windows
   - stack setup
   - make test-golden BINARY=purty.exe
 
@@ -33,5 +32,6 @@ environment:
 install:
   - chocolatey install haskell-stack --version 1.9.3 --yes
   - chocolatey install make --version 4.3 --yes
+  - make bootstrap OS=windows
 
 version: '{build}'
