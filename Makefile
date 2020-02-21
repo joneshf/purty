@@ -26,6 +26,7 @@ TEST_GOLDEN_HS := $(wildcard test/golden/*.hs)
 TEST_GOLDEN_ORIGINAL_PURS := $(wildcard test/golden/files/original/*.purs)
 TEST_GOLDEN_PURS := $(TEST_GOLDEN_FORMATTED_PURS) $(TEST_GOLDEN_ORIGINAL_PURS)
 TESTS := $(TEST_ACCEPTANCE_PURS) $(TEST_GOLDEN_HS) $(TEST_GOLDEN_PURS)
+VERSION_BAZEL := 2.1.0
 VERSION_DHALL_HASKELL := 1.30.0
 VERSION_DHALL_TO_JSON := 1.6.2
 VERSION_PURTY :=
@@ -43,16 +44,34 @@ PURTY_TAR_UPLOADED_FILENAME := purty-$(VERSION_PURTY)-$(OS).tar.gz
 RELEASE_DATE := $(BUILDDIR)/release-date
 
 ifeq ($(OS),linux)
+BAZEL := $(BUILDDIR)/bazel
 DHALL_TO_JSON_ARCHIVE_FILE := ./bin/dhall-to-json
 DHALL_TO_JSON_ARCHIVE_STRIP := 2
 DHALL_TO_JSON_URI := https://github.com/dhall-lang/dhall-haskell/releases/download/$(VERSION_DHALL_HASKELL)/dhall-json-$(VERSION_DHALL_TO_JSON)-x86_64-linux.tar.bz2
 else ifeq ($(OS),osx)
+BAZEL := $(BUILDDIR)/bazel
 DHALL_TO_JSON_ARCHIVE_FILE := bin/dhall-to-json
 DHALL_TO_JSON_ARCHIVE_STRIP := 1
 DHALL_TO_JSON_URI := https://github.com/dhall-lang/dhall-haskell/releases/download/$(VERSION_DHALL_HASKELL)/dhall-json-$(VERSION_DHALL_TO_JSON)-x86_64-macos.tar.bz2
+else ifeq ($(OS),windows)
+BAZEL := $(BUILDDIR)/bazel.exe
 endif
 
-.DEFAULT_GOAL := test
+.DEFAULT_GOAL := bootstrap
+
+$(BAZEL): | $(BUILDDIR)
+	$(info Downloading bazel binary)
+ifeq ($(OS),linux)
+	curl --location --output $@ https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-linux-x86_64
+	@chmod 0755 $@
+else ifeq ($(OS),osx)
+	curl --location --output $@ https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-darwin-x86_64
+	@chmod 0755 $@
+else ifeq ($(OS),windows)
+	curl --location --output $@ https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-windows-x86_64.exe
+endif
+	@touch $@
+	$(BAZEL) version
 
 $(BINDIR)/$(BINARY): $(LIBS) $(SRCS) $(TESTS) package.yaml stack.yaml
 	$(STACK_BUILD) --copy-bins --local-bin-path $(BINDIR) --no-run-tests --test
@@ -96,6 +115,9 @@ $(RELEASE_DATE): | $(BUILDDIR)
 
 .PHONY: bintray-artifacts
 bintray-artifacts: $(BINTRAY_JSON) $(PURTY_TAR)
+
+.PHONY: bootstrap
+bootstrap: $(BAZEL)
 
 .PHONY: clean
 clean:
