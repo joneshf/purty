@@ -29,6 +29,7 @@ deploy:
     version: '%APPVEYOR_REPO_TAG_NAME%'
 
 environment:
+  PYTHON: C:\Python37
   STACK_ROOT: '%APPVEYOR_BUILD_FOLDER%\.stack-root'
   TEST_TMPDIR: '%APPVEYOR_BUILD_FOLDER%\.bazel-cache'
 
