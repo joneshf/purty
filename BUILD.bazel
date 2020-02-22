@@ -1,6 +1,32 @@
 load(
+    "@bazel_tools//tools/python:toolchain.bzl",
+    "py_runtime_pair",
+)
+
+load(
     "@rules_haskell//haskell:defs.bzl",
     "haskell_library",
+)
+
+config_setting(
+    name = "linux",
+    constraint_values = [
+        "@bazel_tools//platforms:linux",
+    ],
+)
+
+config_setting(
+    name = "macos",
+    constraint_values = [
+        "@bazel_tools//platforms:osx",
+    ],
+)
+
+config_setting(
+    name = "windows",
+    constraint_values = [
+        "@bazel_tools//platforms:windows",
+    ],
 )
 
 haskell_library(
@@ -34,4 +60,25 @@ haskell_library(
         ":lib/SourceRange.hs",
         ":lib/Span.hs",
     ],
+)
+
+py_runtime(
+    interpreter_path = select({
+        ":linux": "/usr/bin/python3",
+        ":macos": "/usr/local/bin/python3",
+        ":windows": "C:\\Python37",
+    }),
+    name = "python3_runtime",
+    python_version = "PY3",
+)
+
+py_runtime_pair(
+    name = "python_runtime",
+    py3_runtime = ":python3_runtime",
+)
+
+toolchain(
+    name = "python3",
+    toolchain = ":python_runtime",
+    toolchain_type = "@bazel_tools//tools/python:toolchain_type",
 )
