@@ -5,6 +5,7 @@ load(
 
 load(
     "@rules_haskell//haskell:defs.bzl",
+    "haskell_binary",
     "haskell_library",
 )
 
@@ -29,6 +30,39 @@ config_setting(
     ],
 )
 
+haskell_binary(
+    compiler_flags = [
+        "-O2",
+        "-Wall",
+        "-Wcompat",
+        "-Werror",
+        "-Wincomplete-record-updates",
+        "-Wincomplete-uni-patterns",
+        "-Wmissing-methods",
+        "-Wredundant-constraints",
+        "-optc=-static",
+        "-optl=-pthread",
+        "-rtsopts",
+        "-static",
+        "-threaded",
+        "-with-rtsopts=-N",
+    ] + select({
+        ":macos": [
+        ],
+        "//conditions:default": [
+            "-optl=-static",
+        ],
+    }),
+    deps = [
+        "@stackage//:base",
+        ":purty",
+    ],
+    name = "purty-binary",
+    srcs = [
+        ":src/Main.hs",
+    ],
+)
+
 haskell_library(
     compiler_flags = [
         "-Wall",
@@ -49,7 +83,7 @@ haskell_library(
         "@stackage//:rio",
         "@stackage//:text",
     ],
-    name = "purty-library",
+    name = "purty",
     srcs = [
         ":lib/Annotation.hs",
         ":lib/Args.hs",
