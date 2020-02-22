@@ -29,13 +29,13 @@ deploy:
     version: '%APPVEYOR_REPO_TAG_NAME%'
 
 environment:
-  PYTHON: C:\Python37
   STACK_ROOT: '%APPVEYOR_BUILD_FOLDER%\.stack-root'
   TEST_TMPDIR: '%APPVEYOR_BUILD_FOLDER%\.bazel-cache'
 
 install:
   - chocolatey install haskell-stack --version 1.9.3 --yes
   - chocolatey install make --version 4.3 --yes
+  - chocolatey install python --version 3.8.1 --yes
   - make bootstrap OS=windows
 
 version: '{build}'
