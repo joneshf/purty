@@ -40,6 +40,8 @@ DHALL_TO_JSON := $(BUILDDIR)/$(OS)/dhall-to-json
 DHALL_TO_JSON_TAR := $(BUILDDIR)/$(OS)/dhall-json-$(VERSION_DHALL_TO_JSON).tar.bz2
 FORMATDIR := $(BUILDDIR)/format
 FORMAT_HASKELL_FILES := $(addprefix $(FORMATDIR)/,$(ALL_HASKELL_FILES))
+LINTDIR_ORMOLU := $(BUILDDIR)/lint/ormolu
+LINT_HASKELL_ORMOLU_FILES := $(addprefix $(LINTDIR_ORMOLU)/,$(ALL_HASKELL_FILES))
 NPM_PACKAGE_DHALL := $(CIDIR)/npm/package.dhall
 ORMOLU := $(BUILDDIR)/ormolu
 PACKAGE_JSON := package.json
@@ -110,6 +112,12 @@ $(FORMAT_HASKELL_FILES): $(FORMATDIR)/%: % $(ORMOLU)
 	@mkdir -p $(basename $@)
 	@touch $@
 
+$(LINT_HASKELL_ORMOLU_FILES): $(LINTDIR_ORMOLU)/%: % $(ORMOLU)
+	$(info Linting $* with ormolu)
+	@$(ORMOLU) --mode check $* || (echo $* is not formatted properly. Please run 'make format'.; exit 1)
+	@mkdir -p $(basename $@)
+	@touch $@
+
 $(ORMOLU): stack.yaml
 	$(STACK_BUILD) --copy-bins --local-bin-path $(BUILDDIR) ormolu
 
@@ -145,6 +153,15 @@ format: format-haskell
 
 .PHONY: format-haskell
 format-haskell: $(FORMAT_HASKELL_FILES)
+
+.PHONY: lint
+lint: lint-haskell
+
+.PHONY: lint-haskell
+lint-haskell: lint-haskell-ormolu
+
+.PHONY: lint-haskell-ormolu
+lint-haskell-ormolu: $(LINT_HASKELL_ORMOLU_FILES)
 
 .PHONY: npm-publish
 npm-publish: $(PACKAGE_JSON)

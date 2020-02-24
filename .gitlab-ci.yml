@@ -21,7 +21,7 @@ Build purty:
     - stack setup
   script:
     - make bootstrap
-    - ci/lint/ormolu.sh --verbose
+    - make lint
     - ci/lint/hlint.sh --verbose
     - make test STACK_BUILDFLAGS=--coverage
   stage: build
