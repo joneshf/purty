@@ -78,18 +78,13 @@ debug "Building 'ormolu'"
 stack "${STACK_ARGS[@]}" build ormolu
 
 info "Running 'ormolu'"
-git ls-files -z '*.hs' \
-    | xargs -I {} --null \
-            stack "${STACK_ARGS[@]}" exec ormolu -- --mode inplace {}
+for haskell_file in $(git ls-files '*.hs'); do
+    debug "Checking if ${haskell_file} is formatted"
+    if ! stack "${STACK_ARGS[@]}" exec ormolu -- --mode check "${haskell_file}"; then
+        error "${haskell_file} is not formatted properly"
+        error ''
+        error "You can fix this by running 'make format' locally and committing"
 
-debug 'Checking for changed files'
-CHANGED_FILES="$(git status --porcelain '*.hs')"
-
-if [[ -n "${CHANGED_FILES}"  ]]; then
-    error 'Some Haskell files are not formatted properly'
-    error "$(git diff -- '*.hs')"
-    error ''
-    error "You can fix this by running '${THIS_SCRIPT}' locally and committing"
-
-    exit 1
-fi
+        exit 1
+    fi
+done
