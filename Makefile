@@ -40,7 +40,10 @@ DHALL_TO_JSON := $(BUILDDIR)/$(OS)/dhall-to-json
 DHALL_TO_JSON_TAR := $(BUILDDIR)/$(OS)/dhall-json-$(VERSION_DHALL_TO_JSON).tar.bz2
 FORMATDIR := $(BUILDDIR)/format
 FORMAT_HASKELL_FILES := $(addprefix $(FORMATDIR)/,$(ALL_HASKELL_FILES))
+HLINT := $(BUILDDIR)/hlint
+LINTDIR_HLINT := $(BUILDDIR)/lint/hlint
 LINTDIR_ORMOLU := $(BUILDDIR)/lint/ormolu
+LINT_HASKELL_HLINT_FILES := $(addprefix $(LINTDIR_HLINT)/,$(ALL_HASKELL_FILES))
 LINT_HASKELL_ORMOLU_FILES := $(addprefix $(LINTDIR_ORMOLU)/,$(ALL_HASKELL_FILES))
 NPM_PACKAGE_DHALL := $(CIDIR)/npm/package.dhall
 ORMOLU := $(BUILDDIR)/ormolu
@@ -112,6 +115,15 @@ $(FORMAT_HASKELL_FILES): $(FORMATDIR)/%: % $(ORMOLU)
 	@mkdir -p $(basename $@)
 	@touch $@
 
+$(HLINT): stack.yaml
+	$(STACK_BUILD) --copy-bins --local-bin-path $(BUILDDIR) hlint
+
+$(LINT_HASKELL_HLINT_FILES): $(LINTDIR_HLINT)/%: % $(HLINT)
+	$(info Linting $* with hlint)
+	@$(HLINT) $*
+	@mkdir -p $(basename $@)
+	@touch $@
+
 $(LINT_HASKELL_ORMOLU_FILES): $(LINTDIR_ORMOLU)/%: % $(ORMOLU)
 	$(info Linting $* with ormolu)
 	@$(ORMOLU) --mode check $* || (echo $* is not formatted properly. Please run 'make format'.; exit 1)
@@ -158,7 +170,10 @@ format-haskell: $(FORMAT_HASKELL_FILES)
 lint: lint-haskell
 
 .PHONY: lint-haskell
-lint-haskell: lint-haskell-ormolu
+lint-haskell: lint-haskell-hlint lint-haskell-ormolu
+
+.PHONY: lint-haskell-hlint
+lint-haskell-hlint: $(LINT_HASKELL_HLINT_FILES)
 
 .PHONY: lint-haskell-ormolu
 lint-haskell-ormolu: $(LINT_HASKELL_ORMOLU_FILES)
