@@ -4,6 +4,7 @@
 
 module Args
   ( Args (..),
+    Mode (..),
     debug,
     info,
     input,
@@ -24,24 +25,21 @@ import "rio" RIO.FilePath ((</>))
 import qualified "rio" RIO.FilePath
 import qualified "pathwalk" System.Directory.PathWalk
 
-newtype Args
-  = Format Format
+data Args
+  = Args Mode Verbose
 
 data Format
-  = Format' Input Output Verbose
+  = Format' Input Output
 
 instance Display Format where
   display format' = case format' of
-    Format' input'' output' verbose' ->
+    Format' input'' output' ->
       "Format {"
         <> " input = "
         <> display input''
         <> ","
         <> " output = "
         <> display output'
-        <> ","
-        <> " verbose = "
-        <> display verbose'
         <> " }"
 
 data Input
@@ -58,6 +56,9 @@ instance Display Input where
     InputSTDIN ->
       "InputSTDIN {"
         <> " }"
+
+newtype Mode
+  = Format Format
 
 data Output
   = STDOUT
@@ -93,17 +94,13 @@ instance Semigroup Verbose where
 
 args :: Options.Applicative.Parser Args
 args =
-  asum
-    [ fmap Format format
-    ]
+  pure Args
+    <*> mode
+    <*> verbose
 
 debug :: Args -> Bool
 debug args' = case args' of
-  Format format' -> debugFormat format'
-
-debugFormat :: Format -> Bool
-debugFormat format' = case format' of
-  Format' _ _ verbose' -> debugVerbose verbose'
+  Args _ verbose' -> debugVerbose verbose'
 
 debugVerbose :: Verbose -> Bool
 debugVerbose verbose' = case verbose' of
@@ -115,7 +112,6 @@ format =
   pure Format'
     <*> input'
     <*> output
-    <*> verbose
 
 info :: Options.Applicative.ParserInfo Args
 info = Options.Applicative.info (Options.Applicative.helper <*> args) description
@@ -128,8 +124,8 @@ info = Options.Applicative.info (Options.Applicative.helper <*> args) descriptio
 
 input :: Format -> Utf8Builder
 input format' = case format' of
-  Format' InputSTDIN _ _ -> "STDIN"
-  Format' (InputFile file) _ _ -> displayShow file
+  Format' InputSTDIN _ -> "STDIN"
+  Format' (InputFile file) _ -> displayShow file
 
 input' :: Options.Applicative.Parser Input
 input' =
@@ -143,6 +139,12 @@ input' =
     input'' = Options.Applicative.maybeReader $ \str -> case str of
       "-" -> Just InputSTDIN
       _ -> Just (InputFile str)
+
+mode :: Options.Applicative.Parser Mode
+mode =
+  asum
+    [ fmap Format format
+    ]
 
 output :: Options.Applicative.Parser Output
 output = Options.Applicative.flag STDOUT Write meta
@@ -169,7 +171,7 @@ withInput ::
   (LByteString -> IO (Either Error.Error Utf8Builder)) ->
   IO [Error.Error]
 withInput log format' f = case format' of
-  Format' (InputFile file') output' _ -> do
+  Format' (InputFile file') output' -> do
     Log.debug log ("Converting file " <> displayShow file' <> " to absolute.")
     file <- RIO.Directory.makeAbsolute file'
     directoryExists <- RIO.Directory.doesDirectoryExist file
@@ -182,7 +184,7 @@ withInput log format' f = case format' of
         case err' of
           Just err -> pure [err]
           Nothing -> pure []
-  Format' InputSTDIN _ _ -> do
+  Format' InputSTDIN _ -> do
     Log.debug log "Reading STDIN."
     result' <- tryIO RIO.ByteString.Lazy.getContents
     case result' of
