@@ -120,3 +120,25 @@ info 'STDIN works'
 debug 'Testing if directories work'
 "${PURTY}" "$(pwd)/acceptance/directories" > /dev/null
 info 'Directories works'
+
+debug 'Testing if version mode works'
+expected_version="Purty version: $(cat "$(pwd)/../version/purty")"
+actual_version=$("${PURTY}" version)
+if [[ "${expected_version}" != "${actual_version}" ]]; then
+    error "Expected: ${expected_version}"
+    error "Actual: ${actual_version}"
+
+    exit 1
+fi
+info 'Version mode works'
+
+debug 'Testing if version --numeric flag works'
+expected_version=$(cat "$(pwd)/../version/purty")
+actual_version=$("${PURTY}" version --numeric)
+if [[ "${expected_version}" != "${actual_version}" ]]; then
+    error "Expected: ${expected_version}"
+    error "Actual: ${actual_version}"
+
+    exit 1
+fi
+info 'Version --numeric flag works'
