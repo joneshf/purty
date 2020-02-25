@@ -100,6 +100,7 @@ data Version
 
 data VersionFormat
   = VersionHuman
+  | VersionNumeric
 
 args :: Options.Applicative.Parser Args
 args =
@@ -194,8 +195,14 @@ versionParser =
 versionFormat :: Options.Applicative.Parser VersionFormat
 versionFormat =
   asum
-    [ pure VersionHuman
+    [ pure VersionHuman,
+      Options.Applicative.flag' VersionNumeric versionNumeric
     ]
+  where
+    versionNumeric :: Options.Applicative.Mod Options.Applicative.FlagFields a
+    versionNumeric =
+      Options.Applicative.help "Print machine-readable version number only"
+        <> Options.Applicative.long "numeric"
 
 withInput ::
   Log.Handle ->
@@ -306,3 +313,6 @@ writeVersion log version' = case version' of
   Version' VersionHuman -> do
     Log.debug log "Writing version information"
     hPutBuilder stdout ("Purty version: " <> Version.version <> "\n")
+  Version' VersionNumeric -> do
+    Log.debug log "Writing only `purty` version number"
+    hPutBuilder stdout (Version.version <> "\n")
