@@ -61,4 +61,4 @@ tests:
       - text == 1.2.3.1
     main: Main.hs
     source-dirs: test/golden
-version: 5.0.0
+version: 5.0.1
