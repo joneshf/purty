@@ -26,6 +26,8 @@ TEST_GOLDEN_HS := $(wildcard test/golden/*.hs)
 TEST_GOLDEN_ORIGINAL_PURS := $(wildcard test/golden/files/original/*.purs)
 TEST_GOLDEN_PURS := $(TEST_GOLDEN_FORMATTED_PURS) $(TEST_GOLDEN_ORIGINAL_PURS)
 TESTS := $(TEST_ACCEPTANCE_PURS) $(TEST_GOLDEN_HS) $(TEST_GOLDEN_PURS)
+VERSIONDIR := version
+VERSION_PURTY_FILE := $(VERSIONDIR)/purty
 VERSION_BAZEL := 2.1.0
 VERSION_DHALL_HASKELL := 1.30.0
 VERSION_DHALL_TO_JSON := 1.6.2
@@ -82,7 +84,7 @@ endif
 	@touch $@
 	$(BAZEL) version
 
-$(BINDIR)/$(BINARY): $(LIBS) $(SRCS) $(TESTS) package.yaml stack.yaml
+$(BINDIR)/$(BINARY): $(LIBS) $(SRCS) $(TESTS) $(VERSION_PURTY_FILE) package.yaml stack.yaml
 	$(STACK_BUILD) --copy-bins --local-bin-path $(BINDIR) --no-run-tests --test
 
 $(BINDIR)/$(OS) $(BUILDDIR) $(BUILDDIR)/$(OS):

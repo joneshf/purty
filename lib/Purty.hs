@@ -93,3 +93,7 @@ run' log args = case args of
     Args.Format format' -> do
       Log.debug log "Formatting input"
       Args.withInput log format' (format log)
+    Args.Version version' -> do
+      Log.debug log "Displaying version information"
+      Args.writeVersion log version'
+      pure []
