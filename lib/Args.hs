@@ -117,11 +117,19 @@ debugVerbose verbose' = case verbose' of
   NotVerbose -> False
   Verbose -> True
 
-format :: Options.Applicative.Parser Format
-format =
+formatParser :: Options.Applicative.Parser Format
+formatParser =
   pure Format'
     <*> input'
     <*> output
+
+formatParserInfo :: Options.Applicative.ParserInfo Format
+formatParserInfo = Options.Applicative.info formatParser description
+  where
+    description :: Options.Applicative.InfoMod Format
+    description =
+      Options.Applicative.fullDesc
+        <> Options.Applicative.progDesc "Format a PureScript file"
 
 info :: Options.Applicative.ParserInfo Args
 info = Options.Applicative.info (Options.Applicative.helper <*> args) description
@@ -155,10 +163,11 @@ mode =
   asum
     [ Options.Applicative.hsubparser
         ( fold
-            [ Options.Applicative.command "version" (fmap Version versionParserInfo)
+            [ Options.Applicative.command "format" (fmap Format formatParserInfo),
+              Options.Applicative.command "version" (fmap Version versionParserInfo)
             ]
         ),
-      fmap Format format
+      fmap Format formatParser
     ]
 
 output :: Options.Applicative.Parser Output
