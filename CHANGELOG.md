@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Additions
+
+### Changes
+
+* [Add a `version` mode](https://gitlab.com/joneshf/purty/issues/169)
+
+### Deletions
+
 ## 5.0.0
 
 This is a big one! There are three important differences from previous verions of `purty:
