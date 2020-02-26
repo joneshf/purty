@@ -90,55 +90,67 @@ cd "${DIR}"
 # 2. Run the test. In most cases, letting it crash is fine.
 # 3. Give some `info` about the test that just passed.
 
-debug 'Testing if exit code is non-zero for parse errors'
-debug 'Turning off "errexit" so the command does not exit the script'
-set +o errexit
-"${PURTY}" './acceptance/Unparsable.purs' 2&> /dev/null
-unparseable_exit_code="${?}"
-debug 'Turning on "errexit" so failed commands exit the script'
-set -o errexit
-debug "unparseable_exit_code: ${unparseable_exit_code}"
-[[ "${unparseable_exit_code}" -ne 0 ]]
-info 'Exit code is non-zero for parse errors'
+function suite_format() {
+    local purty="${1}"
+    debug 'Testing if exit code is non-zero for parse errors'
+    debug 'Turning off "errexit" so the command does not exit the script'
+    set +o errexit
+    "${purty}" './acceptance/Unparsable.purs' 2&> /dev/null
+    unparseable_exit_code="${?}"
+    debug 'Turning on "errexit" so failed commands exit the script'
+    set -o errexit
+    debug "unparseable_exit_code: ${unparseable_exit_code}"
+    [[ "${unparseable_exit_code}" -ne 0 ]]
+    info 'Exit code is non-zero for parse errors'
 
-debug 'Testing if absolute paths work'
-"${PURTY}" "$(pwd)/acceptance/Test.purs" > /dev/null
-info 'Absolute file paths work'
+    debug 'Testing if absolute paths work'
+    "${purty}" "$(pwd)/acceptance/Test.purs" > /dev/null
+    info 'Absolute file paths work'
 
-debug 'Testing if relative paths work'
-"${PURTY}" "./acceptance/Test.purs" > /dev/null
-info 'Relative file paths work'
+    debug 'Testing if relative paths work'
+    "${purty}" "./acceptance/Test.purs" > /dev/null
+    info 'Relative file paths work'
 
-debug 'Testing if paths with .. work'
-"${PURTY}" "../test/acceptance/Test.purs" > /dev/null
-info 'Paths with .. work'
+    debug 'Testing if paths with .. work'
+    "${purty}" "../test/acceptance/Test.purs" > /dev/null
+    info 'Paths with .. work'
 
-debug 'Testing if STDIN works'
-"${PURTY}" - < "$(pwd)/acceptance/Test.purs" > /dev/null
-info 'STDIN works'
+    debug 'Testing if STDIN works'
+    "${purty}" - < "$(pwd)/acceptance/Test.purs" > /dev/null
+    info 'STDIN works'
 
-debug 'Testing if directories work'
-"${PURTY}" "$(pwd)/acceptance/directories" > /dev/null
-info 'Directories works'
+    debug 'Testing if directories work'
+    "${purty}" "$(pwd)/acceptance/directories" > /dev/null
+    info 'Directories works'
+}
 
-debug 'Testing if version mode works'
-expected_version="Purty version: $(cat "$(pwd)/../version/purty")"
-actual_version=$("${PURTY}" version)
-if [[ "${expected_version}" != "${actual_version}" ]]; then
-    error "Expected: ${expected_version}"
-    error "Actual: ${actual_version}"
+function suite_version() {
+    local purty="${1}"
+    debug 'Testing if version mode works'
+    expected_version="Purty version: $(cat "$(pwd)/../version/purty")"
+    actual_version=$("${purty}" version)
+    if [[ "${expected_version}" != "${actual_version}" ]]; then
+        error "Expected: ${expected_version}"
+        error "Actual: ${actual_version}"
 
-    exit 1
-fi
-info 'Version mode works'
+        exit 1
+    fi
+    info 'Version mode works'
 
-debug 'Testing if version --numeric flag works'
-expected_version=$(cat "$(pwd)/../version/purty")
-actual_version=$("${PURTY}" version --numeric)
-if [[ "${expected_version}" != "${actual_version}" ]]; then
-    error "Expected: ${expected_version}"
-    error "Actual: ${actual_version}"
+    debug 'Testing if version --numeric flag works'
+    expected_version=$(cat "$(pwd)/../version/purty")
+    actual_version=$("${purty}" version --numeric)
+    if [[ "${expected_version}" != "${actual_version}" ]]; then
+        error "Expected: ${expected_version}"
+        error "Actual: ${actual_version}"
 
-    exit 1
-fi
-info 'Version --numeric flag works'
+        exit 1
+    fi
+    info 'Version --numeric flag works'
+}
+
+info 'Testing format without any command'
+suite_format "${PURTY}"
+
+info 'Testing version command'
+suite_version "${PURTY}"
