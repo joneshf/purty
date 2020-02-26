@@ -92,10 +92,13 @@ cd "${DIR}"
 
 function suite_format() {
     local purty="${1}"
+    shift
+    local args=("$@")
+
     debug 'Testing if exit code is non-zero for parse errors'
     debug 'Turning off "errexit" so the command does not exit the script'
     set +o errexit
-    "${purty}" './acceptance/Unparsable.purs' 2&> /dev/null
+    "${purty}" "${args[@]}" './acceptance/Unparsable.purs' 2&> /dev/null
     unparseable_exit_code="${?}"
     debug 'Turning on "errexit" so failed commands exit the script'
     set -o errexit
@@ -104,23 +107,23 @@ function suite_format() {
     info 'Exit code is non-zero for parse errors'
 
     debug 'Testing if absolute paths work'
-    "${purty}" "$(pwd)/acceptance/Test.purs" > /dev/null
+    "${purty}" "${args[@]}" "$(pwd)/acceptance/Test.purs" > /dev/null
     info 'Absolute file paths work'
 
     debug 'Testing if relative paths work'
-    "${purty}" "./acceptance/Test.purs" > /dev/null
+    "${purty}" "${args[@]}" "./acceptance/Test.purs" > /dev/null
     info 'Relative file paths work'
 
     debug 'Testing if paths with .. work'
-    "${purty}" "../test/acceptance/Test.purs" > /dev/null
+    "${purty}" "${args[@]}" "../test/acceptance/Test.purs" > /dev/null
     info 'Paths with .. work'
 
     debug 'Testing if STDIN works'
-    "${purty}" - < "$(pwd)/acceptance/Test.purs" > /dev/null
+    "${purty}" "${args[@]}" - < "$(pwd)/acceptance/Test.purs" > /dev/null
     info 'STDIN works'
 
     debug 'Testing if directories work'
-    "${purty}" "$(pwd)/acceptance/directories" > /dev/null
+    "${purty}" "${args[@]}" "$(pwd)/acceptance/directories" > /dev/null
     info 'Directories works'
 }
 
@@ -151,6 +154,9 @@ function suite_version() {
 
 info 'Testing format without any command'
 suite_format "${PURTY}"
+
+info 'Testing format with format command'
+suite_format "${PURTY}" format
 
 info 'Testing version command'
 suite_version "${PURTY}"
