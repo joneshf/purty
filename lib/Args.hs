@@ -95,7 +95,7 @@ instance Semigroup Verbose where
     (Verbose, NotVerbose) -> Verbose
     (Verbose, Verbose) -> Verbose
 
-data Version
+newtype Version
   = Version' VersionFormat
 
 data VersionFormat
