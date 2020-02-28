@@ -14,7 +14,6 @@ module Args
   )
 where
 
-import qualified "bytestring" Data.ByteString.Builder
 import qualified "this" Error
 import qualified "this" Log
 import qualified "optparse-applicative" Options.Applicative
@@ -277,12 +276,10 @@ write log f output' file = do
           pure Nothing
         Write -> do
           Log.debug log ("Writing formatted file " <> displayShow file <> " in-place.")
-          RIO.File.writeBinaryFileDurableAtomic
+          RIO.File.withBinaryFileDurableAtomic
             file
-            ( toStrictBytes
-                $ Data.ByteString.Builder.toLazyByteString
-                $ getUtf8Builder formatted
-            )
+            WriteMode
+            (\h -> hPutBuilder h (getUtf8Builder formatted))
           Log.debug log "Wrote formatted file in-place"
           pure Nothing
 

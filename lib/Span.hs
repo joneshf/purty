@@ -54,10 +54,10 @@ module Span
   )
 where
 
-import qualified "text" Data.Text
 import qualified "purescript-cst" Language.PureScript.CST.Positions
 import qualified "purescript-cst" Language.PureScript.CST.Types
 import "rio" RIO
+import qualified "rio" RIO.Text
 import qualified "this" SourceRange
 
 data Span
@@ -104,9 +104,9 @@ caseOf = sourceRange . SourceRange.caseOf
 comment :: (a -> Span) -> Language.PureScript.CST.Types.Comment a -> Span
 comment f comment'' = case comment'' of
   Language.PureScript.CST.Types.Comment comment' ->
-    case Data.Text.count "\n" comment' of
-      0 -> Span.SingleLine
-      _ -> Span.MultipleLines
+    case RIO.Text.find (== '\n') comment' of
+      Nothing -> Span.SingleLine
+      Just _ -> Span.MultipleLines
   Language.PureScript.CST.Types.Line a -> f a
   Language.PureScript.CST.Types.Space _ -> Span.SingleLine
 

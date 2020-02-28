@@ -6,13 +6,13 @@ module Main where
 
 import qualified "componentm" Control.Monad.Component
 import qualified "bytestring" Data.ByteString.Builder
-import qualified "text" Data.Text
 import qualified "purty" Error
 import qualified "purty" Log
 import qualified "purty" Purty
 import "rio" RIO hiding (log)
 import "rio" RIO.FilePath ((</>))
 import qualified "rio" RIO.FilePath
+import qualified "rio" RIO.Text
 import qualified "tasty" Test.Tasty
 import qualified "tasty-golden" Test.Tasty.Golden
 import qualified "tasty-hunit" Test.Tasty.HUnit
@@ -93,6 +93,6 @@ test log file = do
   case result of
     Left err ->
       Test.Tasty.HUnit.assertFailure
-        (Data.Text.unpack $ utf8BuilderToText $ Error.format err)
+        (RIO.Text.unpack $ utf8BuilderToText $ Error.format err)
     Right formatted ->
       pure (Data.ByteString.Builder.toLazyByteString $ getUtf8Builder formatted)
