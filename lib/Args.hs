@@ -4,15 +4,16 @@
 
 module Args
   ( Args (..),
+    Mode (..),
     debug,
     info,
     input,
     parse,
     withInput,
+    writeVersion,
   )
 where
 
-import qualified "bytestring" Data.ByteString.Builder
 import qualified "this" Error
 import qualified "this" Log
 import qualified "optparse-applicative" Options.Applicative
@@ -23,25 +24,23 @@ import qualified "rio" RIO.File
 import "rio" RIO.FilePath ((</>))
 import qualified "rio" RIO.FilePath
 import qualified "pathwalk" System.Directory.PathWalk
+import qualified "this" Version
 
-newtype Args
-  = Format Format
+data Args
+  = Args Mode Verbose
 
 data Format
-  = Format' Input Output Verbose
+  = Format' Input Output
 
 instance Display Format where
   display format' = case format' of
-    Format' input'' output' verbose' ->
+    Format' input'' output' ->
       "Format {"
         <> " input = "
         <> display input''
         <> ","
         <> " output = "
         <> display output'
-        <> ","
-        <> " verbose = "
-        <> display verbose'
         <> " }"
 
 data Input
@@ -58,6 +57,10 @@ instance Display Input where
     InputSTDIN ->
       "InputSTDIN {"
         <> " }"
+
+data Mode
+  = Format Format
+  | Version Version
 
 data Output
   = STDOUT
@@ -91,31 +94,41 @@ instance Semigroup Verbose where
     (Verbose, NotVerbose) -> Verbose
     (Verbose, Verbose) -> Verbose
 
+newtype Version
+  = Version' VersionFormat
+
+data VersionFormat
+  = VersionHuman
+  | VersionNumeric
+
 args :: Options.Applicative.Parser Args
 args =
-  asum
-    [ fmap Format format
-    ]
+  pure Args
+    <*> mode
+    <*> verbose
 
 debug :: Args -> Bool
 debug args' = case args' of
-  Format format' -> debugFormat format'
-
-debugFormat :: Format -> Bool
-debugFormat format' = case format' of
-  Format' _ _ verbose' -> debugVerbose verbose'
+  Args _ verbose' -> debugVerbose verbose'
 
 debugVerbose :: Verbose -> Bool
 debugVerbose verbose' = case verbose' of
   NotVerbose -> False
   Verbose -> True
 
-format :: Options.Applicative.Parser Format
-format =
+formatParser :: Options.Applicative.Parser Format
+formatParser =
   pure Format'
     <*> input'
     <*> output
-    <*> verbose
+
+formatParserInfo :: Options.Applicative.ParserInfo Format
+formatParserInfo = Options.Applicative.info formatParser description
+  where
+    description :: Options.Applicative.InfoMod Format
+    description =
+      Options.Applicative.fullDesc
+        <> Options.Applicative.progDesc "Format a PureScript file"
 
 info :: Options.Applicative.ParserInfo Args
 info = Options.Applicative.info (Options.Applicative.helper <*> args) description
@@ -128,8 +141,8 @@ info = Options.Applicative.info (Options.Applicative.helper <*> args) descriptio
 
 input :: Format -> Utf8Builder
 input format' = case format' of
-  Format' InputSTDIN _ _ -> "STDIN"
-  Format' (InputFile file) _ _ -> displayShow file
+  Format' InputSTDIN _ -> "STDIN"
+  Format' (InputFile file) _ -> displayShow file
 
 input' :: Options.Applicative.Parser Input
 input' =
@@ -143,6 +156,18 @@ input' =
     input'' = Options.Applicative.maybeReader $ \str -> case str of
       "-" -> Just InputSTDIN
       _ -> Just (InputFile str)
+
+mode :: Options.Applicative.Parser Mode
+mode =
+  asum
+    [ Options.Applicative.hsubparser
+        ( fold
+            [ Options.Applicative.command "format" (fmap Format formatParserInfo),
+              Options.Applicative.command "version" (fmap Version versionParserInfo)
+            ]
+        ),
+      fmap Format formatParser
+    ]
 
 output :: Options.Applicative.Parser Output
 output = Options.Applicative.flag STDOUT Write meta
@@ -163,13 +188,37 @@ verbose = Options.Applicative.flag NotVerbose Verbose meta
       Options.Applicative.help "Print debugging information to STDERR while running"
         <> Options.Applicative.long "verbose"
 
+versionParserInfo :: Options.Applicative.ParserInfo Version
+versionParserInfo = Options.Applicative.info versionParser description
+  where
+    description :: Options.Applicative.InfoMod Version
+    description =
+      Options.Applicative.progDesc "Print version information"
+
+versionParser :: Options.Applicative.Parser Version
+versionParser =
+  pure Version'
+    <*> versionFormat
+
+versionFormat :: Options.Applicative.Parser VersionFormat
+versionFormat =
+  asum
+    [ pure VersionHuman,
+      Options.Applicative.flag' VersionNumeric versionNumeric
+    ]
+  where
+    versionNumeric :: Options.Applicative.Mod Options.Applicative.FlagFields a
+    versionNumeric =
+      Options.Applicative.help "Print machine-readable version number only"
+        <> Options.Applicative.long "numeric"
+
 withInput ::
   Log.Handle ->
   Format ->
   (LByteString -> IO (Either Error.Error Utf8Builder)) ->
   IO [Error.Error]
 withInput log format' f = case format' of
-  Format' (InputFile file') output' _ -> do
+  Format' (InputFile file') output' -> do
     Log.debug log ("Converting file " <> displayShow file' <> " to absolute.")
     file <- RIO.Directory.makeAbsolute file'
     directoryExists <- RIO.Directory.doesDirectoryExist file
@@ -182,7 +231,7 @@ withInput log format' f = case format' of
         case err' of
           Just err -> pure [err]
           Nothing -> pure []
-  Format' InputSTDIN _ _ -> do
+  Format' InputSTDIN _ -> do
     Log.debug log "Reading STDIN."
     result' <- tryIO RIO.ByteString.Lazy.getContents
     case result' of
@@ -227,12 +276,10 @@ write log f output' file = do
           pure Nothing
         Write -> do
           Log.debug log ("Writing formatted file " <> displayShow file <> " in-place.")
-          RIO.File.writeBinaryFileDurableAtomic
+          RIO.File.withBinaryFileDurableAtomic
             file
-            ( toStrictBytes
-                $ Data.ByteString.Builder.toLazyByteString
-                $ getUtf8Builder formatted
-            )
+            WriteMode
+            (\h -> hPutBuilder h (getUtf8Builder formatted))
           Log.debug log "Wrote formatted file in-place"
           pure Nothing
 
@@ -263,3 +310,15 @@ writeFiles log f output' directory files = do
     pureScriptFile file
       | RIO.FilePath.isExtensionOf "purs" file = Just file
       | otherwise = Nothing
+
+writeVersion ::
+  Log.Handle ->
+  Version ->
+  IO ()
+writeVersion log version' = case version' of
+  Version' VersionHuman -> do
+    Log.debug log "Writing version information"
+    hPutBuilder stdout ("Purty version: " <> Version.version <> "\n")
+  Version' VersionNumeric -> do
+    Log.debug log "Writing only `purty` version number"
+    hPutBuilder stdout (Version.version <> "\n")

@@ -23,8 +23,6 @@ Build purty:
     - ci/install-stack.sh --verbose
     - stack setup
   script:
-    - ci/lint/ormolu.sh --verbose
-    - ci/lint/hlint.sh --verbose
     - .build/bazel build //:purty-library
-    - make test STACK_BUILDFLAGS=--coverage
+    - make lint test STACK_BUILDFLAGS=--coverage
   stage: build

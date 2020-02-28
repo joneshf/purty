@@ -77,11 +77,14 @@ haskell_library(
         "@stackage//:base",
         "@stackage//:bytestring",
         "@stackage//:componentm",
+        "@stackage//:file-embed",
         "@stackage//:optparse-applicative",
         "@stackage//:pathwalk",
         "@stackage//:purescript-cst",
         "@stackage//:rio",
-        "@stackage//:text",
+    ],
+    extra_srcs = [
+        ":version/purty",
     ],
     name = "purty",
     srcs = [
@@ -93,6 +96,7 @@ haskell_library(
         ":lib/Purty.hs",
         ":lib/SourceRange.hs",
         ":lib/Span.hs",
+        ":lib/Version.hs",
     ],
 )
 

@@ -79,11 +79,11 @@ stack_snapshot(
         "base",
         "bytestring",
         "componentm",
+        "file-embed",
         "optparse-applicative",
         "pathwalk",
         "purescript-cst",
         "rio",
-        "text",
     ],
     tools = [
         "@happy",
