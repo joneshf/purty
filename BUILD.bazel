@@ -104,7 +104,7 @@ py_runtime(
     interpreter_path = select({
         ":linux": "/usr/bin/python3",
         ":macos": "/usr/local/bin/python3",
-        ":windows": "C:\\Python37",
+        ":windows": "C:\\Python37\\python.exe",
     }),
     name = "python3_runtime",
     python_version = "PY3",
