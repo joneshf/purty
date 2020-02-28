@@ -3,6 +3,7 @@ before_deploy:
   - appveyor PushArtifact purty-%APPVEYOR_REPO_TAG_NAME%-win.tar.gz
 
 build_script:
+  - set PATH=C:\Python37-x64\;%PATH%
   - .build\bazel.exe build //:purty
   - stack setup
   - make test-golden BINARY=purty.exe
