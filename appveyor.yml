@@ -3,7 +3,7 @@ before_deploy:
   - appveyor PushArtifact purty-%APPVEYOR_REPO_TAG_NAME%-win.tar.gz
 
 build_script:
-  - .build\bazel.exe build //:purty-library
+  - .build\bazel.exe build //...
   - stack setup
   - make test-golden BINARY=purty.exe
 
