@@ -6,8 +6,6 @@ module Args
   ( Args (..),
     Mode (..),
     debug,
-    info,
-    input,
     parse,
     withInput,
     withValidate,
@@ -34,31 +32,9 @@ data Args
 data Format
   = Format' Input Output
 
-instance Display Format where
-  display format' = case format' of
-    Format' input'' output' ->
-      "Format {"
-        <> " input = "
-        <> display input''
-        <> ","
-        <> " output = "
-        <> display output'
-        <> " }"
-
 data Input
   = InputFile FilePath
   | InputSTDIN
-
-instance Display Input where
-  display input'' = case input'' of
-    InputFile file ->
-      "InputFile {"
-        <> " filePath = "
-        <> displayShow file
-        <> " }"
-    InputSTDIN ->
-      "InputSTDIN {"
-        <> " }"
 
 data Mode
   = Format Format
@@ -69,36 +45,12 @@ data Output
   = STDOUT
   | Write
 
-instance Display Output where
-  display output' = case output' of
-    STDOUT -> "STDOUT"
-    Write -> "Write"
-
-instance Semigroup Output where
-  output1 <> output2 = case (output1, output2) of
-    (STDOUT, STDOUT) -> STDOUT
-    (STDOUT, Write) -> Write
-    (Write, STDOUT) -> Write
-    (Write, Write) -> Write
-
 newtype Validate
   = Validate' Input
 
 data Verbose
   = NotVerbose
   | Verbose
-
-instance Display Verbose where
-  display verbose' = case verbose' of
-    NotVerbose -> "NotVerbose"
-    Verbose -> "Verbose"
-
-instance Semigroup Verbose where
-  verbose1 <> verbose2 = case (verbose1, verbose2) of
-    (NotVerbose, NotVerbose) -> NotVerbose
-    (NotVerbose, Verbose) -> Verbose
-    (Verbose, NotVerbose) -> Verbose
-    (Verbose, Verbose) -> Verbose
 
 newtype Version
   = Version' VersionFormat
@@ -152,11 +104,6 @@ info = Options.Applicative.info (Options.Applicative.helper <*> args) descriptio
       Options.Applicative.fullDesc
         <> Options.Applicative.progDesc "Pretty print a PureScript file"
         <> Options.Applicative.header "purty - A PureScript pretty-printer"
-
-input :: Format -> Utf8Builder
-input format' = case format' of
-  Format' InputSTDIN _ -> "STDIN"
-  Format' (InputFile file) _ -> displayShow file
 
 inputReader :: Options.Applicative.ReadM Input
 inputReader = Options.Applicative.maybeReader $ \str -> case str of
