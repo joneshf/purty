@@ -286,6 +286,20 @@ versionFormat =
       Options.Applicative.help "Print machine-readable version number only"
         <> Options.Applicative.long "numeric"
 
+whenDirectory ::
+  Log.Handle ->
+  FilePath ->
+  (FilePath -> [FilePath] -> IO [Error.Error]) ->
+  IO (Maybe [Error.Error])
+whenDirectory log file f = do
+  directoryExists <- RIO.Directory.doesDirectoryExist file
+  if directoryExists
+    then do
+      Log.debug log ("Parsed " <> displayShow file <> " as an absolute directory")
+      errors <- System.Directory.PathWalk.pathWalkAccumulate file (\directory _ files -> f directory files)
+      pure (Just errors)
+    else pure Nothing
+
 withInput ::
   Log.Handle ->
   Format ->
@@ -295,12 +309,10 @@ withInput log format' f = case format' of
   Format' (InputFile file') output' -> do
     Log.debug log ("Converting file " <> displayShow file' <> " to absolute.")
     file <- RIO.Directory.makeAbsolute file'
-    directoryExists <- RIO.Directory.doesDirectoryExist file
-    if directoryExists
-      then do
-        Log.debug log ("Parsed " <> displayShow file <> " as an absolute directory")
-        System.Directory.PathWalk.pathWalkAccumulate file (\directory _ files -> writeFiles log f output' directory files)
-      else do
+    directoryErrors <- whenDirectory log file (writeFiles log f output')
+    case directoryErrors of
+      Just errors -> pure errors
+      Nothing -> do
         err' <- write log f output' file
         case err' of
           Just err -> pure [err]
@@ -332,12 +344,10 @@ withValidate log validate' f = case validate' of
   Validate' (InputFile file') -> do
     Log.debug log ("Converting file " <> displayShow file' <> " to absolute.")
     file <- RIO.Directory.makeAbsolute file'
-    directoryExists <- RIO.Directory.doesDirectoryExist file
-    if directoryExists
-      then do
-        Log.debug log ("Parsed " <> displayShow file <> " as an absolute directory")
-        System.Directory.PathWalk.pathWalkAccumulate file (\directory _ files -> validateFiles log f directory files)
-      else do
+    directoryErrors <- whenDirectory log file (validateFiles log f)
+    case directoryErrors of
+      Just errors -> pure errors
+      Nothing -> do
         err' <- validateFile log f file
         case err' of
           Just err -> pure [err]
