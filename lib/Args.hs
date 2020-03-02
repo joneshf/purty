@@ -125,8 +125,16 @@ debugVerbose verbose' = case verbose' of
 formatParser :: Options.Applicative.Parser Format
 formatParser =
   pure Format'
-    <*> input'
+    <*> inputParser
     <*> output
+  where
+    inputArgumentFields :: Options.Applicative.Mod Options.Applicative.ArgumentFields a
+    inputArgumentFields =
+      Options.Applicative.help "PureScript file to format or `-` for STDIN"
+        <> Options.Applicative.metavar "FILE"
+    inputParser :: Options.Applicative.Parser Input
+    inputParser =
+      Options.Applicative.argument inputReader inputArgumentFields
 
 formatParserInfo :: Options.Applicative.ParserInfo Format
 formatParserInfo = Options.Applicative.info formatParser description
@@ -150,18 +158,10 @@ input format' = case format' of
   Format' InputSTDIN _ -> "STDIN"
   Format' (InputFile file) _ -> displayShow file
 
-input' :: Options.Applicative.Parser Input
-input' =
-  Options.Applicative.argument input'' meta
-  where
-    meta :: Options.Applicative.Mod Options.Applicative.ArgumentFields a
-    meta =
-      Options.Applicative.help "PureScript file to format or `-` for STDIN"
-        <> Options.Applicative.metavar "FILE"
-    input'' :: Options.Applicative.ReadM Input
-    input'' = Options.Applicative.maybeReader $ \str -> case str of
-      "-" -> Just InputSTDIN
-      _ -> Just (InputFile str)
+inputReader :: Options.Applicative.ReadM Input
+inputReader = Options.Applicative.maybeReader $ \str -> case str of
+  "-" -> Just InputSTDIN
+  _ -> Just (InputFile str)
 
 mode :: Options.Applicative.Parser Mode
 mode =
@@ -245,14 +245,22 @@ validateFiles log f directory files = do
 validateParser :: Options.Applicative.Parser Validate
 validateParser =
   pure Validate'
-    <*> input'
+    <*> inputParser
+  where
+    inputArgumentFields :: Options.Applicative.Mod Options.Applicative.ArgumentFields a
+    inputArgumentFields =
+      Options.Applicative.help "PureScript file to validate or `-` for STDIN"
+        <> Options.Applicative.metavar "FILE"
+    inputParser :: Options.Applicative.Parser Input
+    inputParser =
+      Options.Applicative.argument inputReader inputArgumentFields
 
 validateParserInfo :: Options.Applicative.ParserInfo Validate
 validateParserInfo = Options.Applicative.info validateParser description
   where
     description :: Options.Applicative.InfoMod Validate
     description =
-      Options.Applicative.progDesc "Print validate information"
+      Options.Applicative.progDesc "Validate formatting of a PureScript file"
 
 verbose :: Options.Applicative.Parser Verbose
 verbose = Options.Applicative.flag NotVerbose Verbose meta
