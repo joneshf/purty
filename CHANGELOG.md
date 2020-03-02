@@ -4,6 +4,8 @@
 
 ### Additions
 
+* [Add a `validate` mode](https://gitlab.com/joneshf/purty/issues/17)
+
 ### Changes
 
 * [Add a `version` mode](https://gitlab.com/joneshf/purty/issues/169)
