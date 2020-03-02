@@ -10,10 +10,12 @@ module Args
     input,
     parse,
     withInput,
+    withValidate,
     writeVersion,
   )
 where
 
+import qualified "bytestring" Data.ByteString.Builder
 import qualified "this" Error
 import qualified "this" Log
 import qualified "optparse-applicative" Options.Applicative
@@ -60,6 +62,7 @@ instance Display Input where
 
 data Mode
   = Format Format
+  | Validate Validate
   | Version Version
 
 data Output
@@ -77,6 +80,9 @@ instance Semigroup Output where
     (STDOUT, Write) -> Write
     (Write, STDOUT) -> Write
     (Write, Write) -> Write
+
+newtype Validate
+  = Validate' Input
 
 data Verbose
   = NotVerbose
@@ -163,6 +169,7 @@ mode =
     [ Options.Applicative.hsubparser
         ( fold
             [ Options.Applicative.command "format" (fmap Format formatParserInfo),
+              Options.Applicative.command "validate" (fmap Validate validateParserInfo),
               Options.Applicative.command "version" (fmap Version versionParserInfo)
             ]
         ),
@@ -179,6 +186,73 @@ output = Options.Applicative.flag STDOUT Write meta
 
 parse :: IO Args
 parse = Options.Applicative.execParser info
+
+validateFile ::
+  Log.Handle ->
+  (LByteString -> IO (Either Error.Error Utf8Builder)) ->
+  FilePath ->
+  IO (Maybe Error.Error)
+validateFile log f file = do
+  Log.debug log ("Reading " <> displayShow file <> ".")
+  result' <- tryIO $ withLazyFile file $ \contents -> do
+    Log.debug log "Got the file contents. Formatting for validation"
+    result <- f contents
+    Log.debug log "Finished with the file"
+    pure (contents, result)
+  case result' of
+    Left err ->
+      pure (Just $ Error.new $ "Error reading file: " <> displayShow err)
+    Right result -> case result of
+      (_, Left err) ->
+        pure (Just (Error.wrap ("Error formatting " <> displayShow file) err))
+      (contents, Right formatted) -> do
+        Log.debug log ("Comparing " <> displayShow file <> " with formatted module")
+        if contents == Data.ByteString.Builder.toLazyByteString (getUtf8Builder formatted)
+          then do
+            Log.debug log (displayShow file <> " is formatted correctly")
+            pure Nothing
+          else do
+            Log.debug log (displayShow file <> " is not formatted correctly")
+            pure (Just (Error.new (displayShow file <> " is not formatted correctly")))
+
+validateFiles ::
+  Log.Handle ->
+  (LByteString -> IO (Either Error.Error Utf8Builder)) ->
+  FilePath ->
+  [FilePath] ->
+  IO [Error.Error]
+validateFiles log f directory files = do
+  Log.debug log ("Validating the following files: " <> displayShow files <> " in directory: " <> displayShow directory)
+  errors <- traverse go files
+  pure (catMaybes errors)
+  where
+    go ::
+      FilePath ->
+      IO (Maybe Error.Error)
+    go file' = case pureScriptFile file' of
+      Just file -> do
+        Log.debug log ("Converting file " <> displayShow (directory </> file) <> " to absolute")
+        absoluteFile <- RIO.Directory.makeAbsolute (directory </> file)
+        validateFile log f absoluteFile
+      Nothing -> pure Nothing
+    pureScriptFile ::
+      FilePath ->
+      Maybe FilePath
+    pureScriptFile file
+      | RIO.FilePath.isExtensionOf "purs" file = Just file
+      | otherwise = Nothing
+
+validateParser :: Options.Applicative.Parser Validate
+validateParser =
+  pure Validate'
+    <*> input'
+
+validateParserInfo :: Options.Applicative.ParserInfo Validate
+validateParserInfo = Options.Applicative.info validateParser description
+  where
+    description :: Options.Applicative.InfoMod Validate
+    description =
+      Options.Applicative.progDesc "Print validate information"
 
 verbose :: Options.Applicative.Parser Verbose
 verbose = Options.Applicative.flag NotVerbose Verbose meta
@@ -248,6 +322,47 @@ withInput log format' f = case format' of
             hPutBuilder stdout (getUtf8Builder formatted)
             Log.debug log "Wrote formatted STDIN to STDOUT"
             pure []
+
+withValidate ::
+  Log.Handle ->
+  Validate ->
+  (LByteString -> IO (Either Error.Error Utf8Builder)) ->
+  IO [Error.Error]
+withValidate log validate' f = case validate' of
+  Validate' (InputFile file') -> do
+    Log.debug log ("Converting file " <> displayShow file' <> " to absolute.")
+    file <- RIO.Directory.makeAbsolute file'
+    directoryExists <- RIO.Directory.doesDirectoryExist file
+    if directoryExists
+      then do
+        Log.debug log ("Parsed " <> displayShow file <> " as an absolute directory")
+        System.Directory.PathWalk.pathWalkAccumulate file (\directory _ files -> validateFiles log f directory files)
+      else do
+        err' <- validateFile log f file
+        case err' of
+          Just err -> pure [err]
+          Nothing -> pure []
+  Validate' InputSTDIN -> do
+    Log.debug log "Reading STDIN."
+    result' <- tryIO RIO.ByteString.Lazy.getContents
+    case result' of
+      Left err ->
+        pure [Error.new ("Error reading STDIN: " <> displayShow err)]
+      Right contents -> do
+        Log.debug log "Got STDIN contents"
+        result <- f contents
+        case result of
+          Left err ->
+            pure [Error.wrap "Error validating STDIN" err]
+          Right formatted -> do
+            Log.debug log "Comparing STDIN with formatted module"
+            if contents == Data.ByteString.Builder.toLazyByteString (getUtf8Builder formatted)
+              then do
+                Log.debug log "STDIN was formatted correctly"
+                pure []
+              else do
+                Log.debug log "STDIN was not formatted correctly"
+                pure [Error.new "Module was not formatted correctly"]
 
 write ::
   Log.Handle ->
