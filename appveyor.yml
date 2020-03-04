@@ -35,6 +35,8 @@ environment:
   STACK_ROOT: '%APPVEYOR_BUILD_FOLDER%\.stack-root'
   TEST_TMPDIR: '%APPVEYOR_BUILD_FOLDER%\.bazel-cache'
 
+image: Visual Studio 2019
+
 install:
   - chocolatey install haskell-stack --version 1.9.3 --yes
   - chocolatey install make --version 4.3 --yes
