@@ -31,6 +31,7 @@ deploy:
     version: '%APPVEYOR_REPO_TAG_NAME%'
 
 environment:
+  MSYS2_ARG_CONV_EXCL: '*'
   STACK_ROOT: '%APPVEYOR_BUILD_FOLDER%\.stack-root'
   TEST_TMPDIR: '%APPVEYOR_BUILD_FOLDER%\.bazel-cache'
 
