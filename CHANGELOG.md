@@ -6,7 +6,37 @@
 
 ### Changes
 
+### Deletions
+
+## 6.0.0
+
+This release smooths out some rough edges.
+
+First, we added a `version` mode so you can know which version of `purty` you're using.
+It's pretty impressive tha we went this long without it, but it wasn't intentional.
+In any case, by default it outputs a verbose, human-readable version information.
+There is also a `--numeric` flag if you need a more machine-friendly version.
+
+Next, we added a `validate` mode so you can check whether a file is formatted correctly.
+This mode is useful for using `purty` as a lint step.
+We hope to expand this mode with more useful output (like a diff of what's unformatted).
+
+Finally, we added a `format` mode so you can format a file or directory.
+This works exactly like using `purty` without the `format` mode.
+I.e. `purty foo` is exactly the same as `purty format foo`.
+
+Because these two new modes–`validate` and `version`–act as commands on the `purty` binary, it's entirely possible that they might shadow existing files or directories that would have been formatted before.
+E.g. if you had a directory named `version` with PureScript files in it, it would no longer be formatted when you said `purty version --write`.
+To address this breaking change, we added a `format` mode to bring back the ability to format any file or directory shadowed by a mode the `purty` binary uses.
+This even works if there's a file or directory named `format` you'd like to format: `purty format format`.
+
+### Additions
+
 * [Add a `version` mode](https://gitlab.com/joneshf/purty/issues/169)
+* [Add a `validate` mode](https://gitlab.com/joneshf/purty/issues/17)
+
+### Changes
+
 * [Install `hlint` binary](https://gitlab.com/joneshf/purty/issues/173)
 
 ### Deletions
