@@ -5,7 +5,7 @@ before_deploy:
 build_script:
   - set PATH=C:\Python37\;%PATH%
   - ps: Set-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name LongPathsEnabled -Value 1
-  - .build\bazel.exe build //:purty
+  - .build\bazel.exe build --config windows //:purty
   - stack setup
   - make test-golden BINARY=purty.exe
 
