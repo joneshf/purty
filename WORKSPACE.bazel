@@ -54,7 +54,6 @@ load(
 )
 
 rules_haskell_toolchains(
-    locale = "en_US.UTF-8",
     version = "8.6.5",
 )
 
