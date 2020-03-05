@@ -23,6 +23,12 @@ http_archive(
 
 http_archive(
     name = "rules_haskell",
+    patches = [
+        "//:rules_haskell.patch",
+    ],
+    patch_args = [
+        "-p1",
+    ],
     sha256 = "e7ed5af93ff3fa939e9d68e9f17354ed2cfa1944617b797f79805f882420c176",
     strip_prefix = "rules_haskell-77cf42c30a424f7e701c72c5feb31f49b5230351",
     urls = [
