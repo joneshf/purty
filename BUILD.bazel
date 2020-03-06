@@ -40,7 +40,7 @@ haskell_binary(
     ],
     name = "purty-binary",
     srcs = [
-        ":src/Main.hs",
+        "src/Main.hs",
     ],
 )
 
@@ -65,18 +65,18 @@ haskell_library(
         "@stackage//:rio",
     ],
     extra_srcs = [
-        ":version/purty",
+        "version/purty",
     ],
     name = "purty",
     srcs = [
-        ":lib/Annotation.hs",
-        ":lib/Args.hs",
-        ":lib/Error.hs",
-        ":lib/Format.hs",
-        ":lib/Log.hs",
-        ":lib/Purty.hs",
-        ":lib/SourceRange.hs",
-        ":lib/Span.hs",
-        ":lib/Version.hs",
+        "lib/Annotation.hs",
+        "lib/Args.hs",
+        "lib/Error.hs",
+        "lib/Format.hs",
+        "lib/Log.hs",
+        "lib/Purty.hs",
+        "lib/SourceRange.hs",
+        "lib/Span.hs",
+        "lib/Version.hs",
     ],
 )
