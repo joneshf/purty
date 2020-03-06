@@ -3,6 +3,8 @@ Makefile:;
 
 ACCEPTANCE_SCRIPT := test/acceptance.sh
 ACCEPTANCE_SCRIPTFLAGS := --verbose
+BAZEL_BINDIR := bazel-bin
+BAZEL_PURTY_BINARY := purty-binary
 BINARY := purty
 BINDIR := bin
 BUILDDIR := .build
@@ -114,8 +116,11 @@ endif
 	@touch $@
 	$(BAZEL) version
 
-$(BINDIR)/$(BINARY): $(LIBS) $(SRCS) $(TESTS) $(VERSION_PURTY_FILE) package.yaml stack.yaml
-	$(STACK_BUILD) --copy-bins --local-bin-path $(BINDIR) --no-run-tests --test
+$(BAZEL_BINDIR)/$(BAZEL_PURTY_BINARY): $(BAZEL)
+	$(BAZEL) build //:$(BAZEL_PURTY_BINARY)
+
+$(BINDIR)/$(BINARY): $(BAZEL_BINDIR)/$(BAZEL_PURTY_BINARY)
+	@$(CP) $< $@
 
 $(BINDIR)/$(OS) $(BUILDDIR) $(BUILDDIR)/$(OS) $(LINTDIR_WEEDER):
 	@$(MKDIR) -p $@
@@ -220,6 +225,8 @@ bootstrap: $(BAZEL)
 
 .PHONY: clean
 clean:
+	$(info Removing bazel artifacts)
+	@$(BAZEL) clean
 	$(info Removing $(BUILDDIR))
 	@rm -fr $(BUILDDIR)
 	$(info Removing $(PACKAGE_JSON))
@@ -269,5 +276,5 @@ test-acceptance-npm: $(ACCEPTANCE_SCRIPT) $(BINDIR)/$(OS)/$(BINARY) $(PURTY_JS)
 	$(ACCEPTANCE_SCRIPT) $(ACCEPTANCE_SCRIPTFLAGS) --purty $(PURTY_JS)
 
 .PHONY: test-golden
-test-golden: $(BINDIR)/$(BINARY)
-	$(STACK_BUILD) --test purty:test:golden
+test-golden: $(BAZEL)
+	$(BAZEL) test //:purty-golden
