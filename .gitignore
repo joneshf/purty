@@ -1,6 +1,7 @@
 ### Project Specific ###
 
 *.cabal
+.bazel-cache
 /bin
 /ci/bintray.json
 /package-lock.json
