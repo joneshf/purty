@@ -3,7 +3,6 @@ before_deploy:
   - appveyor PushArtifact purty-%APPVEYOR_REPO_TAG_NAME%-win.tar.gz
 
 build_script:
-  - set PATH=C:\Python37\;%PATH%
   - ps: Set-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name LongPathsEnabled -Value 1
   - .build\bazel.exe build --config appveyor //:purty
   - stack setup
@@ -32,6 +31,7 @@ deploy:
 
 environment:
   MSYS2_ARG_CONV_EXCL: '*'
+  PATH: 'C:\Python37\;%PATH%'
   STACK_ROOT: '%APPVEYOR_BUILD_FOLDER%\.stack-root'
 
 image: Visual Studio 2019
