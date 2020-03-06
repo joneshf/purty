@@ -1,6 +1,8 @@
 build:appveyor --crosstool_top=@rules_haskell_ghc_windows_amd64//:cc_toolchain
 build:appveyor --disk_cache=.bazel-cache
 
+build:gitlab --disk_cache=.bazel-cache
+
 build:travis --disk_cache=.bazel-cache
 
 test --test_output errors

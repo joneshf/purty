@@ -10,7 +10,6 @@ cache:
 variables:
   LC_ALL: C.UTF-8
   STACK_ROOT: $CI_PROJECT_DIR/.stack-root
-  TEST_TMPDIR: ${CI_PROJECT_DIR}/.bazel-cache
 
 stages:
   - build
@@ -23,6 +22,6 @@ Build purty:
     - ci/install-stack.sh --verbose
     - stack setup
   script:
-    - .build/bazel build //:purty
+    - .build/bazel build --config gitlab //:purty
     - make lint test STACK_BUILDFLAGS=--coverage
   stage: build
