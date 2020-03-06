@@ -22,6 +22,6 @@ Build purty:
     - ci/install-stack.sh --verbose
     - stack setup
   script:
-    - .build/bazel build --config gitlab //:purty
+    - .build/bazel build //:purty
     - make lint test STACK_BUILDFLAGS=--coverage
   stage: build
