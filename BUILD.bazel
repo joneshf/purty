@@ -2,6 +2,7 @@ load(
     "@rules_haskell//haskell:defs.bzl",
     "haskell_binary",
     "haskell_library",
+    "haskell_test",
 )
 
 config_setting(
@@ -78,5 +79,25 @@ haskell_library(
         "lib/SourceRange.hs",
         "lib/Span.hs",
         "lib/Version.hs",
+    ],
+)
+
+haskell_test(
+    data = glob([
+        "test/golden/files/formatted/*.purs",
+        "test/golden/files/original/*.purs",
+    ]),
+    deps = [
+        ":purty",
+        "@stackage//:bytestring",
+        "@stackage//:componentm",
+        "@stackage//:rio",
+        "@stackage//:tasty",
+        "@stackage//:tasty-golden",
+        "@stackage//:tasty-hunit",
+    ],
+    name = "purty-golden",
+    srcs = [
+        "test/golden/Main.hs",
     ],
 )

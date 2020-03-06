@@ -2,4 +2,4 @@ build --disk_cache=.bazel-cache
 
 build:appveyor --crosstool_top=@rules_haskell_ghc_windows_amd64//:cc_toolchain
 
-test --test_output errors
+test --test_output all
