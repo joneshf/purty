@@ -10,6 +10,7 @@ haskell_test(
     ]),
     deps = [
         "//lib:purty",
+        "@stackage//:bazel-runfiles",
         "@stackage//:bytestring",
         "@stackage//:componentm",
         "@stackage//:rio",
