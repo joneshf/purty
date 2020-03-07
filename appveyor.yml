@@ -4,7 +4,7 @@ before_deploy:
 
 build_script:
   - ps: Set-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name LongPathsEnabled -Value 1
-  - .build\bazel.exe build --config appveyor //:purty
+  - .build\bazel.exe build --config appveyor //src:purty
   - stack setup
   - make test-golden BINARY=purty.exe
 

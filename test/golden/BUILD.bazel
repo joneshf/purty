@@ -1,0 +1,24 @@
+load(
+    "@rules_haskell//haskell:defs.bzl",
+    "haskell_test",
+)
+
+haskell_test(
+    data = glob([
+        "files/formatted/*.purs",
+        "files/original/*.purs",
+    ]),
+    deps = [
+        "//lib:purty",
+        "@stackage//:bytestring",
+        "@stackage//:componentm",
+        "@stackage//:rio",
+        "@stackage//:tasty",
+        "@stackage//:tasty-golden",
+        "@stackage//:tasty-hunit",
+    ],
+    name = "purty",
+    srcs = [
+        "Main.hs",
+    ],
+)
