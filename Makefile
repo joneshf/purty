@@ -4,7 +4,6 @@ Makefile:;
 ACCEPTANCE_SCRIPT := test/acceptance.sh
 ACCEPTANCE_SCRIPTFLAGS := --verbose
 BAZEL_BINDIR := bazel-bin
-BAZEL_PURTY_BINARY := purty-binary
 BINARY := purty
 BINDIR := bin
 BUILDDIR := .build
@@ -60,6 +59,7 @@ RELEASE_DATE := $(BUILDDIR)/release-date
 
 ifeq ($(OS),linux)
 BAZEL := $(BUILDDIR)/bazel
+BAZEL_PURTY_BINARY := src/purty
 DHALL_TO_JSON_ARCHIVE_FILE := ./bin/dhall-to-json
 DHALL_TO_JSON_ARCHIVE_STRIP := 2
 DHALL_TO_JSON_URI := https://github.com/dhall-lang/dhall-haskell/releases/download/$(VERSION_DHALL_HASKELL)/dhall-json-$(VERSION_DHALL_TO_JSON)-x86_64-linux.tar.bz2
@@ -75,6 +75,7 @@ WEEDER_ARCHIVE_STRIP := 1
 WEEDER_ARCHIVE_URI := https://github.com/ndmitchell/weeder/releases/download/v$(VERSION_WEEDER)/weeder-$(VERSION_WEEDER)-x86_64-linux.tar.gz
 else ifeq ($(OS),osx)
 BAZEL := $(BUILDDIR)/bazel
+BAZEL_PURTY_BINARY := src/purty
 DHALL_TO_JSON_ARCHIVE_FILE := bin/dhall-to-json
 DHALL_TO_JSON_ARCHIVE_STRIP := 1
 DHALL_TO_JSON_URI := https://github.com/dhall-lang/dhall-haskell/releases/download/$(VERSION_DHALL_HASKELL)/dhall-json-$(VERSION_DHALL_TO_JSON)-x86_64-macos.tar.bz2
@@ -90,6 +91,7 @@ WEEDER_ARCHIVE_STRIP := 1
 WEEDER_ARCHIVE_URI := https://github.com/ndmitchell/weeder/releases/download/v$(VERSION_WEEDER)/weeder-$(VERSION_WEEDER)-x86_64-osx.tar.gz
 else ifeq ($(OS),windows)
 BAZEL := $(BUILDDIR)/bazel.exe
+BAZEL_PURTY_BINARY := src/purty.exe
 HLINT := $(BUILDDIR)/hlint.exe
 HLINT_ARCHIVE := $(BUILDDIR)/hlint-$(VERSION_HLINT)-x86_64-windows.zip
 HLINT_ARCHIVE_FILE := hlint-$(VERSION_HLINT)/hlint.exe
@@ -117,7 +119,7 @@ endif
 	$(BAZEL) version
 
 $(BAZEL_BINDIR)/$(BAZEL_PURTY_BINARY): $(BAZEL)
-	$(BAZEL) build //:$(BAZEL_PURTY_BINARY)
+	$(BAZEL) build //src:purty
 
 $(BINDIR)/$(BINARY): $(BAZEL_BINDIR)/$(BAZEL_PURTY_BINARY)
 	@$(CP) $< $@
@@ -277,4 +279,4 @@ test-acceptance-npm: $(ACCEPTANCE_SCRIPT) $(BINDIR)/$(OS)/$(BINARY) $(PURTY_JS)
 
 .PHONY: test-golden
 test-golden: $(BAZEL)
-	$(BAZEL) test //:purty-golden
+	$(BAZEL) test //test/golden:purty

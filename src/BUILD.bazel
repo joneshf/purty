@@ -1,0 +1,44 @@
+load(
+    "@rules_haskell//haskell:defs.bzl",
+    "haskell_binary",
+)
+
+config_setting(
+    name = "linux",
+    constraint_values = [
+        "@bazel_tools//platforms:linux",
+    ],
+)
+
+haskell_binary(
+    compiler_flags = [
+        "-O2",
+        "-Wall",
+        "-Wcompat",
+        "-Werror",
+        "-Wincomplete-record-updates",
+        "-Wincomplete-uni-patterns",
+        "-Wmissing-methods",
+        "-Wredundant-constraints",
+        "-optc=-static",
+        "-optl=-pthread",
+        "-rtsopts",
+        "-static",
+        "-threaded",
+        "-with-rtsopts=-N",
+    ] + select({
+        ":linux": [
+            "-optl=-static",
+        ],
+        "//conditions:default": [
+        ],
+    }),
+    deps = [
+        "@stackage//:base",
+        "//lib:purty",
+    ],
+    name = "purty",
+    srcs = [
+        "Main.hs",
+    ],
+)
