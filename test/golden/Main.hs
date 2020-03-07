@@ -37,7 +37,7 @@ diff :: FilePath -> FilePath -> [String]
 diff old new = ["diff", "--unified", old, new]
 
 files :: FilePath
-files = "files"
+files = "test" </> "golden" </> "files"
 
 fileUsed :: (Foldable f) => f FilePath -> FilePath -> Test.Tasty.TestTree
 fileUsed haystack needle =
