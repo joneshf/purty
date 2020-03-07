@@ -3,23 +3,25 @@ image: node:10.16.0@sha256:7cae3b2b42bde73b68e82fbd949cfff5b43546c2daabba3e95c8a
 cache:
   key: purty-v1
   paths:
+    - ${CI_PROJECT_DIR}/.bazel-cache
     - .stack-root
     - .stack-work
 
 variables:
   LC_ALL: C.UTF-8
   STACK_ROOT: $CI_PROJECT_DIR/.stack-root
-  
+
 stages:
   - build
 
 Build purty:
   before_script:
+    - make bootstrap
     - mkdir --parents $HOME/.local/bin
     - export PATH=$HOME/.local/bin:$PATH
     - ci/install-stack.sh --verbose
     - stack setup
   script:
-    - make bootstrap
+    - .build/bazel build //:purty
     - make lint test STACK_BUILDFLAGS=--coverage
   stage: build

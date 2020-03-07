@@ -1,12 +1,21 @@
 ### Project Specific ###
 
 *.cabal
+.bazel-cache
 /bin
 /ci/bintray.json
 /package-lock.json
 /package.json
 
-# Created by https://www.gitignore.io/api/osx,vim,macos,linux,emacs,haskell,windows,purescript,sublimetext,visualstudiocode
+# Created by https://www.gitignore.io/api/osx,vim,linux,macos,emacs,bazel,windows,haskell,purescript,sublimetext,visualstudiocode
+
+### Bazel ###
+# gitignore template for Bazel build system
+# website: https://bazel.build/
+
+# Ignore all bazel-* symlinks. There is no full list since this can change
+# based on the name of the directory bazel is cloned into.
+/bazel-*
 
 ### Emacs ###
 # -*- mode: gitignore; -*-
