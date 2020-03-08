@@ -15,6 +15,7 @@ import qualified "rio" RIO.Directory
 import "rio" RIO.FilePath ((</>))
 import qualified "rio" RIO.FilePath
 import qualified "rio" RIO.Text
+import qualified "pathwalk" System.Directory.PathWalk
 import qualified "tasty" Test.Tasty
 import qualified "tasty-golden" Test.Tasty.Golden
 import qualified "tasty-hunit" Test.Tasty.HUnit
@@ -29,6 +30,18 @@ main = do
   result <- Control.Monad.Component.runComponentM "golden" (Log.handle config) $
     \log -> try $ do
       runfiles <- Bazel.Runfiles.create
+      hPutBuilder stdout "*** Listing runfiles ***\n"
+      System.Directory.PathWalk.pathWalk
+        (Bazel.Runfiles.rlocation runfiles "")
+        ( \dir _ files ->
+            for_
+              files
+              ( \file ->
+                  hPutBuilder
+                    stdout
+                    (getUtf8Builder (fromString (dir </> file)) <> "\n")
+              )
+        )
       tests <- goldenTests log (Bazel.Runfiles.rlocation runfiles workspace)
       Test.Tasty.defaultMain tests
   case result of
