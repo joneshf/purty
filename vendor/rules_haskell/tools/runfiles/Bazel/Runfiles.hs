@@ -61,12 +61,8 @@ lookupDir p = go
     go pairs' = case pairs' of
       [] -> pure Nothing
       (key, value) : pairs -> do
-        print ("*** Checking for match to " <> show p <> " ***")
-        print ("key:", key, "value:", value)
         if match (key, value)
           then do
-            print ("*** Found match to " <> show p <> " ***")
-            print ("key:", key, "value:", value)
             pure (Just (stripSuffix (key, value)))
           else go pairs
 
