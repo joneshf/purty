@@ -16,7 +16,7 @@ import Control.Monad.Trans.Maybe (MaybeT (..))
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (toLower)
 import Data.Foldable (asum)
-import Data.List (isPrefixOf, isSuffixOf)
+import Data.List (find, isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import GHC.Stack
 import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
@@ -50,16 +50,8 @@ rlocation (RunfilesManifest _ m) g = fromMaybe g' $ asum [lookup g' m, lookupDir
 -- in a manifest file, by looking for the first entry with a matching prefix
 -- and then stripping the superfluous suffix.
 lookupDir :: FilePath -> [(FilePath, FilePath)] -> Maybe FilePath
-lookupDir p = go
+lookupDir p = fmap stripSuffix . find match
   where
-    go :: [(FilePath, FilePath)] -> Maybe FilePath
-    go pairs' = case pairs' of
-      [] -> Nothing
-      (key, value) : pairs ->
-        if match (key, value)
-          then Just (stripSuffix (key, value))
-          else go pairs
-
     p' = normalize $ addTrailingPathSeparator p
     match (key, value) = p' `isPrefixOf` key && drop (length p') key `isSuffixOf` value
     stripSuffix (key, value) = take (length value - (length key - length p')) value
