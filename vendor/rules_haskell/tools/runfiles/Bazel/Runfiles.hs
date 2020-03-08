@@ -17,6 +17,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Char (toLower)
 import Data.Foldable (asum)
 import Data.List (isPrefixOf, isSuffixOf)
+import Data.Maybe (fromMaybe)
 import GHC.Stack
 import System.Directory (doesDirectoryExist, doesFileExist, listDirectory)
 import System.Environment (getExecutablePath, lookupEnv)
@@ -38,11 +39,7 @@ data Runfiles
 -- For example: @rlocation \"myworkspace\/mypackage\/myfile.txt\"@
 rlocation :: Runfiles -> FilePath -> FilePath
 rlocation (RunfilesRoot f) g = f </> normalize g
-rlocation (RunfilesManifest _ m) g = case lookup g' m of
-  Just location -> location
-  Nothing -> case lookupDir g' m of
-    Just location -> location
-    Nothing -> g'
+rlocation (RunfilesManifest _ m) g = fromMaybe g' $ asum [lookup g' m, lookupDir g' m]
   where
     g' = normalize g
 
