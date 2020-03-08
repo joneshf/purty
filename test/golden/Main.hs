@@ -30,11 +30,7 @@ main = do
   result <- Control.Monad.Component.runComponentM "golden" (Log.handle config) $
     \log -> try $ do
       runfiles <- Bazel.Runfiles.create
-      prefix <- pure (Bazel.Runfiles.rlocation runfiles "com_gitlab_joneshf_purty/test/golden/files")
-      hPutBuilder stdout ("prefix: " <> fromString prefix <> "\n")
-      formattedAdo <- pure (Bazel.Runfiles.rlocation runfiles "com_gitlab_joneshf_purty/test/golden/files/formatted/Ado.purs")
-      hPutBuilder stdout ("formattedAdo: " <> fromString formattedAdo <> "\n")
-      tests <- goldenTests log prefix
+      tests <- goldenTests log (Bazel.Runfiles.rlocation runfiles "com_gitlab_joneshf_purty/test/golden/files")
       Test.Tasty.defaultMain tests
   case result of
     Left ExitSuccess -> exitSuccess
