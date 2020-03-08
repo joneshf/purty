@@ -30,7 +30,7 @@ main = do
   result <- Control.Monad.Component.runComponentM "golden" (Log.handle config) $
     \log -> try $ do
       runfiles <- Bazel.Runfiles.create
-      hPutBuilder stdout "*** Listing runfiles ***\n"
+      hPutBuilder stdout "*** Start listing runfiles ***\n"
       System.Directory.PathWalk.pathWalk
         (Bazel.Runfiles.rlocation runfiles "")
         ( \dir _ files ->
@@ -42,6 +42,7 @@ main = do
                     (getUtf8Builder (fromString (dir </> file)) <> "\n")
               )
         )
+      hPutBuilder stdout "*** Done listing runfiles ***\n"
       tests <- goldenTests log (Bazel.Runfiles.rlocation runfiles workspace)
       Test.Tasty.defaultMain tests
   case result of
