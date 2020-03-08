@@ -50,7 +50,11 @@ main = do
             hPutBuilder stdout (Data.ByteString.Builder.lazyByteString manifest)
         )
       hPutBuilder stdout "*** Done listing contents of MANIFEST ***\n"
-      tests <- goldenTests log (Bazel.Runfiles.rlocation runfiles "com_gitlab_joneshf_purty/test/golden/files")
+      let prefix = Bazel.Runfiles.rlocation runfiles "com_gitlab_joneshf_purty/test/golden/files"
+      hPutBuilder stdout ("prefix: " <> fromString prefix <> "\n")
+      let formattedAdo = Bazel.Runfiles.rlocation runfiles "com_gitlab_joneshf_purty/test/golden/files/formatted/Ado.purs"
+      hPutBuilder stdout ("formattedAdo: " <> fromString formattedAdo <> "\n")
+      tests <- goldenTests log prefix
       Test.Tasty.defaultMain tests
   case result of
     Left ExitSuccess -> exitSuccess
