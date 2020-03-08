@@ -36,15 +36,13 @@ data Runfiles
 -- | Construct a path to a data dependency within the given runfiles.
 --
 -- For example: @rlocation \"myworkspace\/mypackage\/myfile.txt\"@
-rlocation :: Runfiles -> FilePath -> IO FilePath
-rlocation (RunfilesRoot f) g = pure (f </> normalize g)
+rlocation :: Runfiles -> FilePath -> FilePath
+rlocation (RunfilesRoot f) g = f </> normalize g
 rlocation (RunfilesManifest _ m) g = case lookup g' m of
-  Just location -> pure location
-  Nothing -> do
-    location' <- lookupDir g' m
-    case location' of
-      Just location -> pure location
-      Nothing -> pure g'
+  Just location -> location
+  Nothing -> case lookupDir g' m of
+    Just location -> location
+    Nothing -> g'
   where
     g' = normalize g
 
@@ -54,16 +52,15 @@ rlocation (RunfilesManifest _ m) g = case lookup g' m of
 -- supports looking up directories. This function allows to lookup a directory
 -- in a manifest file, by looking for the first entry with a matching prefix
 -- and then stripping the superfluous suffix.
-lookupDir :: FilePath -> [(FilePath, FilePath)] -> IO (Maybe FilePath)
+lookupDir :: FilePath -> [(FilePath, FilePath)] -> Maybe FilePath
 lookupDir p = go
   where
-    go :: [(FilePath, FilePath)] -> IO (Maybe FilePath)
+    go :: [(FilePath, FilePath)] -> Maybe FilePath
     go pairs' = case pairs' of
-      [] -> pure Nothing
-      (key, value) : pairs -> do
+      [] -> Nothing
+      (key, value) : pairs ->
         if match (key, value)
-          then do
-            pure (Just (stripSuffix (key, value)))
+          then Just (stripSuffix (key, value))
           else go pairs
 
     p' = normalize $ addTrailingPathSeparator p

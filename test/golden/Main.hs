@@ -30,9 +30,9 @@ main = do
   result <- Control.Monad.Component.runComponentM "golden" (Log.handle config) $
     \log -> try $ do
       runfiles <- Bazel.Runfiles.create
-      prefix <- Bazel.Runfiles.rlocation runfiles "com_gitlab_joneshf_purty/test/golden/files"
+      prefix <- pure (Bazel.Runfiles.rlocation runfiles "com_gitlab_joneshf_purty/test/golden/files")
       hPutBuilder stdout ("prefix: " <> fromString prefix <> "\n")
-      formattedAdo <- Bazel.Runfiles.rlocation runfiles "com_gitlab_joneshf_purty/test/golden/files/formatted/Ado.purs"
+      formattedAdo <- pure (Bazel.Runfiles.rlocation runfiles "com_gitlab_joneshf_purty/test/golden/files/formatted/Ado.purs")
       hPutBuilder stdout ("formattedAdo: " <> fromString formattedAdo <> "\n")
       tests <- goldenTests log prefix
       Test.Tasty.defaultMain tests
