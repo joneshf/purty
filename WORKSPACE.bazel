@@ -58,16 +58,10 @@ rules_haskell_toolchains(
 )
 
 stack_snapshot(
-    extra_deps = {
-        "bazel-runfiles": [
-            "@rules_haskell//tools/runfiles",
-        ],
-    },
     local_snapshot = "//:snapshot.yaml",
     name = "stackage",
     packages = [
         "base",
-        "bazel-runfiles",
         "bytestring",
         "componentm",
         "file-embed",
