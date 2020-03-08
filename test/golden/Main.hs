@@ -43,6 +43,13 @@ main = do
               )
         )
       hPutBuilder stdout "*** Done listing runfiles ***\n"
+      hPutBuilder stdout "*** Start listing contents of MANIFEST ***\n"
+      withLazyFile
+        (Bazel.Runfiles.rlocation runfiles "MANIFEST")
+        ( \manifest ->
+            hPutBuilder stdout (Data.ByteString.Builder.lazyByteString manifest)
+        )
+      hPutBuilder stdout "*** Done listing contents of MANIFEST ***\n"
       tests <- goldenTests log (Bazel.Runfiles.rlocation runfiles workspace)
       Test.Tasty.defaultMain tests
   case result of
