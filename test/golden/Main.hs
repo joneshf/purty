@@ -50,7 +50,7 @@ main = do
             hPutBuilder stdout (Data.ByteString.Builder.lazyByteString manifest)
         )
       hPutBuilder stdout "*** Done listing contents of MANIFEST ***\n"
-      tests <- goldenTests log (Bazel.Runfiles.rlocation runfiles workspace)
+      tests <- goldenTests log (Bazel.Runfiles.rlocation runfiles "com_gitlab_joneshf_purty/test/golden/files")
       Test.Tasty.defaultMain tests
   case result of
     Left ExitSuccess -> exitSuccess
@@ -60,25 +60,25 @@ main = do
 diff :: FilePath -> FilePath -> [String]
 diff old new = ["diff", "--unified", old, new]
 
-files :: FilePath -> FilePath
-files prefix = prefix </> "test" </> "golden" </> "files"
+files :: FilePath
+files = "test" </> "golden" </> "files"
 
 fileUsed :: FilePath -> FilePath -> Test.Tasty.TestTree
 fileUsed prefix fullPath =
   Test.Tasty.HUnit.testCase
-    (files "" </> "formatted" </> filename)
+    (files </> "formatted" </> filename)
     exists
   where
     exists :: Test.Tasty.HUnit.Assertion
     exists = do
-      originalExists <- RIO.Directory.doesFileExist (files prefix </> "original" </> filename)
+      originalExists <- RIO.Directory.doesFileExist (prefix </> "original" </> filename)
       unless
         originalExists
         ( Test.Tasty.HUnit.assertFailure
-            ( (files "" </> "formatted" </> filename)
+            ( (files </> "formatted" </> filename)
                 <> " is unused."
                 <> " Please add an original version at `"
-                <> (files "" </> "original" </> filename)
+                <> (files </> "original" </> filename)
                 <> "."
             )
         )
@@ -98,9 +98,9 @@ formattingTests log prefix = do
 golden :: Log.Handle -> FilePath -> FilePath -> Test.Tasty.TestTree
 golden log prefix original =
   Test.Tasty.Golden.goldenVsStringDiff
-    (files "" </> "formatted" </> RIO.FilePath.takeFileName original)
+    (files </> "formatted" </> RIO.FilePath.takeFileName original)
     diff
-    (files prefix </> "formatted" </> RIO.FilePath.takeFileName original)
+    (prefix </> "formatted" </> RIO.FilePath.takeFileName original)
     (test log original)
 
 goldenTests :: Log.Handle -> FilePath -> IO Test.Tasty.TestTree
@@ -115,7 +115,7 @@ goldenTests log prefix = do
       ]
 
 psFiles :: FilePath -> FilePath -> IO [FilePath]
-psFiles prefix dir = Test.Tasty.Golden.findByExtension [".purs"] (files prefix </> dir)
+psFiles prefix dir = Test.Tasty.Golden.findByExtension [".purs"] (prefix </> dir)
 
 test :: Log.Handle -> FilePath -> IO LByteString
 test log file = do
@@ -126,6 +126,3 @@ test log file = do
         (RIO.Text.unpack $ utf8BuilderToText $ Error.format err)
     Right formatted ->
       pure (Data.ByteString.Builder.toLazyByteString $ getUtf8Builder formatted)
-
-workspace :: String
-workspace = "com_gitlab_joneshf_purty"
