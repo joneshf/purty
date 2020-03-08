@@ -30,29 +30,9 @@ main = do
   result <- Control.Monad.Component.runComponentM "golden" (Log.handle config) $
     \log -> try $ do
       runfiles <- Bazel.Runfiles.create
-      hPutBuilder stdout "*** Start listing runfiles ***\n"
-      System.Directory.PathWalk.pathWalk
-        (Bazel.Runfiles.rlocation runfiles "")
-        ( \dir _ files ->
-            for_
-              files
-              ( \file ->
-                  hPutBuilder
-                    stdout
-                    (getUtf8Builder (fromString (dir </> file)) <> "\n")
-              )
-        )
-      hPutBuilder stdout "*** Done listing runfiles ***\n"
-      hPutBuilder stdout "*** Start listing contents of MANIFEST ***\n"
-      withLazyFile
-        (Bazel.Runfiles.rlocation runfiles "MANIFEST")
-        ( \manifest ->
-            hPutBuilder stdout (Data.ByteString.Builder.lazyByteString manifest)
-        )
-      hPutBuilder stdout "*** Done listing contents of MANIFEST ***\n"
-      let prefix = Bazel.Runfiles.rlocation runfiles "com_gitlab_joneshf_purty/test/golden/files"
+      prefix <- Bazel.Runfiles.rlocation runfiles "com_gitlab_joneshf_purty/test/golden/files"
       hPutBuilder stdout ("prefix: " <> fromString prefix <> "\n")
-      let formattedAdo = Bazel.Runfiles.rlocation runfiles "com_gitlab_joneshf_purty/test/golden/files/formatted/Ado.purs"
+      formattedAdo <- Bazel.Runfiles.rlocation runfiles "com_gitlab_joneshf_purty/test/golden/files/formatted/Ado.purs"
       hPutBuilder stdout ("formattedAdo: " <> fromString formattedAdo <> "\n")
       tests <- goldenTests log prefix
       Test.Tasty.defaultMain tests
