@@ -4,7 +4,7 @@
 
 module Main where
 
-import qualified "bazel-runfiles" Bazel.Runfiles
+import qualified "runfiles" Bazel.Runfiles
 import qualified "componentm" Control.Monad.Component
 import qualified "bytestring" Data.ByteString.Builder
 import qualified "purty" Error
