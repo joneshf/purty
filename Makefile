@@ -3,31 +3,23 @@ Makefile:;
 
 ACCEPTANCE_SCRIPT := test/acceptance.sh
 ACCEPTANCE_SCRIPTFLAGS := --verbose
-BINARY := purty
+BAZEL_BINDIR := bazel-bin
 BINDIR := bin
 BUILDDIR := .build
 CIDIR := ci
 CP := cp
 GIT := git
 LIB_HS := $(wildcard lib/*.hs)
-LIBS := $(LIB_HS)
 MKDIR := mkdir
 PURTY_JS := $(CURDIR)/$(BINDIR)/purty.js
 OS := linux
 SRC_HS := $(wildcard src/*.hs)
-SRCS := $(SRC_HS)
 STACK := stack
 STACKFLAGS :=
 STACK_BUILDFLAGS :=
 STACK_BUILD := $(STACK) $(STACKFLAGS) build $(STACK_BUILDFLAGS)
-TEST_ACCEPTANCE_PURS := $(wildcard test/acceptance/*.purs)
-TEST_GOLDEN_FORMATTED_PURS := $(wildcard test/golden/files/formatted/*.purs)
 TEST_GOLDEN_HS := $(wildcard test/golden/*.hs)
-TEST_GOLDEN_ORIGINAL_PURS := $(wildcard test/golden/files/original/*.purs)
-TEST_GOLDEN_PURS := $(TEST_GOLDEN_FORMATTED_PURS) $(TEST_GOLDEN_ORIGINAL_PURS)
-TESTS := $(TEST_ACCEPTANCE_PURS) $(TEST_GOLDEN_HS) $(TEST_GOLDEN_PURS)
 VERSIONDIR := version
-VERSION_PURTY_FILE := $(VERSIONDIR)/purty
 VERSION_BAZEL := 2.2.0
 VERSION_DHALL_HASKELL := 1.30.0
 VERSION_DHALL_TO_JSON := 1.6.2
@@ -58,6 +50,7 @@ RELEASE_DATE := $(BUILDDIR)/release-date
 
 ifeq ($(OS),linux)
 BAZEL := $(BUILDDIR)/bazel
+BINARY := purty
 DHALL_TO_JSON_ARCHIVE_FILE := ./bin/dhall-to-json
 DHALL_TO_JSON_ARCHIVE_STRIP := 2
 DHALL_TO_JSON_URI := https://github.com/dhall-lang/dhall-haskell/releases/download/$(VERSION_DHALL_HASKELL)/dhall-json-$(VERSION_DHALL_TO_JSON)-x86_64-linux.tar.bz2
@@ -66,6 +59,7 @@ HLINT_ARCHIVE := $(BUILDDIR)/hlint-$(VERSION_HLINT)-x86_64-linux.tar.gz
 HLINT_ARCHIVE_FILE := hlint-$(VERSION_HLINT)/hlint
 HLINT_ARCHIVE_STRIP := 1
 HLINT_ARCHIVE_URI := https://github.com/ndmitchell/hlint/releases/download/v$(VERSION_HLINT)/hlint-$(VERSION_HLINT)-x86_64-linux.tar.gz
+PURTY_BINARY := purty-binary
 WEEDER := $(BUILDDIR)/weeder
 WEEDER_ARCHIVE := $(BUILDDIR)/weeder-$(VERSION_WEEDER)-x86_64-linux.tar.gz
 WEEDER_ARCHIVE_FILE := weeder-$(VERSION_WEEDER)/weeder
@@ -73,6 +67,7 @@ WEEDER_ARCHIVE_STRIP := 1
 WEEDER_ARCHIVE_URI := https://github.com/ndmitchell/weeder/releases/download/v$(VERSION_WEEDER)/weeder-$(VERSION_WEEDER)-x86_64-linux.tar.gz
 else ifeq ($(OS),osx)
 BAZEL := $(BUILDDIR)/bazel
+BINARY := purty
 DHALL_TO_JSON_ARCHIVE_FILE := bin/dhall-to-json
 DHALL_TO_JSON_ARCHIVE_STRIP := 1
 DHALL_TO_JSON_URI := https://github.com/dhall-lang/dhall-haskell/releases/download/$(VERSION_DHALL_HASKELL)/dhall-json-$(VERSION_DHALL_TO_JSON)-x86_64-macos.tar.bz2
@@ -81,6 +76,7 @@ HLINT_ARCHIVE := $(BUILDDIR)/hlint-$(VERSION_HLINT)-x86_64-osx.tar.gz
 HLINT_ARCHIVE_FILE := hlint-$(VERSION_HLINT)/hlint
 HLINT_ARCHIVE_STRIP := 1
 HLINT_ARCHIVE_URI := https://github.com/ndmitchell/hlint/releases/download/v$(VERSION_HLINT)/hlint-$(VERSION_HLINT)-x86_64-osx.tar.gz
+PURTY_BINARY := purty-binary
 WEEDER := $(BUILDDIR)/weeder
 WEEDER_ARCHIVE := $(BUILDDIR)/weeder-$(VERSION_WEEDER)-x86_64-osx.tar.gz
 WEEDER_ARCHIVE_FILE := weeder-$(VERSION_WEEDER)/weeder
@@ -88,10 +84,12 @@ WEEDER_ARCHIVE_STRIP := 1
 WEEDER_ARCHIVE_URI := https://github.com/ndmitchell/weeder/releases/download/v$(VERSION_WEEDER)/weeder-$(VERSION_WEEDER)-x86_64-osx.tar.gz
 else ifeq ($(OS),windows)
 BAZEL := $(BUILDDIR)/bazel.exe
+BINARY := purty.exe
 HLINT := $(BUILDDIR)/hlint.exe
 HLINT_ARCHIVE := $(BUILDDIR)/hlint-$(VERSION_HLINT)-x86_64-windows.zip
 HLINT_ARCHIVE_FILE := hlint-$(VERSION_HLINT)/hlint.exe
 HLINT_ARCHIVE_URI := https://github.com/ndmitchell/hlint/releases/download/v$(VERSION_HLINT)/hlint-$(VERSION_HLINT)-x86_64-windows.zip
+PURTY_BINARY := purty-binary.exe
 WEEDER := $(BUILDDIR)/weeder.exe
 WEEDER_ARCHIVE := $(BUILDDIR)/weeder-$(VERSION_WEEDER)-x86_64-windows.zip
 WEEDER_ARCHIVE_FILE := weeder-$(VERSION_WEEDER)/weeder.exe
@@ -114,8 +112,16 @@ endif
 	@touch $@
 	$(BAZEL) version
 
-$(BINDIR)/$(BINARY): $(LIBS) $(SRCS) $(TESTS) $(VERSION_PURTY_FILE) package.yaml stack.yaml
-	$(STACK_BUILD) --copy-bins --local-bin-path $(BINDIR) --no-run-tests --test
+$(BAZEL_BINDIR)/$(PURTY_BINARY): $(BAZEL)
+	$(BAZEL) build //:purty-binary
+
+$(BINDIR)/$(BINARY): $(BAZEL_BINDIR)/$(PURTY_BINARY)
+	@$(CP) $< $@
+ifeq ($(OS),linux)
+	@chmod 0755 $@
+else ifeq ($(OS),osx)
+	@chmod 0755 $@
+endif
 
 $(BINDIR)/$(OS) $(BUILDDIR) $(BUILDDIR)/$(OS) $(LINTDIR_WEEDER):
 	@$(MKDIR) -p $@
@@ -269,5 +275,5 @@ test-acceptance-npm: $(ACCEPTANCE_SCRIPT) $(BINDIR)/$(OS)/$(BINARY) $(PURTY_JS)
 	$(ACCEPTANCE_SCRIPT) $(ACCEPTANCE_SCRIPTFLAGS) --purty $(PURTY_JS)
 
 .PHONY: test-golden
-test-golden: $(BINDIR)/$(BINARY)
-	$(STACK_BUILD) --test purty:test:golden
+test-golden: $(BAZEL)
+	$(BAZEL) test //:purty-golden
