@@ -121,6 +121,7 @@ sh_test(
         "test/acceptance.sh",
     ],
     tags = [
-        "requires_bash",
+        "coverage_requires_jvm",
+        "test_requires_bash",
     ],
 )
