@@ -11,8 +11,8 @@ import qualified "purty" Error
 import qualified "purty" Log
 import qualified "purty" Purty
 import "rio" RIO hiding (log)
-import "rio" RIO.FilePath ((</>))
 import qualified "rio" RIO.Directory
+import "rio" RIO.FilePath ((</>))
 import qualified "rio" RIO.FilePath
 import qualified "rio" RIO.Text
 import qualified "tasty" Test.Tasty
@@ -64,7 +64,6 @@ fileUsed prefix fullPath =
                 <> "."
             )
         )
-
     filename :: FilePath
     filename = RIO.FilePath.takeFileName fullPath
 
