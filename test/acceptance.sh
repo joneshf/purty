@@ -8,7 +8,6 @@ IFS=$'\n\t'
 # There's a good chunk of boilerplate here.
 # Head down to the end of the boilerplate to see the tests.
 
-readonly DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly THIS_SCRIPT="${0}"
 readonly SCRIPT_NAME="$(basename "${THIS_SCRIPT}")"
 readonly TEMPORARY_DIR="$(mktemp --directory -t "${SCRIPT_NAME}.XXXXXXXXXX")"
@@ -66,12 +65,6 @@ done
 cleanup() {
     local exit_code="$?"
 
-    debug "Removing config file if it exists"
-    rm -f .purty.dhall
-
-    debug "Moving back to ${OLDPWD}"
-    cd "${OLDPWD}"
-
     exit "$exit_code"
 }
 
@@ -79,9 +72,6 @@ trap cleanup EXIT
 
 debug "Created temp directory: ${TEMPORARY_DIR}"
 debug "Created log file: ${LOG_FILE}"
-
-debug "Moving to ${DIR}"
-cd "${DIR}"
 
 # End Boilerplate
 
@@ -94,7 +84,7 @@ function suite_format() {
     local purty=("$@")
 
     debug 'Testing if exit code is non-zero for parse errors'
-    if "${purty[@]}" './acceptance/Unparsable.purs' 2> /dev/null; then
+    if "${purty[@]}" './test/acceptance/Unparsable.purs' 2> /dev/null; then
         error 'Exit code is zero for parse errors'
 
         exit 1
@@ -104,23 +94,23 @@ function suite_format() {
     fi
 
     debug 'Testing if absolute paths work'
-    "${purty[@]}" "$(pwd)/acceptance/Test.purs" > /dev/null
+    "${purty[@]}" "$(pwd)/test/acceptance/Test.purs" > /dev/null
     info 'Absolute file paths work'
 
     debug 'Testing if relative paths work'
-    "${purty[@]}" "./acceptance/Test.purs" > /dev/null
+    "${purty[@]}" "./test/acceptance/Test.purs" > /dev/null
     info 'Relative file paths work'
 
     debug 'Testing if paths with .. work'
-    "${purty[@]}" "../test/acceptance/Test.purs" > /dev/null
+    "${purty[@]}" "./test/../test/acceptance/Test.purs" > /dev/null
     info 'Paths with .. work'
 
     debug 'Testing if STDIN works'
-    "${purty[@]}" - < "$(pwd)/acceptance/Test.purs" > /dev/null
+    "${purty[@]}" - < "$(pwd)/test/acceptance/Test.purs" > /dev/null
     info 'STDIN works'
 
     debug 'Testing if directories work'
-    "${purty[@]}" "$(pwd)/acceptance/directories" > /dev/null
+    "${purty[@]}" "$(pwd)/test/acceptance/directories" > /dev/null
     info 'Directories works'
 }
 
@@ -129,7 +119,7 @@ function suite_validate() {
 
     debug 'Testing if validate mode works'
     debug 'Testing if exit code is non-zero for unformatted files'
-    if "${purty[@]}" validate './acceptance/Unformatted.purs' 2> /dev/null; then
+    if "${purty[@]}" validate './test/acceptance/Unformatted.purs' 2> /dev/null; then
         error 'Exit code is zero for unformatted files'
 
         exit 1
@@ -139,7 +129,7 @@ function suite_validate() {
     fi
 
     debug 'Testing if exit code is non-zero for unformatted directories'
-    if "${purty[@]}" validate './acceptance/directories' 2> /dev/null; then
+    if "${purty[@]}" validate './test/acceptance/directories' 2> /dev/null; then
         error 'Exit code is zero for unformatted directories'
 
         exit 1
@@ -149,23 +139,23 @@ function suite_validate() {
     fi
 
     debug 'Testing if exit code is zero for formatted absolute file paths'
-    "${purty[@]}" validate "$(pwd)/acceptance/Formatted.purs" > /dev/null
+    "${purty[@]}" validate "$(pwd)/test/acceptance/Formatted.purs" > /dev/null
     info 'Exit code is zero for formatted absolute file paths'
 
     debug 'Testing if exit code is zero for formatted relative paths'
-    "${purty[@]}" validate "./acceptance/Formatted.purs" > /dev/null
+    "${purty[@]}" validate "./test/acceptance/Formatted.purs" > /dev/null
     info 'Exit code is zero for formatted relative file paths'
 
     debug 'Testing if exit code is zero for formatted paths with ..'
-    "${purty[@]}" validate "../test/acceptance/Formatted.purs" > /dev/null
+    "${purty[@]}" validate "./test/../test/acceptance/Formatted.purs" > /dev/null
     info 'Exit code is zero for formatted paths with ..'
 
     debug 'Testing if exit code is zero for formatted STDIN works'
-    "${purty[@]}" validate - < "$(pwd)/acceptance/Formatted.purs" > /dev/null
+    "${purty[@]}" validate - < "$(pwd)/test/acceptance/Formatted.purs" > /dev/null
     info 'Exit code is zero for formatted STDIN'
 
     debug 'Testing if exit code is zero for formatted directories work'
-    "${purty[@]}" validate "$(pwd)/acceptance/directories/formatted" > /dev/null
+    "${purty[@]}" validate "$(pwd)/test/acceptance/directories/formatted" > /dev/null
     info 'Exit code is zero for formatted directories'
 }
 
@@ -173,7 +163,7 @@ function suite_version() {
     local purty=("$@")
 
     debug 'Testing if version mode works'
-    expected_version="Purty version: $(cat "$(pwd)/../version/purty")"
+    expected_version="Purty version: $(cat version/purty)"
     actual_version=$("${purty[@]}" version)
     if [[ "${expected_version}" != "${actual_version}" ]]; then
         error "Expected: ${expected_version}"
@@ -184,7 +174,7 @@ function suite_version() {
     info 'Version mode works'
 
     debug 'Testing if version --numeric flag works'
-    expected_version=$(cat "$(pwd)/../version/purty")
+    expected_version=$(cat version/purty)
     actual_version=$("${purty[@]}" version --numeric)
     if [[ "${expected_version}" != "${actual_version}" ]]; then
         error "Expected: ${expected_version}"

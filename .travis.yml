@@ -1,12 +1,6 @@
-before_install:
-  - ci/install-stack.sh --os ${TRAVIS_OS_NAME} --verbose
-
 cache:
   directories:
-    - ${HOME}/.local/bin
     - ${TRAVIS_BUILD_DIR}/.bazel-cache
-    - .stack-root
-    - .stack-work
   timeout: 1000
 
 deploy:
@@ -24,11 +18,9 @@ env:
   global:
     - BAZEL_USE_CPP_ONLY_TOOLCHAIN=1
     - PATH=/usr/local/opt/coreutils/libexec/gnubin:${PATH}
-    - STACK_ROOT=${TRAVIS_BUILD_DIR}/.stack-root
 
 install:
   - make bootstrap OS=${TRAVIS_OS_NAME}
-  - stack setup
 
 language: c
 
@@ -45,5 +37,5 @@ os:
 sudo: false
 
 script:
-  - .build/bazel build //:purty
-  - "[ dependencies = ${BUILD_TYPE} ] || make --jobs bintray-artifacts test OS=${TRAVIS_OS_NAME} VERSION_PURTY=${TRAVIS_TAG}"
+  - .build/bazel coverage //...
+  - make --jobs bintray-artifacts OS=${TRAVIS_OS_NAME} VERSION_PURTY=${TRAVIS_TAG}

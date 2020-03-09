@@ -69,6 +69,7 @@ haskell_library(
         "version/purty",
     ],
     name = "purty",
+    src_strip_prefix = "lib",
     srcs = [
         "lib/Annotation.hs",
         "lib/Args.hs",
@@ -89,6 +90,7 @@ haskell_test(
     ]),
     deps = [
         ":purty",
+        "@rules_haskell//tools/runfiles:runfiles",
         "@stackage//:bytestring",
         "@stackage//:componentm",
         "@stackage//:rio",
@@ -97,7 +99,29 @@ haskell_test(
         "@stackage//:tasty-hunit",
     ],
     name = "purty-golden",
+    src_strip_prefix = "test/golden",
     srcs = [
         "test/golden/Main.hs",
+    ],
+)
+
+sh_test(
+    args = [
+        "--purty $(location :purty-binary)",
+        "--verbose",
+    ],
+    data = glob([
+        "test/acceptance/**/*",
+    ]) + [
+        ":purty-binary",
+        "version/purty",
+    ],
+    name = "test-acceptance-binary",
+    srcs = [
+        "test/acceptance.sh",
+    ],
+    tags = [
+        "coverage_requires_jvm",
+        "test_requires_bash",
     ],
 )
