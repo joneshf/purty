@@ -11,6 +11,7 @@ import qualified "purty" Log
 import qualified "purty" Purty
 import "rio" RIO hiding (log)
 import "rio" RIO.FilePath ((</>))
+import qualified "rio" RIO.Directory
 import qualified "rio" RIO.FilePath
 import qualified "rio" RIO.Text
 import qualified "tasty" Test.Tasty
@@ -39,24 +40,33 @@ diff old new = ["diff", "--unified", old, new]
 files :: FilePath
 files = "test/golden/files"
 
-fileUsed :: (Foldable f) => f FilePath -> FilePath -> Test.Tasty.TestTree
-fileUsed haystack needle =
+fileUsed :: FilePath -> Test.Tasty.TestTree
+fileUsed fullPath =
   Test.Tasty.HUnit.testCase
-    needle
-    ( Test.Tasty.HUnit.assertBool
-        ( needle
-            <> " is unused."
-            <> "Please add an original version to the `original` directory."
+    (files </> "formatted" </> filename)
+    exists
+  where
+    exists :: Test.Tasty.HUnit.Assertion
+    exists = do
+      originalExists <- RIO.Directory.doesFileExist (files </> "original" </> filename)
+      unless
+        originalExists
+        ( Test.Tasty.HUnit.assertFailure
+            ( (files </> "formatted" </> filename)
+                <> " is unused."
+                <> " Please add an original version at `"
+                <> (files </> "original" </> filename)
+                <> "."
+            )
         )
-        (RIO.FilePath.takeBaseName needle `elem` haystack)
-    )
+
+    filename :: FilePath
+    filename = RIO.FilePath.takeFileName fullPath
 
 filesUsedTests :: IO Test.Tasty.TestTree
 filesUsedTests = do
   formatteds <- psFiles "formatted"
-  originals' <- psFiles "original"
-  let originals = fmap RIO.FilePath.takeBaseName originals'
-  pure $ Test.Tasty.testGroup "filesUsed" (fmap (fileUsed originals) formatteds)
+  pure $ Test.Tasty.testGroup "filesUsed" (fmap fileUsed formatteds)
 
 formattingTests :: Log.Handle -> IO Test.Tasty.TestTree
 formattingTests log = do
