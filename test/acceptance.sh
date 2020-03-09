@@ -65,12 +65,6 @@ done
 cleanup() {
     local exit_code="$?"
 
-    debug "Removing config file if it exists"
-    rm -f .purty.dhall
-
-    debug "Moving back to ${OLDPWD}"
-    cd "${OLDPWD}"
-
     exit "$exit_code"
 }
 
