@@ -265,9 +265,9 @@ test: test-acceptance test-golden
 test-acceptance: test-acceptance-binary test-acceptance-npm
 
 .PHONY: test-acceptance-binary
-test-acceptance-binary: $(ACCEPTANCE_SCRIPT) $(BINDIR)/$(BINARY)
+test-acceptance-binary: $(BAZEL)
 	$(info Testing binary interface)
-	$(ACCEPTANCE_SCRIPT) $(ACCEPTANCE_SCRIPTFLAGS)
+	$(BAZEL) test //:test-acceptance-binary
 
 .PHONY: test-acceptance-npm
 test-acceptance-npm: $(ACCEPTANCE_SCRIPT) $(BINDIR)/$(OS)/$(BINARY) $(PURTY_JS)

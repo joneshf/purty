@@ -104,3 +104,23 @@ haskell_test(
         "test/golden/Main.hs",
     ],
 )
+
+sh_test(
+    args = [
+        "--purty $(location :purty-binary)",
+        "--verbose",
+    ],
+    data = glob([
+        "test/acceptance/**/*",
+    ]) + [
+        ":purty-binary",
+        "version/purty",
+    ],
+    name = "test-acceptance-binary",
+    srcs = [
+        "test/acceptance.sh",
+    ],
+    tags = [
+        "requires_bash",
+    ],
+)
