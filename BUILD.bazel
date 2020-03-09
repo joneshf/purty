@@ -90,6 +90,7 @@ haskell_test(
     ]),
     deps = [
         ":purty",
+        "@rules_haskell//tools/runfiles:runfiles",
         "@stackage//:bytestring",
         "@stackage//:componentm",
         "@stackage//:rio",

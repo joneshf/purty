@@ -4,6 +4,7 @@
 
 module Main where
 
+import qualified "runfiles" Bazel.Runfiles
 import qualified "componentm" Control.Monad.Component
 import qualified "bytestring" Data.ByteString.Builder
 import qualified "purty" Error
@@ -27,7 +28,11 @@ main = do
           }
   result <- Control.Monad.Component.runComponentM "golden" (Log.handle config) $
     \log -> try $ do
-      tests <- goldenTests log
+      runfiles <- Bazel.Runfiles.create
+      -- Do not replace the `<> "/" <>` with `</>`.
+      -- This string is not a platform dependent path, it's a bazel label.
+      -- Bazel labels always use forward slashes no matter the platform.
+      tests <- goldenTests log (Bazel.Runfiles.rlocation runfiles (workspace <> "/" <> files))
       Test.Tasty.defaultMain tests
   case result of
     Left ExitSuccess -> exitSuccess
@@ -40,15 +45,15 @@ diff old new = ["diff", "--unified", old, new]
 files :: FilePath
 files = "test/golden/files"
 
-fileUsed :: FilePath -> Test.Tasty.TestTree
-fileUsed fullPath =
+fileUsed :: FilePath -> FilePath -> Test.Tasty.TestTree
+fileUsed prefix fullPath =
   Test.Tasty.HUnit.testCase
     (files </> "formatted" </> filename)
     exists
   where
     exists :: Test.Tasty.HUnit.Assertion
     exists = do
-      originalExists <- RIO.Directory.doesFileExist (files </> "original" </> filename)
+      originalExists <- RIO.Directory.doesFileExist (prefix </> "original" </> filename)
       unless
         originalExists
         ( Test.Tasty.HUnit.assertFailure
@@ -63,30 +68,28 @@ fileUsed fullPath =
     filename :: FilePath
     filename = RIO.FilePath.takeFileName fullPath
 
-filesUsedTests :: IO Test.Tasty.TestTree
-filesUsedTests = do
-  formatteds <- psFiles "formatted"
-  pure $ Test.Tasty.testGroup "filesUsed" (fmap fileUsed formatteds)
+filesUsedTests :: FilePath -> IO Test.Tasty.TestTree
+filesUsedTests prefix = do
+  formatteds <- psFiles prefix "formatted"
+  pure $ Test.Tasty.testGroup "filesUsed" (fmap (fileUsed prefix) formatteds)
 
-formattingTests :: Log.Handle -> IO Test.Tasty.TestTree
-formattingTests log = do
-  originals <- psFiles "original"
-  pure $ Test.Tasty.testGroup "formatting" (fmap (golden log) originals)
+formattingTests :: Log.Handle -> FilePath -> IO Test.Tasty.TestTree
+formattingTests log prefix = do
+  originals <- psFiles prefix "original"
+  pure $ Test.Tasty.testGroup "formatting" (fmap (golden log prefix) originals)
 
-golden :: Log.Handle -> FilePath -> Test.Tasty.TestTree
-golden log original =
+golden :: Log.Handle -> FilePath -> FilePath -> Test.Tasty.TestTree
+golden log prefix original =
   Test.Tasty.Golden.goldenVsStringDiff
-    goldenFile
+    (files </> "formatted" </> RIO.FilePath.takeFileName original)
     diff
-    goldenFile
+    (prefix </> "formatted" </> RIO.FilePath.takeFileName original)
     (test log original)
-  where
-    goldenFile = files </> "formatted" </> RIO.FilePath.takeFileName original
 
-goldenTests :: Log.Handle -> IO Test.Tasty.TestTree
-goldenTests log = do
-  filesUsed <- filesUsedTests
-  formatting <- formattingTests log
+goldenTests :: Log.Handle -> FilePath -> IO Test.Tasty.TestTree
+goldenTests log prefix = do
+  filesUsed <- filesUsedTests prefix
+  formatting <- formattingTests log prefix
   pure $
     Test.Tasty.testGroup
       "golden"
@@ -94,8 +97,8 @@ goldenTests log = do
         formatting
       ]
 
-psFiles :: FilePath -> IO [FilePath]
-psFiles dir = Test.Tasty.Golden.findByExtension [".purs"] (files </> dir)
+psFiles :: FilePath -> FilePath -> IO [FilePath]
+psFiles prefix dir = Test.Tasty.Golden.findByExtension [".purs"] (prefix </> dir)
 
 test :: Log.Handle -> FilePath -> IO LByteString
 test log file = do
@@ -106,3 +109,6 @@ test log file = do
         (RIO.Text.unpack $ utf8BuilderToText $ Error.format err)
     Right formatted ->
       pure (Data.ByteString.Builder.toLazyByteString $ getUtf8Builder formatted)
+
+workspace :: String
+workspace = "com_gitlab_joneshf_purty"
