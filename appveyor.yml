@@ -5,6 +5,7 @@ before_deploy:
 build_script:
   - ps: Set-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name LongPathsEnabled -Value 1
   - .build\bazel.exe test --config appveyor --test_tag_filters -test_requires_bash //...
+  - make bin/purty.exe OS=windows
 
 cache:
   - '%APPVEYOR_BUILD_FOLDER%\.bazel-cache'
