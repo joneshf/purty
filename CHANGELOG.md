@@ -8,6 +8,19 @@
 
 ### Deletions
 
+## 6.0.1
+
+This release is all internal project changes.
+
+### Additions
+
+### Changes
+
+* [Start moving the build to bazel](https://gitlab.com/joneshf/purty/issues/164)
+* [Move tests to bazel](https://gitlab.com/joneshf/purty/issues/164)
+
+### Deletions
+
 ## 6.0.0
 
 This release smooths out some rough edges.
