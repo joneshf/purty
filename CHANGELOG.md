@@ -18,6 +18,7 @@ This release is all internal project changes.
 
 * [Start moving the build to bazel](https://gitlab.com/joneshf/purty/issues/164)
 * [Move tests to bazel](https://gitlab.com/joneshf/purty/issues/164)
+* [Fix Bintray deploy on AppVeyor](https://gitlab.com/joneshf/purty/issues/177)
 
 ### Deletions
 
