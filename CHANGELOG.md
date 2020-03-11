@@ -8,6 +8,20 @@
 
 ### Deletions
 
+## 6.0.2
+
+This is a bugfix due to recent changes.
+We were accidentally dropping code coverage information whenever `purty` was run.
+That should be taken care of, now.
+
+### Additions
+
+### Changes
+
+* [Stop dumping `purty.tix` files in the cwd](https://gitlab.com/joneshf/purty/issues/178)
+
+### Deletions
+
 ## 6.0.1
 
 This release is all internal project changes.
