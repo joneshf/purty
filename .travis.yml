@@ -2,6 +2,7 @@ cache:
   directories:
     - ${HOME}/.cache/bazel/_bazel_${USER}/cache/repos
     - ${TRAVIS_BUILD_DIR}/.bazel-cache
+    - /private/var/temp/_bazel_${USER}/cache/repos
   timeout: 1000
 
 deploy:
