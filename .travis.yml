@@ -2,6 +2,7 @@ cache:
   directories:
     - ${HOME}/.cache/bazel/_bazel_${USER}/cache/repos
     - ${TRAVIS_BUILD_DIR}/.bazel-cache
+    - ${TRAVIS_BUILD_DIR}/.stack
     - /private/var/temp/_bazel_${USER}/cache/repos
   timeout: 1000
 
@@ -20,6 +21,7 @@ env:
   global:
     - BAZEL_USE_CPP_ONLY_TOOLCHAIN=1
     - PATH=/usr/local/opt/coreutils/libexec/gnubin:${PATH}
+    - STACK_ROOT=${TRAVIS_BUILD_DIR}/.stack
 
 install:
   - make bootstrap OS=${TRAVIS_OS_NAME}
