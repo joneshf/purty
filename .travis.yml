@@ -1,5 +1,6 @@
 cache:
   directories:
+    - ${HOME}/.cache/bazel/_bazel_${USER}/cache/repos
     - ${TRAVIS_BUILD_DIR}/.bazel-cache
   timeout: 1000
 
