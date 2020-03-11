@@ -37,5 +37,5 @@ os:
 sudo: false
 
 script:
-  - .build/bazel coverage //...
+  - .build/bazel test //...
   - make --jobs bintray-artifacts OS=${TRAVIS_OS_NAME} VERSION_PURTY=${TRAVIS_TAG}
