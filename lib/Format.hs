@@ -1951,10 +1951,10 @@ type' log indentation indent' type''' = case type''' of
     parens log span indentation indent' (type' log indentation) wrapped'
   Language.PureScript.CST.Types.TypeRecord span wrapped' -> do
     debug log "TypeRecord" type''' span
-    wrapped log indent' (row log span indentation indent') wrapped'
+    wrappedRow log span indentation indent' wrapped'
   Language.PureScript.CST.Types.TypeRow span wrapped' -> do
     debug log "TypeRow" type''' span
-    wrapped log indent' (row log span indentation indent') wrapped'
+    wrappedRow log span indentation indent' wrapped'
   Language.PureScript.CST.Types.TypeString span string _ -> do
     debug log "TypeString" type''' span
     sourceToken log indent' blank string
@@ -2048,3 +2048,26 @@ wrapped log indent f wrapped' = case wrapped' of
   where
     span :: Span.Span
     span = Span.wrapped wrapped'
+
+wrappedRow ::
+  Log.Handle ->
+  Span.Span ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.Types.Wrapped (Language.PureScript.CST.Types.Row Span.Span) ->
+  IO Utf8Builder
+wrappedRow log span indentation indent wrapped' = case wrapped' of
+  Language.PureScript.CST.Types.Wrapped open row' close -> do
+    let (before, after) = case (row', span) of
+          (Language.PureScript.CST.Types.Row (Just _) _, Span.MultipleLines) ->
+            (space, newline <> indent)
+          (Language.PureScript.CST.Types.Row Nothing _, Span.MultipleLines) ->
+            (blank, newline <> indent)
+          (_, Span.SingleLine) ->
+            (blank, blank)
+    debug log "Wrapped" wrapped' span
+    sourceToken log indent blank open
+      <> pure before
+      <> row log span indentation indent row'
+      <> pure after
+      <> sourceToken log indent blank close
