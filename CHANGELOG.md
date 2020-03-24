@@ -8,6 +8,18 @@
 
 ### Deletions
 
+## 6.1.0
+
+This is a small release to fix an oddity of formatting.
+
+### Additions
+
+### Changes
+
+* [Remove erroneous whitespace in empty open row](https://gitlab.com/joneshf/purty/issues/181)
+
+### Deletions
+
 ## 6.0.2
 
 This is a bugfix due to recent changes.
