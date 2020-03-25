@@ -1,4 +1,9 @@
 load(
+    "@bazel_skylib//rules:native_binary.bzl",
+    "native_test",
+)
+
+load(
     "@rules_haskell//haskell:defs.bzl",
     "haskell_binary",
     "haskell_library",
@@ -26,10 +31,30 @@ purty_golden_srcs = [
     "test/golden/Main.hs",
 ]
 
+haskell_srcs = (
+    purty_binary_srcs +
+    purty_golden_srcs +
+    purty_srcs
+)
+
 config_setting(
     name = "linux",
     constraint_values = [
         "@platforms//os:linux",
+    ],
+)
+
+config_setting(
+    name = "macos",
+    constraint_values = [
+        "@platforms//os:macos",
+    ],
+)
+
+config_setting(
+    name = "windows",
+    constraint_values = [
+        "@platforms//os:windows",
     ],
 )
 
@@ -120,6 +145,32 @@ haskell_toolchain_library(
     name = "bytestring",
 )
 
+[
+    native_test(
+        args = [
+            "$(location {haskell_src})".format(
+                haskell_src = haskell_src,
+            ),
+        ],
+        data = [
+            ".hlint.yaml",
+            "//tools/hlint:hlint",
+            haskell_src,
+        ],
+        name = "lint-hlint-{haskell_src}".format(
+            haskell_src = haskell_src,
+        ),
+        out = "lint-hlint-{haskell_src}".format(
+            haskell_src = haskell_src,
+        ),
+        src = "//tools/hlint:hlint",
+        tags = [
+            "hlint",
+            "lint",
+        ],
+    ) for haskell_src in haskell_srcs
+]
+
 sh_test(
     args = [
         "--purty $(location :purty-binary)",
@@ -138,5 +189,20 @@ sh_test(
     tags = [
         "coverage_requires_jvm",
         "test_requires_bash",
+    ],
+)
+
+test_suite(
+    name = "lint",
+    tags = [
+        "lint",
+    ],
+)
+
+test_suite(
+    name = "lint-hlint",
+    tags = [
+        "hlint",
+        "lint",
     ],
 )
