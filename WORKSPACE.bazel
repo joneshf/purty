@@ -67,8 +67,6 @@ stack_snapshot(
     local_snapshot = "//:snapshot.yaml",
     name = "stackage",
     packages = [
-        "base",
-        "bytestring",
         "componentm",
         "file-embed",
         "optparse-applicative",

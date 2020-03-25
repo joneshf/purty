@@ -3,6 +3,7 @@ load(
     "haskell_binary",
     "haskell_library",
     "haskell_test",
+    "haskell_toolchain_library",
 )
 
 config_setting(
@@ -36,7 +37,7 @@ haskell_binary(
         ],
     }),
     deps = [
-        "@stackage//:base",
+        ":base",
         ":purty",
     ],
     name = "purty-binary",
@@ -56,8 +57,8 @@ haskell_library(
         "-Wredundant-constraints",
     ],
     deps = [
-        "@stackage//:base",
-        "@stackage//:bytestring",
+        ":base",
+        ":bytestring",
         "@stackage//:componentm",
         "@stackage//:file-embed",
         "@stackage//:optparse-applicative",
@@ -89,9 +90,9 @@ haskell_test(
         "test/golden/files/original/*.purs",
     ]),
     deps = [
+        ":bytestring",
         ":purty",
         "@rules_haskell//tools/runfiles:runfiles",
-        "@stackage//:bytestring",
         "@stackage//:componentm",
         "@stackage//:rio",
         "@stackage//:tasty",
@@ -103,6 +104,14 @@ haskell_test(
     srcs = [
         "test/golden/Main.hs",
     ],
+)
+
+haskell_toolchain_library(
+    name = "base",
+)
+
+haskell_toolchain_library(
+    name = "bytestring",
 )
 
 sh_test(
