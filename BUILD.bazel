@@ -6,6 +6,26 @@ load(
     "haskell_toolchain_library",
 )
 
+purty_srcs = [
+    "lib/Annotation.hs",
+    "lib/Args.hs",
+    "lib/Error.hs",
+    "lib/Format.hs",
+    "lib/Log.hs",
+    "lib/Purty.hs",
+    "lib/SourceRange.hs",
+    "lib/Span.hs",
+    "lib/Version.hs",
+]
+
+purty_binary_srcs = [
+    "src/Main.hs",
+]
+
+purty_golden_srcs = [
+    "test/golden/Main.hs",
+]
+
 config_setting(
     name = "linux",
     constraint_values = [
@@ -41,9 +61,7 @@ haskell_binary(
         ":purty",
     ],
     name = "purty-binary",
-    srcs = [
-        "src/Main.hs",
-    ],
+    srcs = purty_binary_srcs,
 )
 
 haskell_library(
@@ -71,17 +89,7 @@ haskell_library(
     ],
     name = "purty",
     src_strip_prefix = "lib",
-    srcs = [
-        "lib/Annotation.hs",
-        "lib/Args.hs",
-        "lib/Error.hs",
-        "lib/Format.hs",
-        "lib/Log.hs",
-        "lib/Purty.hs",
-        "lib/SourceRange.hs",
-        "lib/Span.hs",
-        "lib/Version.hs",
-    ],
+    srcs = purty_srcs,
 )
 
 haskell_test(
@@ -101,9 +109,7 @@ haskell_test(
     ],
     name = "purty-golden",
     src_strip_prefix = "test/golden",
-    srcs = [
-        "test/golden/Main.hs",
-    ],
+    srcs = purty_golden_srcs,
 )
 
 haskell_toolchain_library(
