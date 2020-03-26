@@ -1,14 +1,14 @@
 load(
-    "@bazel_skylib//rules:native_binary.bzl",
-    "native_test",
-)
-
-load(
     "@rules_haskell//haskell:defs.bzl",
     "haskell_binary",
     "haskell_library",
     "haskell_test",
     "haskell_toolchain_library",
+)
+
+load(
+    "//tools/hlint:hlint.bzl",
+    "hlint_test",
 )
 
 purty_srcs = [
@@ -145,31 +145,9 @@ haskell_toolchain_library(
     name = "bytestring",
 )
 
-[
-    native_test(
-        args = [
-            "$(location {haskell_src})".format(
-                haskell_src = haskell_src,
-            ),
-        ],
-        data = [
-            ".hlint.yaml",
-            "//tools/hlint:hlint",
-            haskell_src,
-        ],
-        name = "lint-hlint-{haskell_src}".format(
-            haskell_src = haskell_src,
-        ),
-        out = "lint-hlint-{haskell_src}".format(
-            haskell_src = haskell_src,
-        ),
-        src = "//tools/hlint:hlint",
-        tags = [
-            "hlint",
-            "lint",
-        ],
-    ) for haskell_src in haskell_srcs
-]
+hlint_test(
+    srcs = haskell_srcs,
+)
 
 sh_test(
     args = [
