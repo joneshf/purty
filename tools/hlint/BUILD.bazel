@@ -1,0 +1,16 @@
+alias(
+    actual = select({
+        "//:linux": "@hlint_linux//:hlint_binary",
+        "//:macos": "@hlint_macos//:hlint_binary",
+        "//:windows": "@hlint_windows//:hlint_binary",
+    },
+        no_match_error = "No hlint binary available for this platform",
+    ),
+    name = "hlint",
+    tags = [
+        "hlint",
+    ],
+    visibility = [
+        "//:__pkg__",
+    ],
+)

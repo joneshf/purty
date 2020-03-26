@@ -23,7 +23,6 @@ VERSIONDIR := version
 VERSION_BAZEL := 2.2.0
 VERSION_DHALL_HASKELL := 1.30.0
 VERSION_DHALL_TO_JSON := 1.6.2
-VERSION_HLINT := 2.2.11
 VERSION_PURTY :=
 
 ALL_HASKELL_FILES := Setup.hs $(LIB_HS) $(SRC_HS) $(TEST_GOLDEN_HS)
@@ -35,9 +34,7 @@ DHALL_TO_JSON := $(BUILDDIR)/$(OS)/dhall-to-json
 DHALL_TO_JSON_TAR := $(BUILDDIR)/$(OS)/dhall-json-$(VERSION_DHALL_TO_JSON).tar.bz2
 FORMATDIR := $(BUILDDIR)/format
 FORMAT_HASKELL_FILES := $(addprefix $(FORMATDIR)/,$(ALL_HASKELL_FILES))
-LINTDIR_HLINT := $(BUILDDIR)/lint/hlint
 LINTDIR_ORMOLU := $(BUILDDIR)/lint/ormolu
-LINT_HASKELL_HLINT_FILES := $(addprefix $(LINTDIR_HLINT)/,$(ALL_HASKELL_FILES))
 LINT_HASKELL_ORMOLU_FILES := $(addprefix $(LINTDIR_ORMOLU)/,$(ALL_HASKELL_FILES))
 NPM_PACKAGE_DHALL := $(CIDIR)/npm/package.dhall
 ORMOLU := $(BUILDDIR)/ormolu
@@ -52,11 +49,6 @@ BINARY := purty
 DHALL_TO_JSON_ARCHIVE_FILE := ./bin/dhall-to-json
 DHALL_TO_JSON_ARCHIVE_STRIP := 2
 DHALL_TO_JSON_URI := https://github.com/dhall-lang/dhall-haskell/releases/download/$(VERSION_DHALL_HASKELL)/dhall-json-$(VERSION_DHALL_TO_JSON)-x86_64-linux.tar.bz2
-HLINT := $(BUILDDIR)/hlint
-HLINT_ARCHIVE := $(BUILDDIR)/hlint-$(VERSION_HLINT)-x86_64-linux.tar.gz
-HLINT_ARCHIVE_FILE := hlint-$(VERSION_HLINT)/hlint
-HLINT_ARCHIVE_STRIP := 1
-HLINT_ARCHIVE_URI := https://github.com/ndmitchell/hlint/releases/download/v$(VERSION_HLINT)/hlint-$(VERSION_HLINT)-x86_64-linux.tar.gz
 PURTY_BINARY := purty-binary
 else ifeq ($(OS),osx)
 BAZEL := $(BUILDDIR)/bazel
@@ -64,19 +56,10 @@ BINARY := purty
 DHALL_TO_JSON_ARCHIVE_FILE := bin/dhall-to-json
 DHALL_TO_JSON_ARCHIVE_STRIP := 1
 DHALL_TO_JSON_URI := https://github.com/dhall-lang/dhall-haskell/releases/download/$(VERSION_DHALL_HASKELL)/dhall-json-$(VERSION_DHALL_TO_JSON)-x86_64-macos.tar.bz2
-HLINT := $(BUILDDIR)/hlint
-HLINT_ARCHIVE := $(BUILDDIR)/hlint-$(VERSION_HLINT)-x86_64-osx.tar.gz
-HLINT_ARCHIVE_FILE := hlint-$(VERSION_HLINT)/hlint
-HLINT_ARCHIVE_STRIP := 1
-HLINT_ARCHIVE_URI := https://github.com/ndmitchell/hlint/releases/download/v$(VERSION_HLINT)/hlint-$(VERSION_HLINT)-x86_64-osx.tar.gz
 PURTY_BINARY := purty-binary
 else ifeq ($(OS),windows)
 BAZEL := $(BUILDDIR)/bazel.exe
 BINARY := purty.exe
-HLINT := $(BUILDDIR)/hlint.exe
-HLINT_ARCHIVE := $(BUILDDIR)/hlint-$(VERSION_HLINT)-x86_64-windows.zip
-HLINT_ARCHIVE_FILE := hlint-$(VERSION_HLINT)/hlint.exe
-HLINT_ARCHIVE_URI := https://github.com/ndmitchell/hlint/releases/download/v$(VERSION_HLINT)/hlint-$(VERSION_HLINT)-x86_64-windows.zip
 PURTY_BINARY := purty-binary.exe
 endif
 
@@ -137,28 +120,6 @@ $(FORMAT_HASKELL_FILES): $(FORMATDIR)/%: % $(ORMOLU)
 	@mkdir -p $(basename $@)
 	@touch $@
 
-$(HLINT): $(HLINT_ARCHIVE) | $(BUILDDIR)
-	$(info Extracting hlint binary)
-ifeq ($(OS),linux)
-	@tar --extract --file $< --directory $(BUILDDIR) --gzip --strip-components $(HLINT_ARCHIVE_STRIP) $(HLINT_ARCHIVE_FILE)
-else ifeq ($(OS),osx)
-	@tar --extract --file $< --directory $(BUILDDIR) --gzip --strip-components $(HLINT_ARCHIVE_STRIP) $(HLINT_ARCHIVE_FILE)
-else ifeq ($(OS),windows)
-	@7z e $< -o$(BUILDDIR) $(HLINT_ARCHIVE_FILE)
-endif
-	@touch $@
-	$(HLINT) --version
-
-$(HLINT_ARCHIVE): | $(BUILDDIR)
-	$(info Downloading hlint binary)
-	curl --location --output $(HLINT_ARCHIVE) $(HLINT_ARCHIVE_URI)
-
-$(LINT_HASKELL_HLINT_FILES): $(LINTDIR_HLINT)/%: % $(HLINT)
-	$(info Linting $* with hlint)
-	@$(HLINT) $*
-	@mkdir -p $(basename $@)
-	@touch $@
-
 $(LINT_HASKELL_ORMOLU_FILES): $(LINTDIR_ORMOLU)/%: % $(ORMOLU)
 	$(info Linting $* with ormolu)
 	@$(ORMOLU) --mode check $* || (echo $* is not formatted properly. Please run 'make format'.; exit 1)
@@ -208,7 +169,8 @@ lint: lint-haskell
 lint-haskell: lint-haskell-hlint lint-haskell-ormolu
 
 .PHONY: lint-haskell-hlint
-lint-haskell-hlint: $(LINT_HASKELL_HLINT_FILES)
+lint-haskell-hlint: $(BAZEL)
+	$(BAZEL) test //:lint-hlint
 
 .PHONY: lint-haskell-ormolu
 lint-haskell-ormolu: $(LINT_HASKELL_ORMOLU_FILES)

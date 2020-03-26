@@ -1,14 +1,60 @@
 load(
+    "@bazel_skylib//rules:native_binary.bzl",
+    "native_test",
+)
+
+load(
     "@rules_haskell//haskell:defs.bzl",
     "haskell_binary",
     "haskell_library",
     "haskell_test",
+    "haskell_toolchain_library",
+)
+
+purty_srcs = [
+    "lib/Annotation.hs",
+    "lib/Args.hs",
+    "lib/Error.hs",
+    "lib/Format.hs",
+    "lib/Log.hs",
+    "lib/Purty.hs",
+    "lib/SourceRange.hs",
+    "lib/Span.hs",
+    "lib/Version.hs",
+]
+
+purty_binary_srcs = [
+    "src/Main.hs",
+]
+
+purty_golden_srcs = [
+    "test/golden/Main.hs",
+]
+
+haskell_srcs = (
+    purty_binary_srcs +
+    purty_golden_srcs +
+    purty_srcs
 )
 
 config_setting(
     name = "linux",
     constraint_values = [
-        "@bazel_tools//platforms:linux",
+        "@platforms//os:linux",
+    ],
+)
+
+config_setting(
+    name = "macos",
+    constraint_values = [
+        "@platforms//os:macos",
+    ],
+)
+
+config_setting(
+    name = "windows",
+    constraint_values = [
+        "@platforms//os:windows",
     ],
 )
 
@@ -36,13 +82,11 @@ haskell_binary(
         ],
     }),
     deps = [
-        "@stackage//:base",
+        ":base",
         ":purty",
     ],
     name = "purty-binary",
-    srcs = [
-        "src/Main.hs",
-    ],
+    srcs = purty_binary_srcs,
 )
 
 haskell_library(
@@ -56,8 +100,8 @@ haskell_library(
         "-Wredundant-constraints",
     ],
     deps = [
-        "@stackage//:base",
-        "@stackage//:bytestring",
+        ":base",
+        ":bytestring",
         "@stackage//:componentm",
         "@stackage//:file-embed",
         "@stackage//:optparse-applicative",
@@ -70,17 +114,7 @@ haskell_library(
     ],
     name = "purty",
     src_strip_prefix = "lib",
-    srcs = [
-        "lib/Annotation.hs",
-        "lib/Args.hs",
-        "lib/Error.hs",
-        "lib/Format.hs",
-        "lib/Log.hs",
-        "lib/Purty.hs",
-        "lib/SourceRange.hs",
-        "lib/Span.hs",
-        "lib/Version.hs",
-    ],
+    srcs = purty_srcs,
 )
 
 haskell_test(
@@ -89,9 +123,9 @@ haskell_test(
         "test/golden/files/original/*.purs",
     ]),
     deps = [
+        ":bytestring",
         ":purty",
         "@rules_haskell//tools/runfiles:runfiles",
-        "@stackage//:bytestring",
         "@stackage//:componentm",
         "@stackage//:rio",
         "@stackage//:tasty",
@@ -100,10 +134,42 @@ haskell_test(
     ],
     name = "purty-golden",
     src_strip_prefix = "test/golden",
-    srcs = [
-        "test/golden/Main.hs",
-    ],
+    srcs = purty_golden_srcs,
 )
+
+haskell_toolchain_library(
+    name = "base",
+)
+
+haskell_toolchain_library(
+    name = "bytestring",
+)
+
+[
+    native_test(
+        args = [
+            "$(location {haskell_src})".format(
+                haskell_src = haskell_src,
+            ),
+        ],
+        data = [
+            ".hlint.yaml",
+            "//tools/hlint:hlint",
+            haskell_src,
+        ],
+        name = "lint-hlint-{haskell_src}".format(
+            haskell_src = haskell_src,
+        ),
+        out = "lint-hlint-{haskell_src}".format(
+            haskell_src = haskell_src,
+        ),
+        src = "//tools/hlint:hlint",
+        tags = [
+            "hlint",
+            "lint",
+        ],
+    ) for haskell_src in haskell_srcs
+]
 
 sh_test(
     args = [
@@ -123,5 +189,20 @@ sh_test(
     tags = [
         "coverage_requires_jvm",
         "test_requires_bash",
+    ],
+)
+
+test_suite(
+    name = "lint",
+    tags = [
+        "lint",
+    ],
+)
+
+test_suite(
+    name = "lint-hlint",
+    tags = [
+        "hlint",
+        "lint",
     ],
 )
