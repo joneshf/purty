@@ -4,12 +4,9 @@ cache:
   key: purty-v1
   paths:
     - ${CI_PROJECT_DIR}/.bazel-cache
-    - .stack-root
-    - .stack-work
 
 variables:
   LC_ALL: C.UTF-8
-  STACK_ROOT: $CI_PROJECT_DIR/.stack-root
 
 stages:
   - build
@@ -17,10 +14,6 @@ stages:
 Build purty:
   before_script:
     - make bootstrap
-    - mkdir --parents $HOME/.local/bin
-    - export PATH=$HOME/.local/bin:$PATH
-    - ci/install-stack.sh --verbose
-    - stack setup
   script:
     - .build/bazel test //...
     - .build/bazel coverage --test_tag_filters -coverage_requires_jvm //...
