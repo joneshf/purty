@@ -9,35 +9,22 @@ BUILDDIR := .build
 CIDIR := ci
 CP := cp
 GIT := git
-LIB_HS := $(wildcard lib/*.hs)
 MKDIR := mkdir
 PURTY_JS := $(CURDIR)/$(BINDIR)/purty.js
 OS := linux
-SRC_HS := $(wildcard src/*.hs)
-STACK := stack
-STACKFLAGS :=
-STACK_BUILDFLAGS :=
-STACK_BUILD := $(STACK) $(STACKFLAGS) build $(STACK_BUILDFLAGS)
-TEST_GOLDEN_HS := $(wildcard test/golden/*.hs)
 VERSIONDIR := version
 VERSION_BAZEL := 2.2.0
 VERSION_DHALL_HASKELL := 1.30.0
 VERSION_DHALL_TO_JSON := 1.6.2
 VERSION_PURTY :=
 
-ALL_HASKELL_FILES := Setup.hs $(LIB_HS) $(SRC_HS) $(TEST_GOLDEN_HS)
 BINTRAY_DHALL := $(CIDIR)/bintray.dhall
 BINTRAY_JSON := $(BUILDDIR)/$(OS)/bintray.json
 CONFIGURED_BINTRAY_DHALL := $(BUILDDIR)/$(OS)/bintray-configured.dhall
 CONFIGURED_PACKAGE_DHALL := $(BUILDDIR)/package-configured.dhall
 DHALL_TO_JSON := $(BUILDDIR)/$(OS)/dhall-to-json
 DHALL_TO_JSON_TAR := $(BUILDDIR)/$(OS)/dhall-json-$(VERSION_DHALL_TO_JSON).tar.bz2
-FORMATDIR := $(BUILDDIR)/format
-FORMAT_HASKELL_FILES := $(addprefix $(FORMATDIR)/,$(ALL_HASKELL_FILES))
-LINTDIR_ORMOLU := $(BUILDDIR)/lint/ormolu
-LINT_HASKELL_ORMOLU_FILES := $(addprefix $(LINTDIR_ORMOLU)/,$(ALL_HASKELL_FILES))
 NPM_PACKAGE_DHALL := $(CIDIR)/npm/package.dhall
-ORMOLU := $(BUILDDIR)/ormolu
 PACKAGE_JSON := package.json
 PURTY_TAR := $(BUILDDIR)/$(OS)/purty-$(VERSION_PURTY).tar.gz
 PURTY_TAR_UPLOADED_FILENAME := purty-$(VERSION_PURTY)-$(OS).tar.gz
@@ -114,21 +101,6 @@ $(DHALL_TO_JSON): $(DHALL_TO_JSON_TAR) | $(BUILDDIR)/$(OS)
 	@tar --extract --file $< --directory $(dir $@) --bzip2 --strip-components $(DHALL_TO_JSON_ARCHIVE_STRIP) $(DHALL_TO_JSON_ARCHIVE_FILE)
 	@touch $@
 
-$(FORMAT_HASKELL_FILES): $(FORMATDIR)/%: % $(ORMOLU)
-	$(info Formatting $*)
-	@$(ORMOLU) --mode inplace $*
-	@mkdir -p $(basename $@)
-	@touch $@
-
-$(LINT_HASKELL_ORMOLU_FILES): $(LINTDIR_ORMOLU)/%: % $(ORMOLU)
-	$(info Linting $* with ormolu)
-	@$(ORMOLU) --mode check $* || (echo $* is not formatted properly. Please run 'make format'.; exit 1)
-	@mkdir -p $(basename $@)
-	@touch $@
-
-$(ORMOLU): stack.yaml
-	$(STACK_BUILD) --copy-bins --local-bin-path $(BUILDDIR) ormolu
-
 $(PACKAGE_JSON): $(CONFIGURED_PACKAGE_DHALL) $(DHALL_TO_JSON)
 	$(info Generating $@ file)
 	@$(DHALL_TO_JSON) --file $< --output $@
@@ -160,7 +132,8 @@ clean:
 format: format-haskell
 
 .PHONY: format-haskell
-format-haskell: $(FORMAT_HASKELL_FILES)
+format-haskell: $(BAZEL)
+	$(BAZEL) run //:format-ormolu
 
 .PHONY: lint
 lint: lint-haskell
@@ -173,7 +146,8 @@ lint-haskell-hlint: $(BAZEL)
 	$(BAZEL) test //:lint-hlint
 
 .PHONY: lint-haskell-ormolu
-lint-haskell-ormolu: $(LINT_HASKELL_ORMOLU_FILES)
+lint-haskell-ormolu: $(BAZEL)
+	$(BAZEL) test //:lint-ormolu
 
 .PHONY: npm-publish
 npm-publish: $(PACKAGE_JSON)
