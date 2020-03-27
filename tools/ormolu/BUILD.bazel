@@ -1,0 +1,17 @@
+alias(
+    actual = "@ormolu//:ormolu",
+    name = "ormolu",
+    tags = [
+        "ormolu",
+    ],
+    visibility = [
+        "//:__pkg__",
+    ],
+)
+
+exports_files([
+    "format.sh",
+], visibility = [
+    "//:__pkg__",
+],
+)

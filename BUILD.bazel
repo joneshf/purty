@@ -11,6 +11,12 @@ load(
     "hlint_test",
 )
 
+load(
+    "//tools/ormolu:ormolu.bzl",
+    "ormolu_format",
+    "ormolu_test",
+)
+
 purty_srcs = [
     "lib/Annotation.hs",
     "lib/Args.hs",
@@ -149,6 +155,15 @@ hlint_test(
     srcs = haskell_srcs,
 )
 
+ormolu_format(
+    name = "format-ormolu",
+    srcs = haskell_srcs,
+)
+
+ormolu_test(
+    srcs = haskell_srcs,
+)
+
 sh_test(
     args = [
         "--purty $(location :purty-binary)",
@@ -181,6 +196,14 @@ test_suite(
     name = "lint-hlint",
     tags = [
         "hlint",
+        "lint",
+    ],
+)
+
+test_suite(
+    name = "lint-ormolu",
+    tags = [
+        "ormolu",
         "lint",
     ],
 )
