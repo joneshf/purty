@@ -125,7 +125,7 @@ clean:
 	$(info Removing $(BUILDDIR))
 	@rm -fr $(BUILDDIR)
 	$(info Removing $(PACKAGE_JSON))
-	@rm $(PACKAGE_JSON)
+	@rm -f $(PACKAGE_JSON)
 	@$(GIT) clean -X --force $(BINDIR)/*
 
 .PHONY: format
