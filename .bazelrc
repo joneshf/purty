@@ -1,4 +1,5 @@
 build --disk_cache=.bazel-cache/action
+build --repository_cache=.bazel-cache/repository
 
 build:appveyor --crosstool_top=@rules_haskell_ghc_windows_amd64//:cc_toolchain
 
