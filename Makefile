@@ -16,6 +16,7 @@ VERSIONDIR := version
 VERSION_BAZEL := 2.2.0
 VERSION_DHALL_HASKELL := 1.30.0
 VERSION_DHALL_TO_JSON := 1.6.2
+VERSION_IBAZEL := 0.12.3
 VERSION_PURTY :=
 
 BINTRAY_DHALL := $(CIDIR)/bintray.dhall
@@ -36,6 +37,7 @@ BINARY := purty
 DHALL_TO_JSON_ARCHIVE_FILE := ./bin/dhall-to-json
 DHALL_TO_JSON_ARCHIVE_STRIP := 2
 DHALL_TO_JSON_URI := https://github.com/dhall-lang/dhall-haskell/releases/download/$(VERSION_DHALL_HASKELL)/dhall-json-$(VERSION_DHALL_TO_JSON)-x86_64-linux.tar.bz2
+IBAZEL := $(BUILDDIR)/ibazel
 PURTY_BINARY := purty-binary
 else ifeq ($(OS),osx)
 BAZEL := $(BUILDDIR)/bazel
@@ -43,10 +45,12 @@ BINARY := purty
 DHALL_TO_JSON_ARCHIVE_FILE := bin/dhall-to-json
 DHALL_TO_JSON_ARCHIVE_STRIP := 1
 DHALL_TO_JSON_URI := https://github.com/dhall-lang/dhall-haskell/releases/download/$(VERSION_DHALL_HASKELL)/dhall-json-$(VERSION_DHALL_TO_JSON)-x86_64-macos.tar.bz2
+IBAZEL := $(BUILDDIR)/ibazel
 PURTY_BINARY := purty-binary
 else ifeq ($(OS),windows)
 BAZEL := $(BUILDDIR)/bazel.exe
 BINARY := purty.exe
+IBAZEL := $(BUILDDIR)/ibazel.exe
 PURTY_BINARY := purty-binary.exe
 endif
 
@@ -101,6 +105,20 @@ $(DHALL_TO_JSON): $(DHALL_TO_JSON_TAR) | $(BUILDDIR)/$(OS)
 	@tar --extract --file $< --directory $(dir $@) --bzip2 --strip-components $(DHALL_TO_JSON_ARCHIVE_STRIP) $(DHALL_TO_JSON_ARCHIVE_FILE)
 	@touch $@
 
+$(IBAZEL): | $(BUILDDIR)
+	$(info Downloading ibazel binary)
+ifeq ($(OS),linux)
+	curl --location --output $@ https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_linux_amd64
+	@chmod 0755 $@
+else ifeq ($(OS),osx)
+	curl --location --output $@ https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_darwin_amd64
+	@chmod 0755 $@
+else ifeq ($(OS),windows)
+	curl --location --output $@ https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_windows_amd64.exe
+endif
+	@touch $@
+	$(IBAZEL) version
+
 $(PACKAGE_JSON): $(CONFIGURED_PACKAGE_DHALL) $(DHALL_TO_JSON)
 	$(info Generating $@ file)
 	@$(DHALL_TO_JSON) --file $< --output $@
@@ -118,14 +136,14 @@ $(RELEASE_DATE): | $(BUILDDIR)
 bintray-artifacts: $(BINTRAY_JSON) $(PURTY_TAR)
 
 .PHONY: bootstrap
-bootstrap: $(BAZEL)
+bootstrap: $(BAZEL) $(IBAZEL)
 
 .PHONY: clean
 clean:
 	$(info Removing $(BUILDDIR))
 	@rm -fr $(BUILDDIR)
 	$(info Removing $(PACKAGE_JSON))
-	@rm $(PACKAGE_JSON)
+	@rm -f $(PACKAGE_JSON)
 	@$(GIT) clean -X --force $(BINDIR)/*
 
 .PHONY: format
@@ -173,3 +191,7 @@ test-acceptance-npm: $(ACCEPTANCE_SCRIPT) $(BINDIR)/$(OS)/$(BINARY) $(PURTY_JS)
 .PHONY: test-golden
 test-golden: $(BAZEL)
 	$(BAZEL) test //:purty-golden
+
+.PHONY: watch
+watch: $(IBAZEL)
+	$(IBAZEL) test //...
