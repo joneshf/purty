@@ -11,8 +11,6 @@ load(
 
 # Archives and repositories
 
-hlint_version = "2.2.11"
-
 http_archive(
     name = "bazel_skylib",
     sha256 = "97e70364e9249702246c0e9444bccdc4b847bed1eb03c5a3ece4f83dfe6abc44",
@@ -23,74 +21,12 @@ http_archive(
 )
 
 http_archive(
-    build_file = "//tools/alex:alex.BUILD",
-    name = "alex",
-    sha256 = "d58e4d708b14ff332a8a8edad4fa8989cb6a9f518a7c6834e96281ac5f8ff232",
-    strip_prefix = "alex-3.2.4",
-    urls = [
-        "https://hackage.haskell.org/package/alex-3.2.4/alex-3.2.4.tar.gz",
-    ],
-)
-
-http_archive(
     build_file = "//tools/happy:happy.BUILD",
     name = "happy",
     sha256 = "3e81a3e813acca3aae52721c412cde18b7b7c71ecbacfaeaa5c2f4b35abf1d8d",
     strip_prefix = "happy-1.19.9",
     urls = [
         "https://hackage.haskell.org/package/happy-1.19.9/happy-1.19.9.tar.gz",
-    ],
-)
-
-http_archive(
-    build_file = "//tools/hlint:linux.BUILD",
-    name = "hlint_linux",
-    sha256 = "21ccdd7a79b20cfad4b690296e0f30b4439efb1b47a8ee4281c89be0303bd76b",
-    strip_prefix = "hlint-{hlint_version}".format(
-        hlint_version = hlint_version,
-    ),
-    urls = [
-        "https://github.com/ndmitchell/hlint/releases/download/v{hlint_version}/hlint-{hlint_version}-x86_64-linux.tar.gz".format(
-            hlint_version = hlint_version,
-        ),
-    ],
-)
-
-http_archive(
-    build_file = "//tools/hlint:macos.BUILD",
-    name = "hlint_macos",
-    sha256 = "24ee6c423bf7fa491c7451b5881a3d9f2ca276c8808a5c42c0506be0842e0823",
-    strip_prefix = "hlint-{hlint_version}".format(
-        hlint_version = hlint_version,
-    ),
-    urls = [
-         "https://github.com/ndmitchell/hlint/releases/download/v{hlint_version}/hlint-{hlint_version}-x86_64-osx.tar.gz".format(
-             hlint_version = hlint_version,
-         ),
-    ],
-)
-
-http_archive(
-    build_file = "//tools/hlint:windows.BUILD",
-    name = "hlint_windows",
-    sha256 = "3f71983ef0c89d40f1e3cab2f4a61b44626ba60babdf3f16101c18c71fb0cf6e",
-    strip_prefix = "hlint-{hlint_version}".format(
-        hlint_version = hlint_version,
-    ),
-    urls = [
-        "https://github.com/ndmitchell/hlint/releases/download/v{hlint_version}/hlint-{hlint_version}-x86_64-windows.zip".format(
-            hlint_version = hlint_version,
-        ),
-    ],
-)
-
-http_archive(
-    build_file = "//tools/ormolu:ormolu.BUILD",
-    name = "ormolu",
-    sha256 = "8fb635d49812aac4b50a5dc04fbf07a3d6e586825a04606d6b2e81d817d7765f",
-    strip_prefix = "ormolu-0.0.3.1",
-    urls = [
-        "https://hackage.haskell.org/package/ormolu-0.0.3.1/ormolu-0.0.3.1.tar.gz",
     ],
 )
 
@@ -119,11 +55,25 @@ load(
 bazel_skylib_workspace()
 
 load(
+    "//tools/hlint:deps.bzl",
+    "hlint_dependencies",
+)
+
+hlint_dependencies()
+
+load(
     "@rules_haskell//haskell:repositories.bzl",
     "rules_haskell_dependencies",
 )
 
 rules_haskell_dependencies()
+
+load(
+    "//tools/ormolu:deps.bzl",
+    "ormolu_dependencies",
+)
+
+ormolu_dependencies()
 
 # Toolchains
 
