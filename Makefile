@@ -1,8 +1,6 @@
 .SUFFIXES:
 Makefile:;
 
-ACCEPTANCE_SCRIPT := test/acceptance.sh
-ACCEPTANCE_SCRIPTFLAGS := --verbose
 BAZEL_BINDIR := bazel-bin
 BINDIR := bin
 BUILDDIR := .build
@@ -10,7 +8,6 @@ CIDIR := ci
 CP := cp
 GIT := git
 MKDIR := mkdir
-PURTY_JS := $(CURDIR)/$(BINDIR)/purty.js
 OS := linux
 VERSIONDIR := version
 VERSION_BAZEL := 2.2.0
@@ -184,9 +181,9 @@ test-acceptance-binary: $(BAZEL)
 	$(BAZEL) test //:test-acceptance-binary
 
 .PHONY: test-acceptance-npm
-test-acceptance-npm: $(ACCEPTANCE_SCRIPT) $(BINDIR)/$(OS)/$(BINARY) $(PURTY_JS)
+test-acceptance-npm: $(BAZEL)
 	$(info Testing npm interface)
-	$(ACCEPTANCE_SCRIPT) $(ACCEPTANCE_SCRIPTFLAGS) --purty $(PURTY_JS)
+	$(BAZEL) test //:test-acceptance-npm
 
 .PHONY: test-golden
 test-golden: $(BAZEL)
