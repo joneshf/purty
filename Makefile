@@ -151,18 +151,8 @@ format-haskell: $(BAZEL)
 	$(BAZEL) run //:format-ormolu
 
 .PHONY: lint
-lint: lint-haskell
-
-.PHONY: lint-haskell
-lint-haskell: lint-haskell-hlint lint-haskell-ormolu
-
-.PHONY: lint-haskell-hlint
-lint-haskell-hlint: $(BAZEL)
-	$(BAZEL) test //:lint-hlint
-
-.PHONY: lint-haskell-ormolu
-lint-haskell-ormolu: $(BAZEL)
-	$(BAZEL) test //:lint-ormolu
+lint: $(BAZEL)
+	$(BAZEL) test //:lint
 
 .PHONY: npm-publish
 npm-publish: $(PACKAGE_JSON)
@@ -170,24 +160,8 @@ npm-publish: $(PACKAGE_JSON)
 	npm publish
 
 .PHONY: test
-test: test-acceptance test-golden
-
-.PHONY: test-acceptance
-test-acceptance: test-acceptance-binary test-acceptance-npm
-
-.PHONY: test-acceptance-binary
-test-acceptance-binary: $(BAZEL)
-	$(info Testing binary interface)
-	$(BAZEL) test //:test-acceptance-binary
-
-.PHONY: test-acceptance-npm
-test-acceptance-npm: $(BAZEL)
-	$(info Testing npm interface)
-	$(BAZEL) test //:test-acceptance-npm
-
-.PHONY: test-golden
-test-golden: $(BAZEL)
-	$(BAZEL) test //:purty-golden
+test: $(BAZEL)
+	$(BAZEL) test //...
 
 .PHONY: watch
 watch: $(IBAZEL)
