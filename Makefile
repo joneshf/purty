@@ -123,9 +123,9 @@ $(PACKAGE_JSON): $(CONFIGURED_PACKAGE_DHALL) $(DHALL_TO_JSON)
 	$(info Generating $@ file)
 	@$(DHALL_TO_JSON) --file $< --output $@
 
-$(PURTY_TAR): $(BINDIR)/$(OS)/purty | $(BUILDDIR)/$(OS)
+$(PURTY_TAR): $(BINDIR)/$(OS)/$(BINARY) | $(BUILDDIR)/$(OS)
 	$(info Creating $@ tarball)
-	@tar --create --file $@ --directory $(BINDIR)/$(OS) --gzip purty
+	@tar --create --file $@ --directory $(BINDIR)/$(OS) --gzip $(BINARY)
 
 .PHONY: $(RELEASE_DATE)
 $(RELEASE_DATE): | $(BUILDDIR)
