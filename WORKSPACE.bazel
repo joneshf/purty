@@ -21,6 +21,14 @@ http_archive(
 )
 
 http_archive(
+    name = "build_bazel_rules_nodejs",
+    sha256 = "d0c4bb8b902c1658f42eb5563809c70a06e46015d64057d25560b0eb4bdc9007",
+    urls = [
+        "https://github.com/bazelbuild/rules_nodejs/releases/download/1.5.0/rules_nodejs-1.5.0.tar.gz",
+    ],
+)
+
+http_archive(
     build_file = "//tools/happy:happy.BUILD",
     name = "happy",
     sha256 = "3e81a3e813acca3aae52721c412cde18b7b7c71ecbacfaeaa5c2f4b35abf1d8d",
@@ -53,6 +61,13 @@ load(
 )
 
 bazel_skylib_workspace()
+
+load(
+    "@build_bazel_rules_nodejs//:index.bzl",
+    "node_repositories",
+)
+
+node_repositories()
 
 load(
     "//tools/hlint:deps.bzl",
