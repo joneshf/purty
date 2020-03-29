@@ -1,8 +1,6 @@
 .SUFFIXES:
 Makefile:;
 
-ACCEPTANCE_SCRIPT := test/acceptance.sh
-ACCEPTANCE_SCRIPTFLAGS := --verbose
 BAZEL_BINDIR := bazel-bin
 BINDIR := bin
 BUILDDIR := .build
@@ -10,7 +8,6 @@ CIDIR := ci
 CP := cp
 GIT := git
 MKDIR := mkdir
-PURTY_JS := $(CURDIR)/$(BINDIR)/purty.js
 OS := linux
 VERSIONDIR := version
 VERSION_BAZEL := 2.2.0
@@ -123,9 +120,9 @@ $(PACKAGE_JSON): $(CONFIGURED_PACKAGE_DHALL) $(DHALL_TO_JSON)
 	$(info Generating $@ file)
 	@$(DHALL_TO_JSON) --file $< --output $@
 
-$(PURTY_TAR): $(BINDIR)/$(OS)/purty | $(BUILDDIR)/$(OS)
+$(PURTY_TAR): $(BINDIR)/$(OS)/$(BINARY) | $(BUILDDIR)/$(OS)
 	$(info Creating $@ tarball)
-	@tar --create --file $@ --directory $(BINDIR)/$(OS) --gzip purty
+	@tar --create --file $@ --directory $(BINDIR)/$(OS) --gzip $(BINARY)
 
 .PHONY: $(RELEASE_DATE)
 $(RELEASE_DATE): | $(BUILDDIR)
@@ -154,18 +151,8 @@ format-haskell: $(BAZEL)
 	$(BAZEL) run //:format-ormolu
 
 .PHONY: lint
-lint: lint-haskell
-
-.PHONY: lint-haskell
-lint-haskell: lint-haskell-hlint lint-haskell-ormolu
-
-.PHONY: lint-haskell-hlint
-lint-haskell-hlint: $(BAZEL)
-	$(BAZEL) test //:lint-hlint
-
-.PHONY: lint-haskell-ormolu
-lint-haskell-ormolu: $(BAZEL)
-	$(BAZEL) test //:lint-ormolu
+lint: $(BAZEL)
+	$(BAZEL) test //:lint
 
 .PHONY: npm-publish
 npm-publish: $(PACKAGE_JSON)
@@ -173,24 +160,8 @@ npm-publish: $(PACKAGE_JSON)
 	npm publish
 
 .PHONY: test
-test: test-acceptance test-golden
-
-.PHONY: test-acceptance
-test-acceptance: test-acceptance-binary test-acceptance-npm
-
-.PHONY: test-acceptance-binary
-test-acceptance-binary: $(BAZEL)
-	$(info Testing binary interface)
-	$(BAZEL) test //:test-acceptance-binary
-
-.PHONY: test-acceptance-npm
-test-acceptance-npm: $(ACCEPTANCE_SCRIPT) $(BINDIR)/$(OS)/$(BINARY) $(PURTY_JS)
-	$(info Testing npm interface)
-	$(ACCEPTANCE_SCRIPT) $(ACCEPTANCE_SCRIPTFLAGS) --purty $(PURTY_JS)
-
-.PHONY: test-golden
-test-golden: $(BAZEL)
-	$(BAZEL) test //:purty-golden
+test: $(BAZEL)
+	$(BAZEL) test //...
 
 .PHONY: watch
 watch: $(IBAZEL)

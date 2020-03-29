@@ -17,7 +17,7 @@ def hlint_test(srcs):
         location = "$(location {src})".format(
             src = src,
         )
-        name = "lint-hlint-{src}".format(
+        name = "lint-hlint/{src}".format(
             src = src,
         )
 

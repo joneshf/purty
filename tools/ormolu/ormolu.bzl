@@ -47,7 +47,7 @@ def ormolu_test(srcs):
         location = "$(location {src})".format(
             src = src,
         )
-        name = "lint-ormolu-{src}".format(
+        name = "lint-ormolu/{src}".format(
             src = src,
         )
 

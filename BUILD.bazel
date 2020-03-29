@@ -1,4 +1,14 @@
 load(
+    "@bazel_skylib//rules:copy_file.bzl",
+    "copy_file",
+)
+
+load(
+    "@build_bazel_rules_nodejs//:index.bzl",
+    "nodejs_binary",
+)
+
+load(
     "@rules_haskell//haskell:defs.bzl",
     "haskell_binary",
     "haskell_library",
@@ -43,6 +53,17 @@ haskell_srcs = (
     purty_srcs
 )
 
+alias(
+    actual = select({
+        ":linux": "linux-specific-purty",
+        ":macos": "macos-specific-purty",
+        ":windows": "windows-specific-purty",
+    },
+        no_match_error = "No purty binary available for this platform",
+    ),
+    name = "platform-specific-purty",
+)
+
 config_setting(
     name = "linux",
     constraint_values = [
@@ -62,6 +83,27 @@ config_setting(
     constraint_values = [
         "@platforms//os:windows",
     ],
+)
+
+copy_file(
+    is_executable = True,
+    name = "linux-specific-purty",
+    out = "bin/linux/purty",
+    src = ":purty-binary",
+)
+
+copy_file(
+    is_executable = True,
+    name = "macos-specific-purty",
+    out = "bin/osx/purty",
+    src = ":purty-binary",
+)
+
+copy_file(
+    is_executable = True,
+    name = "windows-specific-purty",
+    out = "bin/win/purty",
+    src = ":purty-binary",
 )
 
 haskell_binary(
@@ -155,6 +197,11 @@ hlint_test(
     srcs = haskell_srcs,
 )
 
+nodejs_binary(
+    entry_point = "bin/purty.js",
+    name = "purty.js",
+)
+
 ormolu_format(
     name = "format-ormolu",
     srcs = haskell_srcs,
@@ -176,6 +223,28 @@ sh_test(
         "version/purty",
     ],
     name = "test-acceptance-binary",
+    srcs = [
+        "test/acceptance.sh",
+    ],
+    tags = [
+        "coverage_requires_jvm",
+        "test_requires_bash",
+    ],
+)
+
+sh_test(
+    args = [
+        "--purty $(location :purty.js)",
+        "--verbose",
+    ],
+    data = glob([
+        "test/acceptance/**/*",
+    ]) + [
+        ":platform-specific-purty",
+        ":purty.js",
+        "version/purty",
+    ],
+    name = "test-acceptance-npm",
     srcs = [
         "test/acceptance.sh",
     ],
