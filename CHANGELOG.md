@@ -8,6 +8,19 @@
 
 ### Deletions
 
+## 6.1.1
+
+Another small release.
+This should all be internal project changes related to using `bazel` as the bulk of the build system.
+
+### Additions
+
+### Changes
+
+* [Use bazel for majority of the build system](https://gitlab.com/joneshf/purty/issues/164)
+
+### Deletions
+
 ## 6.1.0
 
 This is a small release to fix an oddity of formatting.
