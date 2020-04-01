@@ -1,11 +1,9 @@
 before_deploy:
-  - 7z a -so -ttar purty-%APPVEYOR_REPO_TAG_NAME%-win.tar .\bin\purty.exe | 7z a -si purty-%APPVEYOR_REPO_TAG_NAME%-win.tar.gz
-  - appveyor PushArtifact purty-%APPVEYOR_REPO_TAG_NAME%-win.tar.gz
+  - appveyor PushArtifact bazel-bin\purty-%APPVEYOR_REPO_TAG_NAME%-win.tar.gz
 
 build_script:
   - ps: Set-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name LongPathsEnabled -Value 1
   - .build\bazel.exe test --config appveyor //...
-  - make bin/purty.exe OS=windows
 
 cache:
   - '%APPVEYOR_BUILD_FOLDER%\.bazel-cache'

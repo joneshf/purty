@@ -24,31 +24,25 @@ DHALL_TO_JSON := $(BUILDDIR)/$(OS)/dhall-to-json
 DHALL_TO_JSON_TAR := $(BUILDDIR)/$(OS)/dhall-json-$(VERSION_DHALL_TO_JSON).tar.bz2
 NPM_PACKAGE_DHALL := $(CIDIR)/npm/package.dhall
 PACKAGE_JSON := package.json
-PURTY_TAR := $(BUILDDIR)/$(OS)/purty-$(VERSION_PURTY).tar.gz
+PURTY_TAR := $(BAZEL_BINDIR)/purty-$(VERSION_PURTY)-$(OS).tar.gz
 PURTY_TAR_UPLOADED_FILENAME := purty-$(VERSION_PURTY)-$(OS).tar.gz
 RELEASE_DATE := $(BUILDDIR)/release-date
 
 ifeq ($(OS),linux)
 BAZEL := $(BUILDDIR)/bazel
-BINARY := purty
 DHALL_TO_JSON_ARCHIVE_FILE := ./bin/dhall-to-json
 DHALL_TO_JSON_ARCHIVE_STRIP := 2
 DHALL_TO_JSON_URI := https://github.com/dhall-lang/dhall-haskell/releases/download/$(VERSION_DHALL_HASKELL)/dhall-json-$(VERSION_DHALL_TO_JSON)-x86_64-linux.tar.bz2
 IBAZEL := $(BUILDDIR)/ibazel
-PURTY_BINARY := purty-binary
 else ifeq ($(OS),osx)
 BAZEL := $(BUILDDIR)/bazel
-BINARY := purty
 DHALL_TO_JSON_ARCHIVE_FILE := bin/dhall-to-json
 DHALL_TO_JSON_ARCHIVE_STRIP := 1
 DHALL_TO_JSON_URI := https://github.com/dhall-lang/dhall-haskell/releases/download/$(VERSION_DHALL_HASKELL)/dhall-json-$(VERSION_DHALL_TO_JSON)-x86_64-macos.tar.bz2
 IBAZEL := $(BUILDDIR)/ibazel
-PURTY_BINARY := purty-binary
 else ifeq ($(OS),windows)
 BAZEL := $(BUILDDIR)/bazel.exe
-BINARY := purty.exe
 IBAZEL := $(BUILDDIR)/ibazel.exe
-PURTY_BINARY := purty-binary.exe
 endif
 
 .DEFAULT_GOAL := bootstrap
@@ -67,22 +61,8 @@ endif
 	@touch $@
 	$(BAZEL) version
 
-$(BAZEL_BINDIR)/$(PURTY_BINARY): $(BAZEL)
-	$(BAZEL) build //:purty-binary
-
-$(BINDIR)/$(BINARY): $(BAZEL_BINDIR)/$(PURTY_BINARY)
-	@$(CP) $< $@
-ifeq ($(OS),linux)
-	@chmod 0755 $@
-else ifeq ($(OS),osx)
-	@chmod 0755 $@
-endif
-
-$(BINDIR)/$(OS) $(BUILDDIR) $(BUILDDIR)/$(OS):
+$(BUILDDIR) $(BUILDDIR)/$(OS):
 	@$(MKDIR) -p $@
-
-$(BINDIR)/$(OS)/$(BINARY): $(BINDIR)/$(BINARY) | $(BINDIR)/$(OS)
-	@$(CP) $< $@
 
 $(BINTRAY_JSON): $(CONFIGURED_BINTRAY_DHALL) $(DHALL_TO_JSON) | $(BUILDDIR)/$(OS)
 	$(info Generating $@ file)
@@ -120,9 +100,8 @@ $(PACKAGE_JSON): $(CONFIGURED_PACKAGE_DHALL) $(DHALL_TO_JSON)
 	$(info Generating $@ file)
 	@$(DHALL_TO_JSON) --file $< --output $@
 
-$(PURTY_TAR): $(BINDIR)/$(OS)/$(BINARY) | $(BUILDDIR)/$(OS)
-	$(info Creating $@ tarball)
-	@tar --create --file $@ --directory $(BINDIR)/$(OS) --gzip $(BINARY)
+$(PURTY_TAR): $(BAZEL)
+	$(BAZEL) build //:purty-tar
 
 .PHONY: $(RELEASE_DATE)
 $(RELEASE_DATE): | $(BUILDDIR)
