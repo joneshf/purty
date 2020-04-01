@@ -4,6 +4,11 @@ load(
 )
 
 load(
+    "@bazel_skylib//rules:write_file.bzl",
+    "write_file",
+)
+
+load(
     "@build_bazel_rules_nodejs//:index.bzl",
     "nodejs_binary",
 )
@@ -14,6 +19,12 @@ load(
     "haskell_library",
     "haskell_test",
     "haskell_toolchain_library",
+)
+
+load(
+    "//:lib/defs.bzl",
+    "template_version",
+    "version_purty",
 )
 
 load(
@@ -127,18 +138,15 @@ haskell_library(
         ":base",
         ":bytestring",
         "@stackage//:componentm",
-        "@stackage//:file-embed",
         "@stackage//:optparse-applicative",
         "@stackage//:pathwalk",
         "@stackage//:purescript-cst",
         "@stackage//:rio",
     ],
-    extra_srcs = [
-        "version/purty",
-    ],
     name = "purty",
     src_strip_prefix = "lib",
     srcs = [
+        ":templated-Version.hs",
         "lib/Annotation.hs",
         "lib/Args.hs",
         "lib/Error.hs",
@@ -147,7 +155,6 @@ haskell_library(
         "lib/Purty.hs",
         "lib/SourceRange.hs",
         "lib/Span.hs",
-        "lib/Version.hs",
     ],
 )
 
@@ -278,6 +285,10 @@ sh_test(
     ],
 )
 
+template_version(
+    name = "templated-Version.hs",
+)
+
 test_suite(
     name = "lint",
     tags = [
@@ -299,4 +310,12 @@ test_suite(
         "ormolu",
         "lint",
     ],
+)
+
+write_file(
+    content = [
+        version_purty,
+    ],
+    name = "version_purty",
+    out = "version/purty",
 )

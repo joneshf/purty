@@ -1,5 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Version
@@ -7,8 +7,7 @@ module Version
   )
 where
 
-import qualified "file-embed" Data.FileEmbed
 import "rio" RIO
 
 version :: Builder
-version = $(Data.FileEmbed.embedStringFile "version/purty")
+version = "{{REPLACE_WITH_VERSION}}"
