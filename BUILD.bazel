@@ -17,6 +17,11 @@ load(
 )
 
 load(
+    "@rules_pkg//:pkg.bzl",
+    "pkg_tar",
+)
+
+load(
     "//:lib/defs.bzl",
     "template_version",
     "version_purty",
@@ -42,6 +47,23 @@ alias(
         no_match_error = "No purty binary available for this platform",
     ),
     name = "platform-specific-purty",
+)
+
+alias(
+    actual = select({
+        ":linux": "purty-{version}-linux".format(
+            version = version_purty,
+        ),
+        ":macos": "purty-{version}-osx".format(
+            version = version_purty,
+        ),
+        ":windows": "purty-{version}-win".format(
+            version = version_purty,
+        ),
+    },
+        no_match_error = "No purty tarball available for this platform",
+    ),
+    name = "purty-tar",
 )
 
 config_setting(
@@ -234,6 +256,47 @@ ormolu_test(
         "lib/Version.hs",
         "src/Main.hs",
         "test/golden/Main.hs",
+    ],
+)
+
+pkg_tar(
+    extension = "tar.gz",
+    mode = "0755",
+    name = "purty-{version}-linux".format(
+        version = version_purty,
+    ),
+    remap_paths = {
+        "purty-binary": "purty",
+    },
+    srcs = [
+        ":purty-binary",
+    ],
+)
+
+pkg_tar(
+    extension = "tar.gz",
+    mode = "0755",
+    name = "purty-{version}-osx".format(
+        version = version_purty,
+    ),
+    remap_paths = {
+        "purty-binary": "purty",
+    },
+    srcs = [
+        ":purty-binary",
+    ],
+)
+
+pkg_tar(
+    extension = "tar.gz",
+    name = "purty-{version}-win".format(
+        version = version_purty,
+    ),
+    remap_paths = {
+        "purty-binary.exe": "purty.exe",
+    },
+    srcs = [
+        ":purty-binary",
     ],
 )
 
