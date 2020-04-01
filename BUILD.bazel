@@ -4,11 +4,6 @@ load(
 )
 
 load(
-    "@bazel_skylib//rules:write_file.bzl",
-    "write_file",
-)
-
-load(
     "@build_bazel_rules_nodejs//:index.bzl",
     "nodejs_binary",
 )
@@ -244,6 +239,9 @@ ormolu_test(
 
 sh_test(
     args = [
+        "--expected-version {version}".format(
+            version = version_purty,
+        ),
         "--purty $(location :purty-binary)",
         "--verbose",
     ],
@@ -251,7 +249,6 @@ sh_test(
         "test/acceptance/**/*",
     ]) + [
         ":purty-binary",
-        "version/purty",
     ],
     name = "test-acceptance-binary",
     srcs = [
@@ -265,6 +262,9 @@ sh_test(
 
 sh_test(
     args = [
+        "--expected-version {version}".format(
+            version = version_purty,
+        ),
         "--purty $(location :purty.js)",
         "--verbose",
     ],
@@ -273,7 +273,6 @@ sh_test(
     ]) + [
         ":platform-specific-purty",
         ":purty.js",
-        "version/purty",
     ],
     name = "test-acceptance-npm",
     srcs = [
@@ -310,12 +309,4 @@ test_suite(
         "ormolu",
         "lint",
     ],
-)
-
-write_file(
-    content = [
-        version_purty,
-    ],
-    name = "version_purty",
-    out = "version/purty",
 )
