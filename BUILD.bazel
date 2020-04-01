@@ -27,32 +27,6 @@ load(
     "ormolu_test",
 )
 
-purty_srcs = [
-    "lib/Annotation.hs",
-    "lib/Args.hs",
-    "lib/Error.hs",
-    "lib/Format.hs",
-    "lib/Log.hs",
-    "lib/Purty.hs",
-    "lib/SourceRange.hs",
-    "lib/Span.hs",
-    "lib/Version.hs",
-]
-
-purty_binary_srcs = [
-    "src/Main.hs",
-]
-
-purty_golden_srcs = [
-    "test/golden/Main.hs",
-]
-
-haskell_srcs = (
-    purty_binary_srcs +
-    purty_golden_srcs +
-    purty_srcs
-)
-
 alias(
     actual = select({
         ":linux": "linux-specific-purty",
@@ -134,7 +108,9 @@ haskell_binary(
         ":purty",
     ],
     name = "purty-binary",
-    srcs = purty_binary_srcs,
+    srcs = [
+        "src/Main.hs",
+    ],
 )
 
 haskell_library(
@@ -162,7 +138,17 @@ haskell_library(
     ],
     name = "purty",
     src_strip_prefix = "lib",
-    srcs = purty_srcs,
+    srcs = [
+        "lib/Annotation.hs",
+        "lib/Args.hs",
+        "lib/Error.hs",
+        "lib/Format.hs",
+        "lib/Log.hs",
+        "lib/Purty.hs",
+        "lib/SourceRange.hs",
+        "lib/Span.hs",
+        "lib/Version.hs",
+    ],
 )
 
 haskell_test(
@@ -182,7 +168,9 @@ haskell_test(
     ],
     name = "purty-golden",
     src_strip_prefix = "test/golden",
-    srcs = purty_golden_srcs,
+    srcs = [
+        "test/golden/Main.hs",
+    ],
 )
 
 haskell_toolchain_library(
@@ -194,7 +182,19 @@ haskell_toolchain_library(
 )
 
 hlint_test(
-    srcs = haskell_srcs,
+    srcs = [
+        "lib/Annotation.hs",
+        "lib/Args.hs",
+        "lib/Error.hs",
+        "lib/Format.hs",
+        "lib/Log.hs",
+        "lib/Purty.hs",
+        "lib/SourceRange.hs",
+        "lib/Span.hs",
+        "lib/Version.hs",
+        "src/Main.hs",
+        "test/golden/Main.hs",
+    ],
 )
 
 nodejs_binary(
@@ -204,11 +204,35 @@ nodejs_binary(
 
 ormolu_format(
     name = "format-ormolu",
-    srcs = haskell_srcs,
+    srcs = [
+        "lib/Annotation.hs",
+        "lib/Args.hs",
+        "lib/Error.hs",
+        "lib/Format.hs",
+        "lib/Log.hs",
+        "lib/Purty.hs",
+        "lib/SourceRange.hs",
+        "lib/Span.hs",
+        "lib/Version.hs",
+        "src/Main.hs",
+        "test/golden/Main.hs",
+    ],
 )
 
 ormolu_test(
-    srcs = haskell_srcs,
+    srcs = [
+        "lib/Annotation.hs",
+        "lib/Args.hs",
+        "lib/Error.hs",
+        "lib/Format.hs",
+        "lib/Log.hs",
+        "lib/Purty.hs",
+        "lib/SourceRange.hs",
+        "lib/Span.hs",
+        "lib/Version.hs",
+        "src/Main.hs",
+        "test/golden/Main.hs",
+    ],
 )
 
 sh_test(
