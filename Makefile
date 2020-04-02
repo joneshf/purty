@@ -1,7 +1,6 @@
 .SUFFIXES:
 Makefile:;
 
-BAZEL_BINDIR := bazel-bin
 BINDIR := bin
 BUILDDIR := .build
 CIDIR := ci
@@ -16,17 +15,11 @@ VERSION_DHALL_TO_JSON := 1.6.2
 VERSION_IBAZEL := 0.12.3
 VERSION_PURTY :=
 
-BINTRAY_DHALL := $(CIDIR)/bintray.dhall
-BINTRAY_JSON := $(BUILDDIR)/$(OS)/bintray.json
-CONFIGURED_BINTRAY_DHALL := $(BUILDDIR)/$(OS)/bintray-configured.dhall
 CONFIGURED_PACKAGE_DHALL := $(BUILDDIR)/package-configured.dhall
 DHALL_TO_JSON := $(BUILDDIR)/$(OS)/dhall-to-json
 DHALL_TO_JSON_TAR := $(BUILDDIR)/$(OS)/dhall-json-$(VERSION_DHALL_TO_JSON).tar.bz2
 NPM_PACKAGE_DHALL := $(CIDIR)/npm/package.dhall
 PACKAGE_JSON := package.json
-PURTY_TAR := $(BAZEL_BINDIR)/purty-$(VERSION_PURTY)-$(OS).tar.gz
-PURTY_TAR_UPLOADED_FILENAME := purty-$(VERSION_PURTY)-$(OS).tar.gz
-RELEASE_DATE := $(BUILDDIR)/release-date
 
 ifeq ($(OS),linux)
 BAZEL := $(BUILDDIR)/bazel
@@ -64,13 +57,6 @@ endif
 $(BUILDDIR) $(BUILDDIR)/$(OS):
 	@$(MKDIR) -p $@
 
-$(BINTRAY_JSON): $(CONFIGURED_BINTRAY_DHALL) $(DHALL_TO_JSON) | $(BUILDDIR)/$(OS)
-	$(info Generating $@ file)
-	@$(DHALL_TO_JSON) --file $< --output $@
-
-$(CONFIGURED_BINTRAY_DHALL): $(BINTRAY_DHALL) $(RELEASE_DATE) $(PURTY_TAR) | $(BUILDDIR)/$(OS)
-	echo '$(CURDIR)/$< {date = "$(shell cat $(RELEASE_DATE))", tarFile = "$(PURTY_TAR)", uploadedFilename = "$(PURTY_TAR_UPLOADED_FILENAME)", version = "$(VERSION_PURTY)"}' > $@
-
 $(CONFIGURED_PACKAGE_DHALL): $(NPM_PACKAGE_DHALL) | $(BUILDDIR)
 	echo '$(CURDIR)/$< {version = "$(VERSION_PURTY)"}' > $@
 
@@ -99,17 +85,6 @@ endif
 $(PACKAGE_JSON): $(CONFIGURED_PACKAGE_DHALL) $(DHALL_TO_JSON)
 	$(info Generating $@ file)
 	@$(DHALL_TO_JSON) --file $< --output $@
-
-$(PURTY_TAR): $(BAZEL)
-	$(BAZEL) build //:purty-tar
-
-.PHONY: $(RELEASE_DATE)
-$(RELEASE_DATE): | $(BUILDDIR)
-	$(info Capturing current date)
-	@date '+%Y-%m-%d' > $@
-
-.PHONY: bintray-artifacts
-bintray-artifacts: $(BINTRAY_JSON) $(PURTY_TAR)
 
 .PHONY: bootstrap
 bootstrap: $(BAZEL) $(IBAZEL)
