@@ -22,6 +22,11 @@ load(
 )
 
 load(
+    "//:ci/travis/defs.bzl",
+    "template_bintray",
+)
+
+load(
     "//:lib/defs.bzl",
     "template_version",
     "version_purty",
@@ -345,6 +350,23 @@ sh_test(
         "coverage_requires_jvm",
         "test_requires_bash",
     ],
+)
+
+template_bintray(
+    name = "templated-bintray.json",
+    tar = ":purty-tar",
+    upload_filename = select({
+        ":linux": "purty-{version}-linux.tar.gz".format(
+            version = version_purty,
+        ),
+        ":macos": "purty-{version}-osx.tar.gz".format(
+            version = version_purty,
+        ),
+        ":windows": "purty-{version}-win.tar.gz".format(
+            version = version_purty,
+        ),
+    }),
+    version = version_purty,
 )
 
 template_version(
