@@ -3,35 +3,21 @@ Makefile:;
 
 BINDIR := bin
 BUILDDIR := .build
-CIDIR := ci
 CP := cp
 GIT := git
 MKDIR := mkdir
 OS := linux
 VERSIONDIR := version
 VERSION_BAZEL := 2.2.0
-VERSION_DHALL_HASKELL := 1.30.0
-VERSION_DHALL_TO_JSON := 1.6.2
 VERSION_IBAZEL := 0.12.3
-VERSION_PURTY :=
 
-CONFIGURED_PACKAGE_DHALL := $(BUILDDIR)/package-configured.dhall
-DHALL_TO_JSON := $(BUILDDIR)/$(OS)/dhall-to-json
-DHALL_TO_JSON_TAR := $(BUILDDIR)/$(OS)/dhall-json-$(VERSION_DHALL_TO_JSON).tar.bz2
-NPM_PACKAGE_DHALL := $(CIDIR)/npm/package.dhall
 PACKAGE_JSON := package.json
 
 ifeq ($(OS),linux)
 BAZEL := $(BUILDDIR)/bazel
-DHALL_TO_JSON_ARCHIVE_FILE := ./bin/dhall-to-json
-DHALL_TO_JSON_ARCHIVE_STRIP := 2
-DHALL_TO_JSON_URI := https://github.com/dhall-lang/dhall-haskell/releases/download/$(VERSION_DHALL_HASKELL)/dhall-json-$(VERSION_DHALL_TO_JSON)-x86_64-linux.tar.bz2
 IBAZEL := $(BUILDDIR)/ibazel
 else ifeq ($(OS),osx)
 BAZEL := $(BUILDDIR)/bazel
-DHALL_TO_JSON_ARCHIVE_FILE := bin/dhall-to-json
-DHALL_TO_JSON_ARCHIVE_STRIP := 1
-DHALL_TO_JSON_URI := https://github.com/dhall-lang/dhall-haskell/releases/download/$(VERSION_DHALL_HASKELL)/dhall-json-$(VERSION_DHALL_TO_JSON)-x86_64-macos.tar.bz2
 IBAZEL := $(BUILDDIR)/ibazel
 else ifeq ($(OS),windows)
 BAZEL := $(BUILDDIR)/bazel.exe
@@ -54,19 +40,8 @@ endif
 	@touch $@
 	$(BAZEL) version
 
-$(BUILDDIR) $(BUILDDIR)/$(OS):
+$(BUILDDIR):
 	@$(MKDIR) -p $@
-
-$(CONFIGURED_PACKAGE_DHALL): $(NPM_PACKAGE_DHALL) | $(BUILDDIR)
-	echo '$(CURDIR)/$< {version = "$(VERSION_PURTY)"}' > $@
-
-$(DHALL_TO_JSON_TAR): | $(BUILDDIR)/$(OS)
-	$(info Downloading dhall-to-json binary)
-	curl --location --output $@ $(DHALL_TO_JSON_URI)
-
-$(DHALL_TO_JSON): $(DHALL_TO_JSON_TAR) | $(BUILDDIR)/$(OS)
-	@tar --extract --file $< --directory $(dir $@) --bzip2 --strip-components $(DHALL_TO_JSON_ARCHIVE_STRIP) $(DHALL_TO_JSON_ARCHIVE_FILE)
-	@touch $@
 
 $(IBAZEL): | $(BUILDDIR)
 	$(info Downloading ibazel binary)
@@ -82,9 +57,10 @@ endif
 	@touch $@
 	$(IBAZEL) version
 
-$(PACKAGE_JSON): $(CONFIGURED_PACKAGE_DHALL) $(DHALL_TO_JSON)
+$(PACKAGE_JSON): $(BAZEL)
 	$(info Generating $@ file)
-	@$(DHALL_TO_JSON) --file $< --output $@
+	$(BAZEL) build //:package.json
+	cp $(BAZEL_BINDIR)/ci/npm/package.json $@
 
 .PHONY: bootstrap
 bootstrap: $(BAZEL) $(IBAZEL)
