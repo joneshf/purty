@@ -13,9 +13,7 @@ def _template_impl(ctx):
         ctx: analysis context.
     """
 
-    output = ctx.actions.declare_file("templated/{file}".format(
-        file = ctx.file._template.path,
-    ))
+    output = ctx.actions.declare_file(ctx.file._template.path)
 
     ctx.actions.expand_template(
         output = output,
