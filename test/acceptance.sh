@@ -13,6 +13,7 @@ readonly SCRIPT_NAME="$(basename "${THIS_SCRIPT}")"
 readonly TEMPORARY_DIR="$(mktemp --directory -t "${SCRIPT_NAME}.XXXXXXXXXX")"
 readonly LOG_FILE="$(mktemp -t "${SCRIPT_NAME}.log.XXXXXXXXXX")"
 
+EXPECTED_VERSION=''
 PURTY='../bin/purty'
 VERBOSE=''
 
@@ -36,6 +37,7 @@ emergency() { log 'EMERGENCY' "${1}" ; exit 1 ; }
 #/ Run the acceptance tests
 #/
 #/ Options:
+#/       --expected-version     version we expect the purty binary to report
 #/       --help                 display this help and exit
 #/       --purty                path to the purty binary
 #/   -V, --verbose              display logs from all levels
@@ -49,6 +51,9 @@ usage() {
 while [[ $# -gt 0 ]]; do
     option="${1}"
     case "${option}" in
+        --expected-version)
+            shift
+            EXPECTED_VERSION="${1}";;
         --help) usage;;
         --purty)
             shift
@@ -163,7 +168,7 @@ function suite_version() {
     local purty=("$@")
 
     debug 'Testing if version mode works'
-    expected_version="Purty version: $(cat version/purty)"
+    expected_version="Purty version: ${EXPECTED_VERSION}"
     actual_version=$("${purty[@]}" version)
     if [[ "${expected_version}" != "${actual_version}" ]]; then
         error "Expected: ${expected_version}"
@@ -174,7 +179,7 @@ function suite_version() {
     info 'Version mode works'
 
     debug 'Testing if version --numeric flag works'
-    expected_version=$(cat version/purty)
+    expected_version="${EXPECTED_VERSION}"
     actual_version=$("${purty[@]}" version --numeric)
     if [[ "${expected_version}" != "${actual_version}" ]]; then
         error "Expected: ${expected_version}"

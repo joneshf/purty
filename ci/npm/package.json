@@ -1,0 +1,31 @@
+{
+  "author": "Hardy Jones <jones3.hardy@gmail.com>",
+  "bin": "./bin/purty.js",
+  "bugs": {
+    "url": "https://gitlab.com/joneshf/purty/issues"
+  },
+  "description": "PureScript pretty printer",
+  "files": [
+    "bin/linux/purty",
+    "bin/osx/purty",
+    "bin/purty.js",
+    "bin/win/purty.exe"
+  ],
+  "homepage": "https://gitlab.com/joneshf/purty#README",
+  "license": "BSD-3-Clause",
+  "main": "index.js",
+  "name": "purty",
+  "os": [
+    "linux",
+    "darwin",
+    "win32"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/joneshf/purty.git"
+  },
+  "scripts": {
+    "prepack": "ci/npm/prepack.sh"
+  },
+  "version": "{{REPLACE_WITH_VERSION}}"
+}

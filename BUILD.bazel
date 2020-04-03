@@ -17,6 +17,27 @@ load(
 )
 
 load(
+    "@rules_pkg//:pkg.bzl",
+    "pkg_tar",
+)
+
+load(
+    "//:ci/npm/defs.bzl",
+    "template_package_json",
+)
+
+load(
+    "//:ci/travis/defs.bzl",
+    "template_bintray",
+)
+
+load(
+    "//:lib/defs.bzl",
+    "template_version",
+    "version_purty",
+)
+
+load(
     "//tools/hlint:hlint.bzl",
     "hlint_test",
 )
@@ -25,32 +46,6 @@ load(
     "//tools/ormolu:ormolu.bzl",
     "ormolu_format",
     "ormolu_test",
-)
-
-purty_srcs = [
-    "lib/Annotation.hs",
-    "lib/Args.hs",
-    "lib/Error.hs",
-    "lib/Format.hs",
-    "lib/Log.hs",
-    "lib/Purty.hs",
-    "lib/SourceRange.hs",
-    "lib/Span.hs",
-    "lib/Version.hs",
-]
-
-purty_binary_srcs = [
-    "src/Main.hs",
-]
-
-purty_golden_srcs = [
-    "test/golden/Main.hs",
-]
-
-haskell_srcs = (
-    purty_binary_srcs +
-    purty_golden_srcs +
-    purty_srcs
 )
 
 alias(
@@ -62,6 +57,23 @@ alias(
         no_match_error = "No purty binary available for this platform",
     ),
     name = "platform-specific-purty",
+)
+
+alias(
+    actual = select({
+        ":linux": "purty-{version}-linux".format(
+            version = version_purty,
+        ),
+        ":macos": "purty-{version}-osx".format(
+            version = version_purty,
+        ),
+        ":windows": "purty-{version}-win".format(
+            version = version_purty,
+        ),
+    },
+        no_match_error = "No purty tarball available for this platform",
+    ),
+    name = "purty-tar",
 )
 
 config_setting(
@@ -134,7 +146,9 @@ haskell_binary(
         ":purty",
     ],
     name = "purty-binary",
-    srcs = purty_binary_srcs,
+    srcs = [
+        "src/Main.hs",
+    ],
 )
 
 haskell_library(
@@ -151,18 +165,24 @@ haskell_library(
         ":base",
         ":bytestring",
         "@stackage//:componentm",
-        "@stackage//:file-embed",
         "@stackage//:optparse-applicative",
         "@stackage//:pathwalk",
         "@stackage//:purescript-cst",
         "@stackage//:rio",
     ],
-    extra_srcs = [
-        "version/purty",
-    ],
     name = "purty",
     src_strip_prefix = "lib",
-    srcs = purty_srcs,
+    srcs = [
+        ":templated-Version.hs",
+        "lib/Annotation.hs",
+        "lib/Args.hs",
+        "lib/Error.hs",
+        "lib/Format.hs",
+        "lib/Log.hs",
+        "lib/Purty.hs",
+        "lib/SourceRange.hs",
+        "lib/Span.hs",
+    ],
 )
 
 haskell_test(
@@ -182,7 +202,9 @@ haskell_test(
     ],
     name = "purty-golden",
     src_strip_prefix = "test/golden",
-    srcs = purty_golden_srcs,
+    srcs = [
+        "test/golden/Main.hs",
+    ],
 )
 
 haskell_toolchain_library(
@@ -194,7 +216,19 @@ haskell_toolchain_library(
 )
 
 hlint_test(
-    srcs = haskell_srcs,
+    srcs = [
+        "lib/Annotation.hs",
+        "lib/Args.hs",
+        "lib/Error.hs",
+        "lib/Format.hs",
+        "lib/Log.hs",
+        "lib/Purty.hs",
+        "lib/SourceRange.hs",
+        "lib/Span.hs",
+        "lib/Version.hs",
+        "src/Main.hs",
+        "test/golden/Main.hs",
+    ],
 )
 
 nodejs_binary(
@@ -204,15 +238,83 @@ nodejs_binary(
 
 ormolu_format(
     name = "format-ormolu",
-    srcs = haskell_srcs,
+    srcs = [
+        "lib/Annotation.hs",
+        "lib/Args.hs",
+        "lib/Error.hs",
+        "lib/Format.hs",
+        "lib/Log.hs",
+        "lib/Purty.hs",
+        "lib/SourceRange.hs",
+        "lib/Span.hs",
+        "lib/Version.hs",
+        "src/Main.hs",
+        "test/golden/Main.hs",
+    ],
 )
 
 ormolu_test(
-    srcs = haskell_srcs,
+    srcs = [
+        "lib/Annotation.hs",
+        "lib/Args.hs",
+        "lib/Error.hs",
+        "lib/Format.hs",
+        "lib/Log.hs",
+        "lib/Purty.hs",
+        "lib/SourceRange.hs",
+        "lib/Span.hs",
+        "lib/Version.hs",
+        "src/Main.hs",
+        "test/golden/Main.hs",
+    ],
+)
+
+pkg_tar(
+    extension = "tar.gz",
+    mode = "0755",
+    name = "purty-{version}-linux".format(
+        version = version_purty,
+    ),
+    remap_paths = {
+        "purty-binary": "purty",
+    },
+    srcs = [
+        ":purty-binary",
+    ],
+)
+
+pkg_tar(
+    extension = "tar.gz",
+    mode = "0755",
+    name = "purty-{version}-osx".format(
+        version = version_purty,
+    ),
+    remap_paths = {
+        "purty-binary": "purty",
+    },
+    srcs = [
+        ":purty-binary",
+    ],
+)
+
+pkg_tar(
+    extension = "tar.gz",
+    name = "purty-{version}-win".format(
+        version = version_purty,
+    ),
+    remap_paths = {
+        "purty-binary.exe": "purty.exe",
+    },
+    srcs = [
+        ":purty-binary",
+    ],
 )
 
 sh_test(
     args = [
+        "--expected-version {version}".format(
+            version = version_purty,
+        ),
         "--purty $(location :purty-binary)",
         "--verbose",
     ],
@@ -220,7 +322,6 @@ sh_test(
         "test/acceptance/**/*",
     ]) + [
         ":purty-binary",
-        "version/purty",
     ],
     name = "test-acceptance-binary",
     srcs = [
@@ -234,6 +335,9 @@ sh_test(
 
 sh_test(
     args = [
+        "--expected-version {version}".format(
+            version = version_purty,
+        ),
         "--purty $(location :purty.js)",
         "--verbose",
     ],
@@ -242,7 +346,6 @@ sh_test(
     ]) + [
         ":platform-specific-purty",
         ":purty.js",
-        "version/purty",
     ],
     name = "test-acceptance-npm",
     srcs = [
@@ -252,6 +355,32 @@ sh_test(
         "coverage_requires_jvm",
         "test_requires_bash",
     ],
+)
+
+template_bintray(
+    name = "templated-bintray.json",
+    tar = ":purty-tar",
+    upload_filename = select({
+        ":linux": "purty-{version}-linux.tar.gz".format(
+            version = version_purty,
+        ),
+        ":macos": "purty-{version}-osx.tar.gz".format(
+            version = version_purty,
+        ),
+        ":windows": "purty-{version}-win.tar.gz".format(
+            version = version_purty,
+        ),
+    }),
+    version = version_purty,
+)
+
+template_package_json(
+    name = "templated-package.json",
+    version = version_purty,
+)
+
+template_version(
+    name = "templated-Version.hs",
 )
 
 test_suite(

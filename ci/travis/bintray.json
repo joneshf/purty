@@ -1,0 +1,21 @@
+{
+  "files": [
+    {
+      "includePattern": "{{REPLACE_WITH_TAR}}",
+      "uploadPattern": "{{REPLACE_WITH_UPLOAD_FILENAME}}"
+    }
+  ],
+  "package": {
+    "licenses": [
+      "BSD 3-Clause"
+    ],
+    "name": "purty",
+    "repo": "generic",
+    "subject": "joneshf",
+    "vcs_url": "https://github.com/joneshf/purty.git"
+  },
+  "publish": true,
+  "version": {
+    "name": "{{REPLACE_WITH_VERSION}}"
+  }
+}
