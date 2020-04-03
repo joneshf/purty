@@ -22,6 +22,11 @@ load(
 )
 
 load(
+    "//:ci/npm/defs.bzl",
+    "template_package_json",
+)
+
+load(
     "//:ci/travis/defs.bzl",
     "template_bintray",
 )
@@ -366,6 +371,11 @@ template_bintray(
             version = version_purty,
         ),
     }),
+    version = version_purty,
+)
+
+template_package_json(
+    name = "templated-package.json",
     version = version_purty,
 )
 
