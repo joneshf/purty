@@ -3,11 +3,7 @@ Makefile:;
 
 BINDIR := bin
 BUILDDIR := .build
-CP := cp
-GIT := git
-MKDIR := mkdir
 OS := linux
-VERSIONDIR := version
 VERSION_BAZEL := 2.2.0
 VERSION_IBAZEL := 0.12.3
 
@@ -41,7 +37,7 @@ endif
 	$(BAZEL) version
 
 $(BUILDDIR):
-	@$(MKDIR) -p $@
+	@mkdir -p $@
 
 $(IBAZEL): | $(BUILDDIR)
 	$(info Downloading ibazel binary)
@@ -71,7 +67,7 @@ clean:
 	@rm -fr $(BUILDDIR)
 	$(info Removing $(PACKAGE_JSON))
 	@rm -f $(PACKAGE_JSON)
-	@$(GIT) clean -X --force $(BINDIR)/*
+	@git clean -X --force $(BINDIR)/*
 
 .PHONY: format
 format: format-haskell
