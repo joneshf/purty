@@ -11,28 +11,27 @@ PACKAGE_JSON := package.json
 
 ifeq ($(OS),linux)
 BAZEL := $(BUILDDIR)/bazel
+BAZEL_URI := https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-linux-x86_64
 IBAZEL := $(BUILDDIR)/ibazel
+IBAZEL_URI := https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_linux_amd64
 else ifeq ($(OS),osx)
 BAZEL := $(BUILDDIR)/bazel
+BAZEL_URI := https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-darwin-x86_64
 IBAZEL := $(BUILDDIR)/ibazel
+IBAZEL_URI := https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_darwin_amd64
 else ifeq ($(OS),windows)
 BAZEL := $(BUILDDIR)/bazel.exe
+BAZEL_URI := https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-windows-x86_64.exe
 IBAZEL := $(BUILDDIR)/ibazel.exe
+IBAZEL_URI := https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_windows_amd64.exe
 endif
 
 .DEFAULT_GOAL := bootstrap
 
 $(BAZEL): | $(BUILDDIR)
 	$(info Downloading bazel binary)
-ifeq ($(OS),linux)
-	curl --location --output $@ https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-linux-x86_64
+	curl --location --output $@ $(BAZEL_URI)
 	@chmod 0755 $@
-else ifeq ($(OS),osx)
-	curl --location --output $@ https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-darwin-x86_64
-	@chmod 0755 $@
-else ifeq ($(OS),windows)
-	curl --location --output $@ https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-windows-x86_64.exe
-endif
 	@touch $@
 	$(BAZEL) version
 
@@ -41,15 +40,8 @@ $(BUILDDIR):
 
 $(IBAZEL): | $(BUILDDIR)
 	$(info Downloading ibazel binary)
-ifeq ($(OS),linux)
-	curl --location --output $@ https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_linux_amd64
+	curl --location --output $@ $(IBAZEL_URI)
 	@chmod 0755 $@
-else ifeq ($(OS),osx)
-	curl --location --output $@ https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_darwin_amd64
-	@chmod 0755 $@
-else ifeq ($(OS),windows)
-	curl --location --output $@ https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_windows_amd64.exe
-endif
 	@touch $@
 	$(IBAZEL) version
 
