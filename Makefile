@@ -9,6 +9,7 @@ VERSION_IBAZEL := 0.12.3
 
 PACKAGE_JSON := package.json
 
+# Based on https://stackoverflow.com/a/12099167/1549047.
 ifeq ($(OS),Windows_NT)
 BAZEL := $(BUILDDIR)/bazel.exe
 BAZEL_URI := https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-windows-x86_64.exe
