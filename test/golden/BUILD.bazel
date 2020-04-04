@@ -5,6 +5,12 @@ load(
 )
 
 load(
+    ":defs.bzl",
+    "golden_tests",
+    "golden_usages",
+)
+
+load(
     "//tools/hlint:hlint.bzl",
     "hlint_test",
 )
@@ -13,6 +19,18 @@ load(
     "//tools/ormolu:ormolu.bzl",
     "ormolu_format",
     "ormolu_test",
+)
+
+golden_tests(
+    srcs = glob([
+        "files/original/*.purs",
+    ]),
+)
+
+golden_usages(
+    srcs = glob([
+        "files/formatted/*.purs",
+    ]),
 )
 
 haskell_test(
