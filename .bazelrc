@@ -1,12 +1,16 @@
+# Order these configuration options according to the documentation:
+# https://docs.bazel.build/versions/master/guide.html#option-defaults
+
 build --disk_cache=.bazel-cache/action
 build --repository_cache=.bazel-cache/repository
 
 build:appveyor --crosstool_top=@rules_haskell_ghc_windows_amd64//:cc_toolchain
 
-# We explicitly set the coverage to print to STDOUT so GitLabCI can pick it up.
-coverage --test_output all
-
 # We don't need the output of tests to print to STDOUT unless there's a failure.
 test --test_output errors
 
 test:appveyor --test_tag_filters -lint,-test_requires_bash
+
+# We explicitly set the coverage to print to STDOUT so GitLabCI can pick it up.
+coverage:gitlabci --test_output all
+coverage:gitlabci --test_tag_filters -coverage_requires_jvm

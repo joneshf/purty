@@ -12,10 +12,6 @@ stages:
   - build
 
 Build purty:
-  before_script:
-    - make bootstrap
   script:
-    - .build/bazel test //...
-    - .build/bazel coverage --test_tag_filters -coverage_requires_jvm //...
-    - make lint
+    - make coverage BAZEL_CONFIG='--config=gitlabci'
   stage: build

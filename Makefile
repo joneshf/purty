@@ -1,32 +1,35 @@
 .SUFFIXES:
 Makefile:;
 
+BAZEL_CONFIG :=
 BINDIR := bin
 BUILDDIR := .build
-OS := linux
 VERSION_BAZEL := 2.2.0
 VERSION_IBAZEL := 0.12.3
 
 PACKAGE_JSON := package.json
 
-ifeq ($(OS),linux)
-BAZEL := $(BUILDDIR)/bazel
-BAZEL_URI := https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-linux-x86_64
-IBAZEL := $(BUILDDIR)/ibazel
-IBAZEL_URI := https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_linux_amd64
-else ifeq ($(OS),osx)
-BAZEL := $(BUILDDIR)/bazel
-BAZEL_URI := https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-darwin-x86_64
-IBAZEL := $(BUILDDIR)/ibazel
-IBAZEL_URI := https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_darwin_amd64
-else ifeq ($(OS),windows)
+# Based on https://stackoverflow.com/a/12099167/1549047.
+ifeq ($(OS),Windows_NT)
 BAZEL := $(BUILDDIR)/bazel.exe
 BAZEL_URI := https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-windows-x86_64.exe
 IBAZEL := $(BUILDDIR)/ibazel.exe
 IBAZEL_URI := https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_windows_amd64.exe
+else ifeq ($(shell uname -s),Linux)
+BAZEL := $(BUILDDIR)/bazel
+BAZEL_URI := https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-linux-x86_64
+IBAZEL := $(BUILDDIR)/ibazel
+IBAZEL_URI := https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_linux_amd64
+else ifeq ($(shell uname -s),Darwin)
+BAZEL := $(BUILDDIR)/bazel
+BAZEL_URI := https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-darwin-x86_64
+IBAZEL := $(BUILDDIR)/ibazel
+IBAZEL_URI := https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_darwin_amd64
+else
+$(error Platform not supported. Only Linux, macOS, and Windows are supported)
 endif
 
-.DEFAULT_GOAL := bootstrap
+.DEFAULT_GOAL := test
 
 $(BAZEL): | $(BUILDDIR)
 	$(info Downloading bazel binary)
@@ -50,9 +53,6 @@ $(PACKAGE_JSON): $(BAZEL)
 	$(BAZEL) build //:package.json
 	cp $(BAZEL_BINDIR)/ci/npm/package.json $@
 
-.PHONY: bootstrap
-bootstrap: $(BAZEL) $(IBAZEL)
-
 .PHONY: clean
 clean:
 	$(info Removing $(BUILDDIR))
@@ -61,17 +61,21 @@ clean:
 	@rm -f $(PACKAGE_JSON)
 	@git clean -X --force $(BINDIR)/*
 
+.PHONY: coverage
+coverage: $(BAZEL)
+	$(BAZEL) coverage $(BAZEL_CONFIG) //...
+
 .PHONY: format
 format: format-haskell
 
 .PHONY: format-haskell
 format-haskell: $(BAZEL)
-	$(BAZEL) run //:format-ormolu
-	$(BAZEL) run //test/golden:format-ormolu
+	$(BAZEL) run $(BAZEL_CONFIG) //:format-ormolu
+	$(BAZEL) run $(BAZEL_CONFIG) //test/golden:format-ormolu
 
 .PHONY: lint
 lint: $(BAZEL)
-	$(BAZEL) test //:lint
+	$(BAZEL) test $(BAZEL_CONFIG) //:lint
 
 .PHONY: npm-publish
 npm-publish: $(PACKAGE_JSON)
@@ -80,8 +84,8 @@ npm-publish: $(PACKAGE_JSON)
 
 .PHONY: test
 test: $(BAZEL)
-	$(BAZEL) test //...
+	$(BAZEL) test $(BAZEL_CONFIG) //...
 
 .PHONY: watch
 watch: $(IBAZEL)
-	$(IBAZEL) test //...
+	$(IBAZEL) test $(BAZEL_CONFIG) //...
