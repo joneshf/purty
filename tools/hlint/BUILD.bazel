@@ -11,6 +11,6 @@ alias(
         "hlint",
     ],
     visibility = [
-        "//:__pkg__",
+        "//:__subpackages__",
     ],
 )

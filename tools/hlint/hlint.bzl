@@ -26,7 +26,7 @@ def hlint_test(srcs):
                 location,
             ],
             data = [
-                ".hlint.yaml",
+                "//:.hlint.yaml",
                 "//tools/hlint:hlint",
                 src,
             ],

@@ -5,13 +5,13 @@ alias(
         "ormolu",
     ],
     visibility = [
-        "//:__pkg__",
+        "//:__subpackages__",
     ],
 )
 
 exports_files([
     "format.sh",
 ], visibility = [
-    "//:__pkg__",
+    "//:__subpackages__",
 ],
 )

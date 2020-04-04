@@ -1,0 +1,60 @@
+load(
+    "@rules_haskell//haskell:defs.bzl",
+    "haskell_test",
+    "haskell_toolchain_library",
+)
+
+load(
+    "//tools/hlint:hlint.bzl",
+    "hlint_test",
+)
+
+load(
+    "//tools/ormolu:ormolu.bzl",
+    "ormolu_format",
+    "ormolu_test",
+)
+
+haskell_test(
+    data = glob([
+        "files/formatted/*.purs",
+        "files/original/*.purs",
+    ]),
+    deps = [
+        ":bytestring",
+        "//:purty",
+        "@rules_haskell//tools/runfiles:runfiles",
+        "@stackage//:componentm",
+        "@stackage//:rio",
+        "@stackage//:tasty",
+        "@stackage//:tasty-golden",
+        "@stackage//:tasty-hunit",
+    ],
+    name = "purty-golden",
+    srcs = [
+        "Main.hs",
+    ],
+)
+
+haskell_toolchain_library(
+    name = "bytestring",
+)
+
+hlint_test(
+    srcs = [
+        "Main.hs",
+    ],
+)
+
+ormolu_format(
+    name = "format-ormolu",
+    srcs = [
+        "Main.hs",
+    ],
+)
+
+ormolu_test(
+    srcs = [
+        "Main.hs",
+    ],
+)

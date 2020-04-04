@@ -19,13 +19,21 @@ def ormolu_format(name, srcs):
         srcs: Haskell source files to run ormolu on.
     """
 
+    haskell_srcs = []
+
+    for src in srcs:
+        haskell_src = "$(location {src})".format(
+            src = src,
+        )
+        haskell_srcs.append(shell.quote(haskell_src))
+
     native.sh_binary(
         args = [
             "--ormolu $(location //tools/ormolu:ormolu)",
-        ] + [shell.quote(src) for src in srcs],
+        ] + haskell_srcs,
         data = [
             "//tools/ormolu:ormolu",
-        ],
+        ] + srcs,
         name = name,
         srcs = [
             "//tools/ormolu:format.sh",
