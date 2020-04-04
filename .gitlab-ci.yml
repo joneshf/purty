@@ -6,7 +6,6 @@ cache:
     - ${CI_PROJECT_DIR}/.bazel-cache
 
 variables:
-  BAZEL_CONFIG: '--config=gitlabci'
   LC_ALL: C.UTF-8
 
 stages:
@@ -14,5 +13,5 @@ stages:
 
 Build purty:
   script:
-    - make coverage
+    - make coverage BAZEL_CONFIG='--config=gitlabci'
   stage: build
