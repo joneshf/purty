@@ -12,7 +12,6 @@ load(
     "@rules_haskell//haskell:defs.bzl",
     "haskell_binary",
     "haskell_library",
-    "haskell_test",
     "haskell_toolchain_library",
 )
 
@@ -118,6 +117,13 @@ copy_file(
     src = ":purty-binary",
 )
 
+exports_files([
+    ".hlint.yaml",
+], visibility = [
+    "//:__subpackages__",
+],
+)
+
 haskell_binary(
     compiler_flags = [
         "-O2",
@@ -183,27 +189,8 @@ haskell_library(
         "lib/SourceRange.hs",
         "lib/Span.hs",
     ],
-)
-
-haskell_test(
-    data = glob([
-        "test/golden/files/formatted/*.purs",
-        "test/golden/files/original/*.purs",
-    ]),
-    deps = [
-        ":bytestring",
-        ":purty",
-        "@rules_haskell//tools/runfiles:runfiles",
-        "@stackage//:componentm",
-        "@stackage//:rio",
-        "@stackage//:tasty",
-        "@stackage//:tasty-golden",
-        "@stackage//:tasty-hunit",
-    ],
-    name = "purty-golden",
-    src_strip_prefix = "test/golden",
-    srcs = [
-        "test/golden/Main.hs",
+    visibility = [
+        "//:__subpackages__",
     ],
 )
 
@@ -227,7 +214,6 @@ hlint_test(
         "lib/Span.hs",
         "lib/Version.hs",
         "src/Main.hs",
-        "test/golden/Main.hs",
     ],
 )
 
@@ -249,7 +235,6 @@ ormolu_format(
         "lib/Span.hs",
         "lib/Version.hs",
         "src/Main.hs",
-        "test/golden/Main.hs",
     ],
 )
 
@@ -265,7 +250,6 @@ ormolu_test(
         "lib/Span.hs",
         "lib/Version.hs",
         "src/Main.hs",
-        "test/golden/Main.hs",
     ],
 )
 

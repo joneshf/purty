@@ -67,6 +67,7 @@ format: format-haskell
 .PHONY: format-haskell
 format-haskell: $(BAZEL)
 	$(BAZEL) run //:format-ormolu
+	$(BAZEL) run //test/golden:format-ormolu
 
 .PHONY: lint
 lint: $(BAZEL)
