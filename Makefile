@@ -62,6 +62,10 @@ clean:
 	@rm -f $(PACKAGE_JSON)
 	@git clean -X --force $(BINDIR)/*
 
+.PHONY: coverage
+coverage: $(BAZEL)
+	$(BAZEL) coverage $(BAZEL_CONFIG) //...
+
 .PHONY: format
 format: format-haskell
 
