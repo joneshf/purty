@@ -1,6 +1,7 @@
 .SUFFIXES:
 Makefile:;
 
+BAZEL_CONFIG :=
 BINDIR := bin
 BUILDDIR := .build
 OS := linux
@@ -66,12 +67,12 @@ format: format-haskell
 
 .PHONY: format-haskell
 format-haskell: $(BAZEL)
-	$(BAZEL) run //:format-ormolu
-	$(BAZEL) run //test/golden:format-ormolu
+	$(BAZEL) run $(BAZEL_CONFIG) //:format-ormolu
+	$(BAZEL) run $(BAZEL_CONFIG) //test/golden:format-ormolu
 
 .PHONY: lint
 lint: $(BAZEL)
-	$(BAZEL) test //:lint
+	$(BAZEL) test $(BAZEL_CONFIG) //:lint
 
 .PHONY: npm-publish
 npm-publish: $(PACKAGE_JSON)
@@ -80,8 +81,8 @@ npm-publish: $(PACKAGE_JSON)
 
 .PHONY: test
 test: $(BAZEL)
-	$(BAZEL) test //...
+	$(BAZEL) test $(BAZEL_CONFIG) //...
 
 .PHONY: watch
 watch: $(IBAZEL)
-	$(IBAZEL) test //...
+	$(IBAZEL) test $(BAZEL_CONFIG) //...
