@@ -138,9 +138,6 @@ stack_snapshot(
         "purescript-cst",
         "rio",
         "syb",
-        "tasty",
-        "tasty-golden",
-        "tasty-hunit",
     ],
     tools = [
         "@alex",
