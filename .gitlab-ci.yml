@@ -13,8 +13,6 @@ stages:
   - build
 
 Build purty:
-  before_script:
-    - make bootstrap
   script:
     - make coverage
   stage: build

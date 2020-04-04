@@ -19,9 +19,6 @@ env:
     - BAZEL_USE_CPP_ONLY_TOOLCHAIN=1
     - PATH=/usr/local/opt/coreutils/libexec/gnubin:${PATH}
 
-install:
-  - make bootstrap OS=${TRAVIS_OS_NAME}
-
 language: c
 
 notifications:

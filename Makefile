@@ -4,30 +4,31 @@ Makefile:;
 BAZEL_CONFIG :=
 BINDIR := bin
 BUILDDIR := .build
-OS := linux
 VERSION_BAZEL := 2.2.0
 VERSION_IBAZEL := 0.12.3
 
 PACKAGE_JSON := package.json
 
-ifeq ($(OS),linux)
-BAZEL := $(BUILDDIR)/bazel
-BAZEL_URI := https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-linux-x86_64
-IBAZEL := $(BUILDDIR)/ibazel
-IBAZEL_URI := https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_linux_amd64
-else ifeq ($(OS),osx)
-BAZEL := $(BUILDDIR)/bazel
-BAZEL_URI := https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-darwin-x86_64
-IBAZEL := $(BUILDDIR)/ibazel
-IBAZEL_URI := https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_darwin_amd64
-else ifeq ($(OS),windows)
+ifeq ($(OS),Windows_NT)
 BAZEL := $(BUILDDIR)/bazel.exe
 BAZEL_URI := https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-windows-x86_64.exe
 IBAZEL := $(BUILDDIR)/ibazel.exe
 IBAZEL_URI := https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_windows_amd64.exe
+else ifeq ($(shell uname -s),Linux)
+BAZEL := $(BUILDDIR)/bazel
+BAZEL_URI := https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-linux-x86_64
+IBAZEL := $(BUILDDIR)/ibazel
+IBAZEL_URI := https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_linux_amd64
+else ifeq ($(shell uname -s),Darwin)
+BAZEL := $(BUILDDIR)/bazel
+BAZEL_URI := https://github.com/bazelbuild/bazel/releases/download/$(VERSION_BAZEL)/bazel-$(VERSION_BAZEL)-darwin-x86_64
+IBAZEL := $(BUILDDIR)/ibazel
+IBAZEL_URI := https://github.com/bazelbuild/bazel-watcher/releases/download/v$(VERSION_IBAZEL)/ibazel_darwin_amd64
+else
+$(error Platform not supported. Only Linux, macOS, and Windows are supported)
 endif
 
-.DEFAULT_GOAL := bootstrap
+.DEFAULT_GOAL := test
 
 $(BAZEL): | $(BUILDDIR)
 	$(info Downloading bazel binary)
@@ -50,9 +51,6 @@ $(PACKAGE_JSON): $(BAZEL)
 	$(info Generating $@ file)
 	$(BAZEL) build //:package.json
 	cp $(BAZEL_BINDIR)/ci/npm/package.json $@
-
-.PHONY: bootstrap
-bootstrap: $(BAZEL) $(IBAZEL)
 
 .PHONY: clean
 clean:
