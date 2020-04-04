@@ -66,12 +66,8 @@ coverage: $(BAZEL)
 	$(BAZEL) coverage $(BAZEL_CONFIG) //...
 
 .PHONY: format
-format: format-haskell
-
-.PHONY: format-haskell
-format-haskell: $(BAZEL)
+format: $(BAZEL)
 	$(BAZEL) run $(BAZEL_CONFIG) //:format-ormolu
-	$(BAZEL) run $(BAZEL_CONFIG) //test/golden:format-ormolu
 
 .PHONY: lint
 lint: $(BAZEL)

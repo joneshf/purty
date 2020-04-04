@@ -155,6 +155,9 @@ haskell_binary(
     srcs = [
         "src/Main.hs",
     ],
+    visibility = [
+        "//:__subpackages__",
+    ],
 )
 
 haskell_library(
