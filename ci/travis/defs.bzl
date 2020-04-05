@@ -1,53 +1,43 @@
 """Helpers for working with TravisCI.
 """
 
+load(
+    "//tools/bazel:defs.bzl",
+    "expand_template_action",
+)
+
 def _template_impl(ctx):
     """Writes a templated file with the given version.
 
-    We need a rule (instead of a macro) in order to use a template.
-    It would be nice if `bazel_skylib` provided this.
-    There's an issue tracking the request:
-    https://github.com/bazelbuild/bazel-skylib/issues/191.
+    This rule exists entirely because this issue has not been solved:
+    https://github.com/bazelbuild/bazel/issues/5356. If we had a
+    string_keyed_label_dict (or equivalent) we could change
+    `//tools/bazel:defs.bzl.expand_template` to that, and remove this rule
+    entirely. Until that exists, we need this rule so we can use label values.
 
     Args:
         ctx: analysis context.
     """
 
-    output = ctx.actions.declare_file(ctx.file._template.path)
+    substitutions = {
+        "{{REPLACE_WITH_TAR}}": ctx.file.tar.path,
+        "{{REPLACE_WITH_UPLOAD_FILENAME}}": ctx.attr.upload_filename,
+        "{{REPLACE_WITH_VERSION}}": ctx.attr.version,
+    }
 
-    ctx.actions.expand_template(
-        output = output,
-        substitutions = {
-            "{{REPLACE_WITH_TAR}}": ctx.file.tar.path,
-            "{{REPLACE_WITH_UPLOAD_FILENAME}}": ctx.attr.upload_filename,
-            "{{REPLACE_WITH_VERSION}}": ctx.attr.version,
-        },
-        template = ctx.file._template,
+    return expand_template_action(
+        ctx = ctx,
+        substitutions = substitutions,
     )
-
-    files = depset([
-        output,
-    ])
-
-    runfiles = ctx.runfiles(
-        transitive_files = files,
-    )
-
-    return [
-        DefaultInfo(
-            files = files,
-            runfiles = runfiles,
-        ),
-    ]
 
 template_bintray = rule(
     attrs = {
-        "_template": attr.label(
+        "template": attr.label(
             allow_single_file = [
                 ".json",
             ],
-            default = "ci/travis/bintray.json",
             doc = "The input template file",
+            mandatory = True,
         ),
         "tar": attr.label(
             allow_single_file = [
