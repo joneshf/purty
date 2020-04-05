@@ -5,6 +5,7 @@ load(
 )
 
 golden_tests(
+    binary = "//:purty-binary",
     srcs = glob([
         "files/original/*.purs",
     ]),

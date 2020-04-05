@@ -16,10 +16,11 @@ load(
     "diff_test",
 )
 
-def _golden_test(golden_file, input_file):
+def _golden_test(binary, golden_file, input_file):
     """Runs `purty` on a PureScript file and compares the output.
 
     Args:
+        binary: The `purty` binary label.
         golden_file: Golden PureScript file to compare.
         input_file: Input PureScript file to format.
     """
@@ -29,7 +30,8 @@ def _golden_test(golden_file, input_file):
         input_file = input_file,
     )
     native.genrule(
-        cmd = "$(location //:purty-binary) $(location {input_file}) > $@".format(
+        cmd = "$(location {binary}) $(location {input_file}) > $@".format(
+            binary = binary,
             input_file = input_file,
         ),
         name = formatted_name,
@@ -40,7 +42,7 @@ def _golden_test(golden_file, input_file):
             input_file
         ],
         tools = [
-            "//:purty-binary",
+            binary,
         ],
     )
 
@@ -74,10 +76,11 @@ def _golden_usage(input_file):
         src = input_file,
     )
 
-def golden_tests(srcs):
+def golden_tests(binary, srcs):
     """Runs `purty` on a collection of PureScript files and compare the output.
 
     Args:
+        binary: The `purty` binary label.
         srcs: List of PureScript files to compare.
     """
 
@@ -85,6 +88,7 @@ def golden_tests(srcs):
         filename = paths.basename(src)
         golden_file = paths.join("files", "formatted", filename)
         _golden_test(
+            binary = binary,
             golden_file = golden_file,
             input_file = src,
         )
