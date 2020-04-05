@@ -1,6 +1,7 @@
 .SUFFIXES:
 Makefile:;
 
+BAZEL_BINDIR := bazel-bin
 BAZEL_CONFIG :=
 BINDIR := bin
 BUILDDIR := .build
@@ -50,7 +51,7 @@ $(IBAZEL): | $(BUILDDIR)
 
 $(PACKAGE_JSON): $(BAZEL)
 	$(info Generating $@ file)
-	$(BAZEL) build //:package.json
+	$(BAZEL) build //:ci/npm/package.json
 	cp $(BAZEL_BINDIR)/ci/npm/package.json $@
 
 .PHONY: clean

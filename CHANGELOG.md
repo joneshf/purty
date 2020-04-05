@@ -6,6 +6,8 @@
 
 ### Changes
 
+* [Fix `make package.json` rule](https://gitlab.com/joneshf/purty/-/issues/188)
+
 ### Deletions
 
 ## 6.1.1
