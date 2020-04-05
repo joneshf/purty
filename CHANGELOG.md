@@ -6,7 +6,10 @@
 
 ### Changes
 
-* [Fix `make package.json` rule](https://gitlab.com/joneshf/purty/-/issues/188)
+* [Put version under `bazel`s control](https://gitlab.com/joneshf/purty/issues/184)
+* [Move more tests to bazel](https://gitlab.com/joneshf/purty/issues/186)
+* [Remove platform handling in `make`](https://gitlab.com/joneshf/purty/issues/187)
+* [Fix `make package.json` rule](https://gitlab.com/joneshf/purty/issues/188)
 
 ### Deletions
 
