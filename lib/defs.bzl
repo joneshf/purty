@@ -53,4 +53,4 @@ template_version = rule(
     ],
 )
 
-version_purty = "6.1.1"
+version_purty = "6.1.2"
