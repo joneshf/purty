@@ -6,9 +6,14 @@
 
 ### Changes
 
+* [Fix `prepack.sh` script](https://gitlab.com/joneshf/purty/issues/191)
+
 ### Deletions
 
 ## 6.1.2
+
+Another small release.
+This should all be internal project changes.
 
 ### Additions
 

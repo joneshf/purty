@@ -123,4 +123,4 @@ tar --extract \
     --gzip
 
 debug 'Moving win binary to the appropriate location'
-mv "${TEMPORARY_DIR}/purty.exe" "bin/win/purty.exe"
+mv "${TEMPORARY_DIR}/.\\purty.exe" "bin/win/purty.exe"
