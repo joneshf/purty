@@ -44,18 +44,29 @@ def ormolu_format(name, srcs):
         ],
     )
 
-def ormolu_test(srcs):
+def ormolu_test(name, srcs, **kwargs):
     """Generates a test rule for each Haskell source file.
+    Then places all of them into a single test suite.
 
     Args:
+        name: Name of the test suite.
         srcs: Haskell source files to run ormolu on.
+        kwargs: Additional keyword arguments to pass to the `test_suite` rule.
     """
+
+    kwarg_tags = kwargs.pop("tags", [])
+    tags = kwarg_tags.append([
+        "ormolu",
+        "lint",
+    ])
+    tests = []
 
     for src in srcs:
         location = "$(location {src})".format(
             src = src,
         )
-        name = "lint-ormolu/{src}".format(
+        test_name = "{name}/{src}".format(
+            name = name,
             src = src,
         )
 
@@ -68,11 +79,20 @@ def ormolu_test(srcs):
                 "//tools/ormolu:ormolu",
                 src,
             ],
-            name = name,
-            out = name,
+            name = test_name,
+            out = test_name,
             src = "//tools/ormolu:ormolu",
             tags = [
                 "ormolu",
                 "lint",
             ],
         )
+
+        tests.append(test_name)
+
+    native.test_suite(
+        name = name,
+        tests = tests,
+        tags = tags,
+        **kwargs,
+    )

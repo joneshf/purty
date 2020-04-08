@@ -258,6 +258,7 @@ ormolu_format(
 )
 
 ormolu_test(
+    name = "lint-ormolu",
     srcs = [
         "lib/Annotation.hs",
         "lib/Args.hs",
@@ -385,13 +386,6 @@ test_suite(
     ],
     tests = [
         ":lint-hlint",
-    ],
-)
-
-test_suite(
-    name = "lint-ormolu",
-    tags = [
-        "ormolu",
-        "lint",
+        ":lint-ormolu",
     ],
 )
