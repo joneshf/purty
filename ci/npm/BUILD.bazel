@@ -1,0 +1,17 @@
+load(
+    "//lib:defs.bzl",
+    "version_purty",
+)
+
+load(
+    "//tools/bazel:defs.bzl",
+    "expand_template_temporary",
+)
+
+expand_template_temporary(
+    name = "templated-package.json",
+    substitutions = {
+        "{{REPLACE_WITH_VERSION}}": version_purty,
+    },
+    template = "package.json",
+)
