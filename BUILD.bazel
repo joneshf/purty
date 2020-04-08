@@ -9,11 +9,6 @@ load(
 )
 
 load(
-    "@rules_pkg//:pkg.bzl",
-    "pkg_tar",
-)
-
-load(
     "//lib:defs.bzl",
     "version_purty",
 )
@@ -81,16 +76,6 @@ exports_files([
 nodejs_binary(
     entry_point = "bin/purty.js",
     name = "purty.js",
-)
-
-pkg_tar(
-    extension = "tar.gz",
-    name = "purty-{version}-win".format(
-        version = version_purty,
-    ),
-    srcs = [
-        "//src:purty",
-    ],
 )
 
 sh_test(
