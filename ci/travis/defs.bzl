@@ -3,7 +3,7 @@
 
 load(
     "//tools/bazel:defs.bzl",
-    "expand_template_action",
+    "expand_template_temporary_action",
 )
 
 def _template_impl(ctx):
@@ -25,7 +25,7 @@ def _template_impl(ctx):
         "{{REPLACE_WITH_VERSION}}": ctx.attr.version,
     }
 
-    return expand_template_action(
+    return expand_template_temporary_action(
         ctx = ctx,
         substitutions = substitutions,
     )
