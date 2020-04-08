@@ -1,5 +1,5 @@
 before_deploy:
-  - appveyor PushArtifact bazel-bin\purty-%APPVEYOR_REPO_TAG_NAME%-win.tar.gz
+  - appveyor PushArtifact bazel-bin\ci\appveyor\purty-%APPVEYOR_REPO_TAG_NAME%-win.tar.gz
 
 build_script:
   - ps: Set-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name LongPathsEnabled -Value 1
