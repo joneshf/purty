@@ -74,6 +74,9 @@ exports_files([
 )
 
 nodejs_binary(
+    data = [
+        ":platform-specific-purty",
+    ],
     entry_point = "bin/purty.js",
     name = "purty.js",
 )
@@ -112,7 +115,6 @@ sh_test(
     data = glob([
         "test/acceptance/**/*",
     ]) + [
-        ":platform-specific-purty",
         ":purty.js",
     ],
     name = "test-acceptance-npm",
