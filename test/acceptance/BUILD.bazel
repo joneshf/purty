@@ -1,0 +1,50 @@
+load(
+    "//lib:defs.bzl",
+    "version_purty",
+)
+
+sh_test(
+    args = [
+        "--expected-version {version}".format(
+            version = version_purty,
+        ),
+        "--purty $(location //src:purty)",
+        "--verbose",
+    ],
+    data = glob([
+        "**",
+    ]) + [
+        "//src:purty",
+    ],
+    name = "binary",
+    srcs = [
+        "suite.sh",
+    ],
+    tags = [
+        "coverage_requires_jvm",
+        "test_requires_bash",
+    ],
+)
+
+sh_test(
+    args = [
+        "--expected-version {version}".format(
+            version = version_purty,
+        ),
+        "--purty $(location //bin:purty)",
+        "--verbose",
+    ],
+    data = glob([
+        "**",
+    ]) + [
+        "//bin:purty",
+    ],
+    name = "npm",
+    srcs = [
+        "suite.sh",
+    ],
+    tags = [
+        "coverage_requires_jvm",
+        "test_requires_bash",
+    ],
+)
