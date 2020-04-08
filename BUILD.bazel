@@ -221,6 +221,7 @@ haskell_toolchain_library(
 )
 
 hlint_test(
+    name = "lint-hlint",
     srcs = [
         "lib/Annotation.hs",
         "lib/Args.hs",
@@ -382,13 +383,8 @@ test_suite(
     tags = [
         "lint",
     ],
-)
-
-test_suite(
-    name = "lint-hlint",
-    tags = [
-        "hlint",
-        "lint",
+    tests = [
+        ":lint-hlint",
     ],
 )
 
