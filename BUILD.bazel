@@ -14,11 +14,6 @@ load(
 )
 
 load(
-    "//:ci/travis/defs.bzl",
-    "template_bintray",
-)
-
-load(
     "//lib:defs.bzl",
     "version_purty",
 )
@@ -32,23 +27,6 @@ alias(
         no_match_error = "No purty binary available for this platform",
     ),
     name = "platform-specific-purty",
-)
-
-alias(
-    actual = select({
-        ":linux": "purty-{version}-linux".format(
-            version = version_purty,
-        ),
-        ":macos": "purty-{version}-osx".format(
-            version = version_purty,
-        ),
-        ":windows": "purty-{version}-win".format(
-            version = version_purty,
-        ),
-    },
-        no_match_error = "No purty tarball available for this platform",
-    ),
-    name = "purty-tar",
 )
 
 config_setting(
@@ -107,28 +85,6 @@ nodejs_binary(
 
 pkg_tar(
     extension = "tar.gz",
-    mode = "0755",
-    name = "purty-{version}-linux".format(
-        version = version_purty,
-    ),
-    srcs = [
-        "//src:purty",
-    ],
-)
-
-pkg_tar(
-    extension = "tar.gz",
-    mode = "0755",
-    name = "purty-{version}-osx".format(
-        version = version_purty,
-    ),
-    srcs = [
-        "//src:purty",
-    ],
-)
-
-pkg_tar(
-    extension = "tar.gz",
     name = "purty-{version}-win".format(
         version = version_purty,
     ),
@@ -182,24 +138,6 @@ sh_test(
         "coverage_requires_jvm",
         "test_requires_bash",
     ],
-)
-
-template_bintray(
-    name = "templated-bintray.json",
-    tar = ":purty-tar",
-    template = "ci/travis/bintray.json",
-    upload_filename = select({
-        ":linux": "purty-{version}-linux.tar.gz".format(
-            version = version_purty,
-        ),
-        ":macos": "purty-{version}-osx.tar.gz".format(
-            version = version_purty,
-        ),
-        ":windows": "purty-{version}-win.tar.gz".format(
-            version = version_purty,
-        ),
-    }),
-    version = version_purty,
 )
 
 test_suite(
