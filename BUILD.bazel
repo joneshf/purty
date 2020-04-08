@@ -46,7 +46,7 @@ sh_test(
     ],
     name = "test-acceptance-binary",
     srcs = [
-        "test/acceptance.sh",
+        "test/acceptance/suite.sh",
     ],
     tags = [
         "coverage_requires_jvm",
@@ -69,7 +69,7 @@ sh_test(
     ],
     name = "test-acceptance-npm",
     srcs = [
-        "test/acceptance.sh",
+        "test/acceptance/suite.sh",
     ],
     tags = [
         "coverage_requires_jvm",
