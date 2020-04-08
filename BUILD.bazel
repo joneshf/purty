@@ -11,7 +11,6 @@ load(
 load(
     "@rules_haskell//haskell:defs.bzl",
     "haskell_binary",
-    "haskell_library",
     "haskell_toolchain_library",
 )
 
@@ -26,7 +25,7 @@ load(
 )
 
 load(
-    "//:lib/defs.bzl",
+    "//lib:defs.bzl",
     "version_purty",
 )
 
@@ -124,14 +123,6 @@ expand_template(
     template = "ci/npm/package.json",
 )
 
-expand_template(
-    name = "templated-Version.hs",
-    substitutions = {
-        "{{REPLACE_WITH_VERSION}}": version_purty,
-    },
-    template = "lib/Version.hs",
-)
-
 exports_files([
     ".hlint.yaml",
 ], visibility = [
@@ -164,7 +155,7 @@ haskell_binary(
     }),
     deps = [
         ":base",
-        ":purty",
+        "//lib:purty",
     ],
     name = "purty-binary",
     srcs = [
@@ -175,63 +166,13 @@ haskell_binary(
     ],
 )
 
-haskell_library(
-    compiler_flags = [
-        "-Wall",
-        "-Wcompat",
-        "-Werror",
-        "-Wincomplete-record-updates",
-        "-Wincomplete-uni-patterns",
-        "-Wmissing-methods",
-        "-Wredundant-constraints",
-    ],
-    deps = [
-        ":base",
-        ":bytestring",
-        "@stackage//:componentm",
-        "@stackage//:optparse-applicative",
-        "@stackage//:pathwalk",
-        "@stackage//:purescript-cst",
-        "@stackage//:rio",
-    ],
-    name = "purty",
-    src_strip_prefix = "lib",
-    srcs = [
-        ":templated-Version.hs",
-        "lib/Annotation.hs",
-        "lib/Args.hs",
-        "lib/Error.hs",
-        "lib/Format.hs",
-        "lib/Log.hs",
-        "lib/Purty.hs",
-        "lib/SourceRange.hs",
-        "lib/Span.hs",
-    ],
-    visibility = [
-        "//:__subpackages__",
-    ],
-)
-
 haskell_toolchain_library(
     name = "base",
-)
-
-haskell_toolchain_library(
-    name = "bytestring",
 )
 
 hlint_test(
     name = "lint-hlint",
     srcs = [
-        "lib/Annotation.hs",
-        "lib/Args.hs",
-        "lib/Error.hs",
-        "lib/Format.hs",
-        "lib/Log.hs",
-        "lib/Purty.hs",
-        "lib/SourceRange.hs",
-        "lib/Span.hs",
-        "lib/Version.hs",
         "src/Main.hs",
     ],
 )
@@ -244,15 +185,6 @@ nodejs_binary(
 ormolu_format(
     name = "format-ormolu",
     srcs = [
-        "lib/Annotation.hs",
-        "lib/Args.hs",
-        "lib/Error.hs",
-        "lib/Format.hs",
-        "lib/Log.hs",
-        "lib/Purty.hs",
-        "lib/SourceRange.hs",
-        "lib/Span.hs",
-        "lib/Version.hs",
         "src/Main.hs",
     ],
 )
@@ -260,15 +192,6 @@ ormolu_format(
 ormolu_test(
     name = "lint-ormolu",
     srcs = [
-        "lib/Annotation.hs",
-        "lib/Args.hs",
-        "lib/Error.hs",
-        "lib/Format.hs",
-        "lib/Log.hs",
-        "lib/Purty.hs",
-        "lib/SourceRange.hs",
-        "lib/Span.hs",
-        "lib/Version.hs",
         "src/Main.hs",
     ],
 )
@@ -385,6 +308,7 @@ test_suite(
         "lint",
     ],
     tests = [
+        "//lib:lint",
         ":lint-hlint",
         ":lint-ormolu",
     ],
