@@ -1,22 +1,6 @@
 load(
-    "@build_bazel_rules_nodejs//:index.bzl",
-    "nodejs_binary",
-)
-
-load(
     "//lib:defs.bzl",
     "version_purty",
-)
-
-alias(
-    actual = select({
-        ":linux": "//bin/linux:purty-binary",
-        ":macos": "//bin/osx:purty-binary",
-        ":windows": "//bin/win:purty-binary",
-    },
-        no_match_error = "No purty binary available for this platform",
-    ),
-    name = "platform-specific-purty",
 )
 
 config_setting(
@@ -47,14 +31,6 @@ exports_files([
 ],
 )
 
-nodejs_binary(
-    data = [
-        ":platform-specific-purty",
-    ],
-    entry_point = "bin/purty.js",
-    name = "purty.js",
-)
-
 sh_test(
     args = [
         "--expected-version {version}".format(
@@ -83,13 +59,13 @@ sh_test(
         "--expected-version {version}".format(
             version = version_purty,
         ),
-        "--purty $(location :purty.js)",
+        "--purty $(location //bin:purty)",
         "--verbose",
     ],
     data = glob([
         "test/acceptance/**/*",
     ]) + [
-        ":purty.js",
+        "//bin:purty",
     ],
     name = "test-acceptance-npm",
     srcs = [

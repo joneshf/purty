@@ -1,0 +1,26 @@
+load(
+    "@build_bazel_rules_nodejs//:index.bzl",
+    "nodejs_binary",
+)
+
+alias(
+    actual = select({
+        "//:linux": "//bin/linux:purty-binary",
+        "//:macos": "//bin/osx:purty-binary",
+        "//:windows": "//bin/win:purty-binary",
+    },
+        no_match_error = "No purty binary available for this platform",
+    ),
+    name = "platform-specific-purty",
+)
+
+nodejs_binary(
+    data = [
+        ":platform-specific-purty",
+    ],
+    entry_point = "purty.js",
+    name = "purty",
+    visibility = [
+        "//:__subpackages__",
+    ],
+)
