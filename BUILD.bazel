@@ -23,11 +23,6 @@ load(
     "version_purty",
 )
 
-load(
-    "//tools/bazel:defs.bzl",
-    "expand_template",
-)
-
 alias(
     actual = select({
         ":linux": "linux-specific-purty",
@@ -96,14 +91,6 @@ copy_file(
     name = "windows-specific-purty",
     out = "bin/win/purty",
     src = "//src:purty",
-)
-
-expand_template(
-    name = "templated-package.json",
-    substitutions = {
-        "{{REPLACE_WITH_VERSION}}": version_purty,
-    },
-    template = "ci/npm/package.json",
 )
 
 exports_files([
