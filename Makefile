@@ -70,6 +70,7 @@ coverage: $(BAZEL)
 format: $(BAZEL)
 	$(BAZEL) run $(BAZEL_CONFIG) //:format-ormolu
 	$(BAZEL) run $(BAZEL_CONFIG) //lib:format-ormolu
+	$(BAZEL) run $(BAZEL_CONFIG) //src:format-ormolu
 
 .PHONY: lint
 lint: $(BAZEL)

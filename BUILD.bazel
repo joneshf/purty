@@ -9,12 +9,6 @@ load(
 )
 
 load(
-    "@rules_haskell//haskell:defs.bzl",
-    "haskell_binary",
-    "haskell_toolchain_library",
-)
-
-load(
     "@rules_pkg//:pkg.bzl",
     "pkg_tar",
 )
@@ -32,17 +26,6 @@ load(
 load(
     "//tools/bazel:defs.bzl",
     "expand_template",
-)
-
-load(
-    "//tools/hlint:hlint.bzl",
-    "hlint_test",
-)
-
-load(
-    "//tools/ormolu:ormolu.bzl",
-    "ormolu_format",
-    "ormolu_test",
 )
 
 alias(
@@ -98,21 +81,21 @@ copy_file(
     is_executable = True,
     name = "linux-specific-purty",
     out = "bin/linux/purty",
-    src = ":purty-binary",
+    src = "//src:purty",
 )
 
 copy_file(
     is_executable = True,
     name = "macos-specific-purty",
     out = "bin/osx/purty",
-    src = ":purty-binary",
+    src = "//src:purty",
 )
 
 copy_file(
     is_executable = True,
     name = "windows-specific-purty",
     out = "bin/win/purty",
-    src = ":purty-binary",
+    src = "//src:purty",
 )
 
 expand_template(
@@ -130,70 +113,9 @@ exports_files([
 ],
 )
 
-haskell_binary(
-    compiler_flags = [
-        "-O2",
-        "-Wall",
-        "-Wcompat",
-        "-Werror",
-        "-Wincomplete-record-updates",
-        "-Wincomplete-uni-patterns",
-        "-Wmissing-methods",
-        "-Wredundant-constraints",
-        "-optc=-static",
-        "-optl=-pthread",
-        "-rtsopts",
-        "-static",
-        "-threaded",
-        "-with-rtsopts=-N",
-    ] + select({
-        ":linux": [
-            "-optl=-static",
-        ],
-        "//conditions:default": [
-        ],
-    }),
-    deps = [
-        ":base",
-        "//lib:purty",
-    ],
-    name = "purty-binary",
-    srcs = [
-        "src/Main.hs",
-    ],
-    visibility = [
-        "//:__subpackages__",
-    ],
-)
-
-haskell_toolchain_library(
-    name = "base",
-)
-
-hlint_test(
-    name = "lint-hlint",
-    srcs = [
-        "src/Main.hs",
-    ],
-)
-
 nodejs_binary(
     entry_point = "bin/purty.js",
     name = "purty.js",
-)
-
-ormolu_format(
-    name = "format-ormolu",
-    srcs = [
-        "src/Main.hs",
-    ],
-)
-
-ormolu_test(
-    name = "lint-ormolu",
-    srcs = [
-        "src/Main.hs",
-    ],
 )
 
 pkg_tar(
@@ -202,11 +124,8 @@ pkg_tar(
     name = "purty-{version}-linux".format(
         version = version_purty,
     ),
-    remap_paths = {
-        "purty-binary": "purty",
-    },
     srcs = [
-        ":purty-binary",
+        "//src:purty",
     ],
 )
 
@@ -216,11 +135,8 @@ pkg_tar(
     name = "purty-{version}-osx".format(
         version = version_purty,
     ),
-    remap_paths = {
-        "purty-binary": "purty",
-    },
     srcs = [
-        ":purty-binary",
+        "//src:purty",
     ],
 )
 
@@ -229,11 +145,8 @@ pkg_tar(
     name = "purty-{version}-win".format(
         version = version_purty,
     ),
-    remap_paths = {
-        "purty-binary.exe": "purty.exe",
-    },
     srcs = [
-        ":purty-binary",
+        "//src:purty",
     ],
 )
 
@@ -242,13 +155,13 @@ sh_test(
         "--expected-version {version}".format(
             version = version_purty,
         ),
-        "--purty $(location :purty-binary)",
+        "--purty $(location //src:purty)",
         "--verbose",
     ],
     data = glob([
         "test/acceptance/**/*",
     ]) + [
-        ":purty-binary",
+        "//src:purty",
     ],
     name = "test-acceptance-binary",
     srcs = [
@@ -309,7 +222,6 @@ test_suite(
     ],
     tests = [
         "//lib:lint",
-        ":lint-hlint",
-        ":lint-ormolu",
+        "//src:lint",
     ],
 )
