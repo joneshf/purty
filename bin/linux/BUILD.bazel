@@ -1,0 +1,14 @@
+load(
+    "@bazel_skylib//rules:copy_file.bzl",
+    "copy_file",
+)
+
+copy_file(
+    is_executable = True,
+    name = "purty-binary",
+    out = "purty",
+    src = "//src:purty",
+    visibility = [
+        "//:__subpackages__",
+    ],
+)

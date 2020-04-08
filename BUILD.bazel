@@ -1,9 +1,4 @@
 load(
-    "@bazel_skylib//rules:copy_file.bzl",
-    "copy_file",
-)
-
-load(
     "@build_bazel_rules_nodejs//:index.bzl",
     "nodejs_binary",
 )
@@ -15,9 +10,9 @@ load(
 
 alias(
     actual = select({
-        ":linux": "linux-specific-purty",
-        ":macos": "macos-specific-purty",
-        ":windows": "windows-specific-purty",
+        ":linux": "//bin/linux:purty-binary",
+        ":macos": "//bin/osx:purty-binary",
+        ":windows": "//bin/win:purty-binary",
     },
         no_match_error = "No purty binary available for this platform",
     ),
@@ -43,27 +38,6 @@ config_setting(
     constraint_values = [
         "@platforms//os:windows",
     ],
-)
-
-copy_file(
-    is_executable = True,
-    name = "linux-specific-purty",
-    out = "bin/linux/purty",
-    src = "//src:purty",
-)
-
-copy_file(
-    is_executable = True,
-    name = "macos-specific-purty",
-    out = "bin/osx/purty",
-    src = "//src:purty",
-)
-
-copy_file(
-    is_executable = True,
-    name = "windows-specific-purty",
-    out = "bin/win/purty",
-    src = "//src:purty",
 )
 
 exports_files([
