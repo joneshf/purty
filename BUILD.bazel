@@ -21,19 +21,18 @@ load(
 )
 
 load(
-    "//:ci/npm/defs.bzl",
-    "template_package_json",
-)
-
-load(
     "//:ci/travis/defs.bzl",
     "template_bintray",
 )
 
 load(
     "//:lib/defs.bzl",
-    "template_version",
     "version_purty",
+)
+
+load(
+    "//tools/bazel:defs.bzl",
+    "expand_template",
 )
 
 load(
@@ -115,6 +114,22 @@ copy_file(
     name = "windows-specific-purty",
     out = "bin/win/purty",
     src = ":purty-binary",
+)
+
+expand_template(
+    name = "templated-package.json",
+    substitutions = {
+        "{{REPLACE_WITH_VERSION}}": version_purty,
+    },
+    template = "ci/npm/package.json",
+)
+
+expand_template(
+    name = "templated-Version.hs",
+    substitutions = {
+        "{{REPLACE_WITH_VERSION}}": version_purty,
+    },
+    template = "lib/Version.hs",
 )
 
 exports_files([
@@ -206,6 +221,7 @@ haskell_toolchain_library(
 )
 
 hlint_test(
+    name = "lint-hlint",
     srcs = [
         "lib/Annotation.hs",
         "lib/Args.hs",
@@ -242,6 +258,7 @@ ormolu_format(
 )
 
 ormolu_test(
+    name = "lint-ormolu",
     srcs = [
         "lib/Annotation.hs",
         "lib/Args.hs",
@@ -347,6 +364,7 @@ sh_test(
 template_bintray(
     name = "templated-bintray.json",
     tar = ":purty-tar",
+    template = "ci/travis/bintray.json",
     upload_filename = select({
         ":linux": "purty-{version}-linux.tar.gz".format(
             version = version_purty,
@@ -361,34 +379,13 @@ template_bintray(
     version = version_purty,
 )
 
-template_package_json(
-    name = "templated-package.json",
-    version = version_purty,
-)
-
-template_version(
-    name = "templated-Version.hs",
-)
-
 test_suite(
     name = "lint",
     tags = [
         "lint",
     ],
-)
-
-test_suite(
-    name = "lint-hlint",
-    tags = [
-        "hlint",
-        "lint",
-    ],
-)
-
-test_suite(
-    name = "lint-ormolu",
-    tags = [
-        "ormolu",
-        "lint",
+    tests = [
+        ":lint-hlint",
+        ":lint-ormolu",
     ],
 )
