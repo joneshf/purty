@@ -3,6 +3,13 @@ load(
     "version_purty",
 )
 
+filegroup(
+    name = "test_files",
+    srcs = glob([
+        "**",
+    ]),
+)
+
 sh_test(
     args = [
         "--expected-version {version}".format(
@@ -11,10 +18,9 @@ sh_test(
         "--purty $(location //src:purty)",
         "--verbose",
     ],
-    data = glob([
-        "**",
-    ]) + [
+    data = [
         "//src:purty",
+        ":test_files",
     ],
     name = "binary",
     srcs = [
@@ -34,10 +40,9 @@ sh_test(
         "--purty $(location //bin:purty)",
         "--verbose",
     ],
-    data = glob([
-        "**",
-    ]) + [
+    data = [
         "//bin:purty",
+        ":test_files",
     ],
     name = "npm",
     srcs = [
