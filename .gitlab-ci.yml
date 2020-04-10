@@ -13,5 +13,5 @@ stages:
 
 Build purty:
   script:
-    - make coverage BAZEL_CONFIG='--config=gitlabci'
+    - make test BAZEL_CONFIG='--config=gitlabci'
   stage: build
