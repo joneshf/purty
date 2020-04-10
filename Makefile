@@ -51,7 +51,7 @@ $(IBAZEL): | $(BUILDDIR)
 
 $(PACKAGE_JSON): $(BAZEL)
 	$(info Generating $@ file)
-	$(BAZEL) build //:ci/npm/package.json
+	$(BAZEL) build //ci/npm:package.json
 	cp $(BAZEL_BINDIR)/ci/npm/package.json $@
 
 .PHONY: clean
@@ -70,6 +70,7 @@ coverage: $(BAZEL)
 format: $(BAZEL)
 	$(BAZEL) run $(BAZEL_CONFIG) //:format-ormolu
 	$(BAZEL) run $(BAZEL_CONFIG) //lib:format-ormolu
+	$(BAZEL) run $(BAZEL_CONFIG) //src:format-ormolu
 
 .PHONY: lint
 lint: $(BAZEL)

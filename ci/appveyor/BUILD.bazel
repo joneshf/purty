@@ -1,0 +1,19 @@
+load(
+    "@rules_pkg//:pkg.bzl",
+    "pkg_tar",
+)
+
+load(
+    "//lib:defs.bzl",
+    "version_purty",
+)
+
+pkg_tar(
+    extension = "tar.gz",
+    name = "purty-{version}-win".format(
+        version = version_purty,
+    ),
+    srcs = [
+        "//src:purty",
+    ],
+)
