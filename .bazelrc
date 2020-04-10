@@ -11,6 +11,7 @@ test --test_output errors
 
 test:appveyor --test_tag_filters -lint,-test_requires_bash
 
+test:gitlabci --test_tag_filters -coverage_requires_jvm
+
 # We explicitly set the coverage to print to STDOUT so GitLabCI can pick it up.
 coverage:gitlabci --test_output all
-coverage:gitlabci --test_tag_filters -coverage_requires_jvm
