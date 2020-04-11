@@ -24,7 +24,7 @@ import qualified "rio" RIO.File
 import "rio" RIO.FilePath ((</>))
 import qualified "rio" RIO.FilePath
 import qualified "pathwalk" System.Directory.PathWalk
-import qualified "this" Version
+import qualified "purs-tool-version" Version
 
 data Args
   = Args Mode Verbose

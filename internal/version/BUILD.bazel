@@ -1,0 +1,88 @@
+load(
+    "@rules_haskell//haskell:defs.bzl",
+    "haskell_library",
+)
+
+load(
+    "//internal/version:defs.bzl",
+    "version_purty",
+)
+
+load(
+    "//tools/bazel:defs.bzl",
+    "expand_template",
+)
+
+load(
+    "//tools/hlint:hlint.bzl",
+    "hlint_test",
+)
+
+load(
+    "//tools/ormolu:ormolu.bzl",
+    "ormolu_format",
+    "ormolu_test",
+)
+
+expand_template(
+    name = "haskell-template",
+    substitutions = {
+        "{{REPLACE_WITH_VERSION}}": version_purty,
+    },
+    template = "Version.hs",
+)
+
+haskell_library(
+    compiler_flags = [
+        "-Wall",
+        "-Wcompat",
+        "-Werror",
+        "-Wincomplete-record-updates",
+        "-Wincomplete-uni-patterns",
+        "-Wmissing-methods",
+        "-Wredundant-constraints",
+    ],
+    deps = [
+        "@stackage//:rio",
+    ],
+    name = "haskell",
+    package_name = "purs-tool-version",
+    srcs = [
+        ":haskell-template",
+    ],
+    visibility = [
+        "//:__subpackages__",
+    ],
+)
+
+hlint_test(
+    name = "lint-hlint",
+    srcs = [
+        "Version.hs",
+    ],
+)
+
+ormolu_format(
+    name = "format-ormolu",
+    srcs = [
+        "Version.hs",
+    ],
+)
+
+ormolu_test(
+    name = "lint-ormolu",
+    srcs = [
+        "Version.hs",
+    ],
+)
+
+test_suite(
+    name = "lint",
+    tags = [
+        "lint",
+    ],
+    tests = [
+        ":lint-hlint",
+        ":lint-ormolu",
+    ],
+)

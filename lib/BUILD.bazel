@@ -5,16 +5,6 @@ load(
 )
 
 load(
-    "//internal/version:defs.bzl",
-    "version_purty",
-)
-
-load(
-    "//tools/bazel:defs.bzl",
-    "expand_template",
-)
-
-load(
     "//tools/hlint:hlint.bzl",
     "hlint_test",
 )
@@ -23,14 +13,6 @@ load(
     "//tools/ormolu:ormolu.bzl",
     "ormolu_format",
     "ormolu_test",
-)
-
-expand_template(
-    name = "templated-Version.hs",
-    substitutions = {
-        "{{REPLACE_WITH_VERSION}}": version_purty,
-    },
-    template = "Version.hs",
 )
 
 haskell_library(
@@ -44,6 +26,7 @@ haskell_library(
         "-Wredundant-constraints",
     ],
     deps = [
+        "//internal/version:haskell",
         ":base",
         ":bytestring",
         "@stackage//:componentm",
@@ -54,7 +37,6 @@ haskell_library(
     ],
     name = "purty",
     srcs = [
-        ":templated-Version.hs",
         "Annotation.hs",
         "Args.hs",
         "Error.hs",
@@ -88,7 +70,6 @@ hlint_test(
         "Purty.hs",
         "SourceRange.hs",
         "Span.hs",
-        "Version.hs",
     ],
 )
 
@@ -103,7 +84,6 @@ ormolu_format(
         "Purty.hs",
         "SourceRange.hs",
         "Span.hs",
-        "Version.hs",
     ],
 )
 
@@ -118,7 +98,6 @@ ormolu_test(
         "Purty.hs",
         "SourceRange.hs",
         "Span.hs",
-        "Version.hs",
     ],
 )
 

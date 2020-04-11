@@ -32,6 +32,7 @@ test_suite(
         "lint",
     ],
     tests = [
+        "//internal/version:lint",
         "//lib:lint",
         "//src:lint",
     ],
