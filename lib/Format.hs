@@ -10,7 +10,7 @@ where
 
 import qualified "purescript-cst" Language.PureScript.CST.Print
 import qualified "purescript-cst" Language.PureScript.CST.Types
-import qualified "this" Log
+import qualified "purs-tool-log" Log
 import "rio" RIO hiding (log, span)
 import qualified "rio" RIO.NonEmpty
 import qualified "this" SourceRange

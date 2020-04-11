@@ -9,7 +9,7 @@ where
 
 import qualified "base" Data.Bitraversable
 import qualified "purescript-cst" Language.PureScript.CST.Types
-import qualified "this" Log
+import qualified "purs-tool-log" Log
 import "rio" RIO hiding (log, span)
 import qualified "this" SourceRange
 import qualified "this" Span

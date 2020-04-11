@@ -15,7 +15,7 @@ import qualified "this" Error
 import qualified "this" Format
 import qualified "purescript-cst" Language.PureScript.CST.Errors
 import qualified "purescript-cst" Language.PureScript.CST.Parser
-import qualified "this" Log
+import qualified "purs-tool-log" Log
 import "rio" RIO hiding (log)
 import qualified "rio" RIO.NonEmpty
 
