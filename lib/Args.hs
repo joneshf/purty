@@ -14,7 +14,7 @@ module Args
 where
 
 import qualified "bytestring" Data.ByteString.Builder
-import qualified "this" Error
+import qualified "purs-tool-error" Error
 import qualified "purs-tool-log" Log
 import qualified "optparse-applicative" Options.Applicative
 import "rio" RIO hiding (log)

@@ -11,7 +11,7 @@ where
 import qualified "this" Annotation
 import qualified "this" Args
 import qualified "componentm" Control.Monad.Component
-import qualified "this" Error
+import qualified "purs-tool-error" Error
 import qualified "this" Format
 import qualified "purescript-cst" Language.PureScript.CST.Errors
 import qualified "purescript-cst" Language.PureScript.CST.Parser

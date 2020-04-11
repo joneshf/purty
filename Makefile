@@ -68,6 +68,7 @@ coverage: $(BAZEL)
 
 .PHONY: format
 format: $(BAZEL)
+	$(BAZEL) run $(BAZEL_CONFIG) //internal/error:format-ormolu
 	$(BAZEL) run $(BAZEL_CONFIG) //internal/log:format-ormolu
 	$(BAZEL) run $(BAZEL_CONFIG) //internal/version:format-ormolu
 	$(BAZEL) run $(BAZEL_CONFIG) //lib:format-ormolu
