@@ -5,7 +5,7 @@ load(
 )
 
 load(
-    ":defs.bzl",
+    "//internal/version:defs.bzl",
     "version_purty",
 )
 

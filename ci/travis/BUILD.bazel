@@ -9,7 +9,7 @@ load(
 )
 
 load(
-    "//lib:defs.bzl",
+    "//internal/version:defs.bzl",
     "version_purty",
 )
 
