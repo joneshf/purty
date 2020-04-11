@@ -11,7 +11,7 @@ import qualified "base" Data.Bitraversable
 import qualified "purescript-cst" Language.PureScript.CST.Types
 import qualified "purs-tool-log" Log
 import "rio" RIO hiding (log, span)
-import qualified "this" SourceRange
+import qualified "purs-tool-cst" SourceRange
 import qualified "this" Span
 
 adoBlock ::

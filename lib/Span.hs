@@ -58,7 +58,7 @@ import qualified "purescript-cst" Language.PureScript.CST.Positions
 import qualified "purescript-cst" Language.PureScript.CST.Types
 import "rio" RIO
 import qualified "rio" RIO.Text
-import qualified "this" SourceRange
+import qualified "purs-tool-cst" SourceRange
 
 data Span
   = MultipleLines

@@ -1,7 +1,6 @@
 load(
     "@rules_haskell//haskell:defs.bzl",
     "haskell_library",
-    "haskell_toolchain_library",
 )
 
 load(
@@ -26,69 +25,37 @@ haskell_library(
         "-Wredundant-constraints",
     ],
     deps = [
-        "//internal/log:haskell",
-        "//internal/error:haskell",
-        "//internal/version:haskell",
-        "//pkg/cst:haskell",
-        ":base",
-        ":bytestring",
-        "@stackage//:componentm",
-        "@stackage//:optparse-applicative",
-        "@stackage//:pathwalk",
         "@stackage//:purescript-cst",
         "@stackage//:rio",
     ],
-    name = "purty",
+    name = "haskell",
+    package_name = "purs-tool-cst",
     srcs = [
-        "Annotation.hs",
-        "Args.hs",
-        "Format.hs",
-        "Purty.hs",
-        "Span.hs",
+        "SourceRange.hs",
     ],
     visibility = [
         "//:__subpackages__",
     ],
 )
 
-haskell_toolchain_library(
-    name = "base",
-)
-
-haskell_toolchain_library(
-    name = "bytestring",
-)
-
 hlint_test(
     name = "lint-hlint",
     srcs = [
-        "Annotation.hs",
-        "Args.hs",
-        "Format.hs",
-        "Purty.hs",
-        "Span.hs",
+        "SourceRange.hs",
     ],
 )
 
 ormolu_format(
     name = "format-ormolu",
     srcs = [
-        "Annotation.hs",
-        "Args.hs",
-        "Format.hs",
-        "Purty.hs",
-        "Span.hs",
+        "SourceRange.hs",
     ],
 )
 
 ormolu_test(
     name = "lint-ormolu",
     srcs = [
-        "Annotation.hs",
-        "Args.hs",
-        "Format.hs",
-        "Purty.hs",
-        "Span.hs",
+        "SourceRange.hs",
     ],
 )
 

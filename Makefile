@@ -72,6 +72,7 @@ format: $(BAZEL)
 	$(BAZEL) run $(BAZEL_CONFIG) //internal/log:format-ormolu
 	$(BAZEL) run $(BAZEL_CONFIG) //internal/version:format-ormolu
 	$(BAZEL) run $(BAZEL_CONFIG) //lib:format-ormolu
+	$(BAZEL) run $(BAZEL_CONFIG) //pkg/cst:format-ormolu
 	$(BAZEL) run $(BAZEL_CONFIG) //src:format-ormolu
 
 .PHONY: lint
