@@ -8,6 +8,5 @@ import qualified "base" System.IO
 
 main :: System.IO.IO ()
 main = do
-  args <- Args.parse
-  code <- Args.run args
+  code <- Args.run
   System.Exit.exitWith code

@@ -3,8 +3,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Args
-  ( parse,
-    run,
+  ( run,
   )
 where
 
@@ -146,9 +145,10 @@ output = Options.Applicative.flag STDOUT Write meta
 parse :: IO Args
 parse = Options.Applicative.execParser info
 
-run :: Args -> IO ExitCode
-run args' =
-  runComponent (debug args') "purty" (Log.handle config) $ \log -> do
+run :: IO ExitCode
+run = do
+  args' <- parse
+  runComponent (debug args') "purty" (Log.handle (config (debug args'))) $ \log -> do
     result <- run' log args'
     case RIO.NonEmpty.nonEmpty result of
       Just errs -> do
@@ -158,11 +158,13 @@ run args' =
         pure (ExitFailure 1)
       Nothing -> pure ExitSuccess
   where
-    config :: Log.Config
-    config =
+    config ::
+      Bool ->
+      Log.Config
+    config debug' =
       Log.Config
         { Log.name = "Log - main program",
-          Log.verbose = debug args'
+          Log.verbose = debug'
         }
     runComponent ::
       Bool ->
