@@ -40,7 +40,7 @@ pkg_tar(
         version = version_purty,
     ),
     srcs = [
-        "//src:purty",
+        "//cmd/purs-format:purty",
     ],
 )
 
@@ -51,7 +51,7 @@ pkg_tar(
         version = version_purty,
     ),
     srcs = [
-        "//src:purty",
+        "//cmd/purs-format:purty",
     ],
 )
 
@@ -61,7 +61,7 @@ pkg_tar(
         version = version_purty,
     ),
     srcs = [
-        "//src:purty",
+        "//cmd/purs-format:purty",
     ],
 )
 

@@ -7,7 +7,7 @@ copy_file(
     is_executable = True,
     name = "purty-binary",
     out = "purty",
-    src = "//src:purty",
+    src = "//cmd/purs-format:purty",
     visibility = [
         "//:__subpackages__",
     ],

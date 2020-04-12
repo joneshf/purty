@@ -68,12 +68,12 @@ coverage: $(BAZEL)
 
 .PHONY: format
 format: $(BAZEL)
+	$(BAZEL) run $(BAZEL_CONFIG) //cmd/purs-format:format-ormolu
 	$(BAZEL) run $(BAZEL_CONFIG) //internal/error:format-ormolu
 	$(BAZEL) run $(BAZEL_CONFIG) //internal/format:format-ormolu
 	$(BAZEL) run $(BAZEL_CONFIG) //internal/log:format-ormolu
 	$(BAZEL) run $(BAZEL_CONFIG) //internal/version:format-ormolu
 	$(BAZEL) run $(BAZEL_CONFIG) //pkg/cst:format-ormolu
-	$(BAZEL) run $(BAZEL_CONFIG) //src:format-ormolu
 
 .PHONY: lint
 lint: $(BAZEL)
