@@ -23,9 +23,14 @@ parse ::
   Either Utf8Builder (Language.PureScript.CST.Types.Module ())
 parse contents = case decodeUtf8' (toStrictBytes contents) of
   Left error -> Left (renderUnicodeException error)
-  Right decoded -> case Language.PureScript.CST.Parser.parse decoded of
-    Left error -> Left (renderParserErrors error)
-    Right parsed -> Right parsed
+  Right decoded -> parseText decoded
+
+parseText ::
+  Text ->
+  Either Utf8Builder (Language.PureScript.CST.Types.Module ())
+parseText decoded = case Language.PureScript.CST.Parser.parse decoded of
+  Left error -> Left (renderParserErrors error)
+  Right parsed -> Right parsed
 
 renderParserError ::
   Language.PureScript.CST.Errors.ParserError ->
