@@ -44,12 +44,23 @@ haskell_binary(
         ],
     }),
     deps = [
+        "//internal/error:haskell",
+        "//internal/format:haskell",
+        "//internal/log:haskell",
+        "//internal/version:haskell",
         ":base",
-        "//lib:purty",
+        ":bytestring",
+        "@stackage//:componentm",
+        "@stackage//:optparse-applicative",
+        "@stackage//:pathwalk",
+        "@stackage//:purescript-cst",
+        "@stackage//:rio",
     ],
     name = "purty",
     srcs = [
+        "Args.hs",
         "Main.hs",
+        "Purty.hs",
     ],
     visibility = [
         "//:__subpackages__",
@@ -60,24 +71,34 @@ haskell_toolchain_library(
     name = "base",
 )
 
+haskell_toolchain_library(
+    name = "bytestring",
+)
+
 hlint_test(
     name = "lint-hlint",
     srcs = [
+        "Args.hs",
         "Main.hs",
+        "Purty.hs",
     ],
 )
 
 ormolu_format(
     name = "format-ormolu",
     srcs = [
+        "Args.hs",
         "Main.hs",
+        "Purty.hs",
     ],
 )
 
 ormolu_test(
     name = "lint-ormolu",
     srcs = [
+        "Args.hs",
         "Main.hs",
+        "Purty.hs",
     ],
 )
 

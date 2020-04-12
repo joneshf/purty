@@ -36,7 +36,6 @@ test_suite(
         "//internal/format:lint",
         "//internal/log:lint",
         "//internal/version:lint",
-        "//lib:lint",
         "//pkg/cst:lint",
         "//src:lint",
     ],
