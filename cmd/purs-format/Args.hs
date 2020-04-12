@@ -14,8 +14,8 @@ module Args
 where
 
 import qualified "bytestring" Data.ByteString.Builder
-import qualified "this" Error
-import qualified "this" Log
+import qualified "purs-tool-error" Error
+import qualified "purs-tool-log" Log
 import qualified "optparse-applicative" Options.Applicative
 import "rio" RIO hiding (log)
 import qualified "rio" RIO.ByteString.Lazy
@@ -24,7 +24,7 @@ import qualified "rio" RIO.File
 import "rio" RIO.FilePath ((</>))
 import qualified "rio" RIO.FilePath
 import qualified "pathwalk" System.Directory.PathWalk
-import qualified "this" Version
+import qualified "purs-tool-version" Version
 
 data Args
   = Args Mode Verbose

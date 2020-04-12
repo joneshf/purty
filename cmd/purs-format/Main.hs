@@ -2,8 +2,8 @@
 
 module Main where
 
-import qualified "purty" Args
-import qualified "purty" Purty
+import qualified "this" Args
+import qualified "this" Purty
 import qualified "base" System.Exit
 import qualified "base" System.IO
 

@@ -1,0 +1,81 @@
+load(
+    "@rules_haskell//haskell:defs.bzl",
+    "haskell_library",
+    "haskell_toolchain_library",
+)
+
+load(
+    "//tools/hlint:hlint.bzl",
+    "hlint_test",
+)
+
+load(
+    "//tools/ormolu:ormolu.bzl",
+    "ormolu_format",
+    "ormolu_test",
+)
+
+package(
+    default_visibility = [
+        "//cmd:__subpackages__",
+        "//internal:__subpackages__",
+    ],
+)
+
+haskell_library(
+    compiler_flags = [
+        "-Wall",
+        "-Wcompat",
+        "-Werror",
+        "-Wincomplete-record-updates",
+        "-Wincomplete-uni-patterns",
+        "-Wmissing-methods",
+        "-Wredundant-constraints",
+    ],
+    deps = [
+        ":base",
+        "@stackage//:componentm",
+        "@stackage//:rio",
+    ],
+    name = "haskell",
+    package_name = "purs-tool-log",
+    srcs = [
+        "Log.hs",
+    ],
+)
+
+haskell_toolchain_library(
+    name = "base",
+)
+
+hlint_test(
+    name = "lint-hlint",
+    srcs = [
+        "Log.hs",
+    ],
+)
+
+ormolu_format(
+    name = "format-ormolu",
+    srcs = [
+        "Log.hs",
+    ],
+)
+
+ormolu_test(
+    name = "lint-ormolu",
+    srcs = [
+        "Log.hs",
+    ],
+)
+
+test_suite(
+    name = "lint",
+    tags = [
+        "lint",
+    ],
+    tests = [
+        ":lint-hlint",
+        ":lint-ormolu",
+    ],
+)

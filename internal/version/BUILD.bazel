@@ -1,12 +1,16 @@
 load(
     "@rules_haskell//haskell:defs.bzl",
-    "haskell_binary",
-    "haskell_toolchain_library",
+    "haskell_library",
 )
 
 load(
-    "//lib:defs.bzl",
+    "//internal/version:defs.bzl",
     "version_purty",
+)
+
+load(
+    "//tools/bazel:defs.bzl",
+    "expand_template",
 )
 
 load(
@@ -20,9 +24,23 @@ load(
     "ormolu_test",
 )
 
-haskell_binary(
+package(
+    default_visibility = [
+        "//cmd:__subpackages__",
+        "//internal:__subpackages__",
+    ],
+)
+
+expand_template(
+    name = "haskell-template",
+    substitutions = {
+        "{{REPLACE_WITH_VERSION}}": version_purty,
+    },
+    template = "Version.hs",
+)
+
+haskell_library(
     compiler_flags = [
-        "-O2",
         "-Wall",
         "-Wcompat",
         "-Werror",
@@ -30,54 +48,35 @@ haskell_binary(
         "-Wincomplete-uni-patterns",
         "-Wmissing-methods",
         "-Wredundant-constraints",
-        "-optc=-static",
-        "-optl=-pthread",
-        "-rtsopts",
-        "-static",
-        "-threaded",
-        "-with-rtsopts=-N",
-    ] + select({
-        "//:linux": [
-            "-optl=-static",
-        ],
-        "//conditions:default": [
-        ],
-    }),
+    ],
     deps = [
-        ":base",
-        "//lib:purty",
+        "@stackage//:rio",
     ],
-    name = "purty",
+    name = "haskell",
+    package_name = "purs-tool-version",
     srcs = [
-        "Main.hs",
+        ":haskell-template",
     ],
-    visibility = [
-        "//:__subpackages__",
-    ],
-)
-
-haskell_toolchain_library(
-    name = "base",
 )
 
 hlint_test(
     name = "lint-hlint",
     srcs = [
-        "Main.hs",
+        "Version.hs",
     ],
 )
 
 ormolu_format(
     name = "format-ormolu",
     srcs = [
-        "Main.hs",
+        "Version.hs",
     ],
 )
 
 ormolu_test(
     name = "lint-ormolu",
     srcs = [
-        "Main.hs",
+        "Version.hs",
     ],
 )
 

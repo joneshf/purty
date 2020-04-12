@@ -32,7 +32,11 @@ test_suite(
         "lint",
     ],
     tests = [
-        "//lib:lint",
-        "//src:lint",
+        "//cmd/purs-format:lint",
+        "//internal/error:lint",
+        "//internal/format:lint",
+        "//internal/log:lint",
+        "//internal/version:lint",
+        "//pkg/cst:lint",
     ],
 )

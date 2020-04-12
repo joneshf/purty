@@ -9,7 +9,7 @@ load(
 )
 
 load(
-    "//lib:defs.bzl",
+    "//internal/version:defs.bzl",
     "version_purty",
 )
 
@@ -28,9 +28,6 @@ alias(
         no_match_error = "No purty tarball available for this platform",
     ),
     name = "purty-tar",
-    visibility = [
-        "//:__subpackages__",
-    ],
 )
 
 pkg_tar(
@@ -40,7 +37,7 @@ pkg_tar(
         version = version_purty,
     ),
     srcs = [
-        "//src:purty",
+        "//cmd/purs-format:purty",
     ],
 )
 
@@ -51,7 +48,7 @@ pkg_tar(
         version = version_purty,
     ),
     srcs = [
-        "//src:purty",
+        "//cmd/purs-format:purty",
     ],
 )
 
@@ -61,7 +58,7 @@ pkg_tar(
         version = version_purty,
     ),
     srcs = [
-        "//src:purty",
+        "//cmd/purs-format:purty",
     ],
 )
 

@@ -5,16 +5,6 @@ load(
 )
 
 load(
-    ":defs.bzl",
-    "version_purty",
-)
-
-load(
-    "//tools/bazel:defs.bzl",
-    "expand_template",
-)
-
-load(
     "//tools/hlint:hlint.bzl",
     "hlint_test",
 )
@@ -25,12 +15,11 @@ load(
     "ormolu_test",
 )
 
-expand_template(
-    name = "templated-Version.hs",
-    substitutions = {
-        "{{REPLACE_WITH_VERSION}}": version_purty,
-    },
-    template = "Version.hs",
+package(
+    default_visibility = [
+        "//cmd:__subpackages__",
+        "//internal:__subpackages__",
+    ],
 )
 
 haskell_library(
@@ -44,28 +33,18 @@ haskell_library(
         "-Wredundant-constraints",
     ],
     deps = [
+        "//internal/log:haskell",
+        "//pkg/cst:haskell",
         ":base",
-        ":bytestring",
-        "@stackage//:componentm",
-        "@stackage//:optparse-applicative",
-        "@stackage//:pathwalk",
         "@stackage//:purescript-cst",
         "@stackage//:rio",
     ],
-    name = "purty",
+    name = "haskell",
+    package_name = "purs-tool-format",
     srcs = [
-        ":templated-Version.hs",
         "Annotation.hs",
-        "Args.hs",
-        "Error.hs",
         "Format.hs",
-        "Log.hs",
-        "Purty.hs",
-        "SourceRange.hs",
         "Span.hs",
-    ],
-    visibility = [
-        "//:__subpackages__",
     ],
 )
 
@@ -73,22 +52,12 @@ haskell_toolchain_library(
     name = "base",
 )
 
-haskell_toolchain_library(
-    name = "bytestring",
-)
-
 hlint_test(
     name = "lint-hlint",
     srcs = [
         "Annotation.hs",
-        "Args.hs",
-        "Error.hs",
         "Format.hs",
-        "Log.hs",
-        "Purty.hs",
-        "SourceRange.hs",
         "Span.hs",
-        "Version.hs",
     ],
 )
 
@@ -96,14 +65,8 @@ ormolu_format(
     name = "format-ormolu",
     srcs = [
         "Annotation.hs",
-        "Args.hs",
-        "Error.hs",
         "Format.hs",
-        "Log.hs",
-        "Purty.hs",
-        "SourceRange.hs",
         "Span.hs",
-        "Version.hs",
     ],
 )
 
@@ -111,14 +74,8 @@ ormolu_test(
     name = "lint-ormolu",
     srcs = [
         "Annotation.hs",
-        "Args.hs",
-        "Error.hs",
         "Format.hs",
-        "Log.hs",
-        "Purty.hs",
-        "SourceRange.hs",
         "Span.hs",
-        "Version.hs",
     ],
 )
 
