@@ -22,17 +22,25 @@ parse ::
   LByteString ->
   Either Utf8Builder (Language.PureScript.CST.Types.Module ())
 parse contents = case decodeUtf8' (toStrictBytes contents) of
-  Left error -> Left ("Error decoding contents" <> displayShow error)
+  Left error -> Left (renderUnicodeException error)
   Right decoded -> case Language.PureScript.CST.Parser.parse decoded of
-    Left error' ->
-      Left
-        ( "Error parsing contents:"
-            <> foldMap
-              ( \error ->
-                  newline
-                    <> indentation
-                    <> fromString (Language.PureScript.CST.Errors.prettyPrintError error)
-              )
-              error'
-        )
+    Left error -> Left (renderParserErrors error)
     Right parsed -> Right parsed
+
+renderParserError ::
+  Language.PureScript.CST.Errors.ParserError ->
+  Utf8Builder
+renderParserError error =
+  newline
+    <> indentation
+    <> fromString (Language.PureScript.CST.Errors.prettyPrintError error)
+
+renderParserErrors ::
+  NonEmpty Language.PureScript.CST.Errors.ParserError ->
+  Utf8Builder
+renderParserErrors error' = "Error parsing contents:" <> foldMap renderParserError error'
+
+renderUnicodeException ::
+  UnicodeException ->
+  Utf8Builder
+renderUnicodeException error = "Error decoding contents" <> displayShow error
