@@ -4,10 +4,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Format
-  ( module',
+  ( format,
   )
 where
 
+import qualified "this" Annotation
 import qualified "purescript-cst" Language.PureScript.CST.Print
 import qualified "purescript-cst" Language.PureScript.CST.Types
 import qualified "purs-tool-log" Log
@@ -1027,6 +1028,21 @@ foreign' log span indentation indent' foreign'' = case foreign'' of
   Language.PureScript.CST.Types.ForeignValue labeled' -> do
     debug log "ForeignValue" foreign'' span
     labeledNameType log indentation indent' labeled'
+
+format ::
+  (Show a) =>
+  Log.Handle ->
+  Indentation ->
+  Language.PureScript.CST.Types.Module a ->
+  IO Utf8Builder
+format log indentation module'' = do
+  Log.debug log "Annotating module"
+  annotated <- Annotation.module' log module''
+  Log.debug log ("Annotated module" <> displayShow annotated)
+  Log.debug log "Formatting module"
+  formatted <- module' log indentation annotated
+  Log.debug log ("Formatted module" <> display formatted)
+  pure formatted
 
 guarded ::
   Log.Handle ->

@@ -8,7 +8,6 @@ module Purty
   )
 where
 
-import qualified "purs-tool-format" Annotation
 import qualified "this" Args
 import qualified "purs-tool-cst" CST
 import qualified "componentm" Control.Monad.Component
@@ -25,12 +24,7 @@ format log contents = do
     Left err -> pure (Left (Error.new err))
     Right parsed -> do
       Log.debug log ("Parsed contents: " <> displayShow parsed)
-      Log.debug log "Annotating module"
-      annotated <- Annotation.module' log parsed
-      Log.debug log ("Annotated module" <> displayShow annotated)
-      Log.debug log "Formatting module"
-      formatted <- Format.module' log indentation annotated
-      Log.debug log ("Formatted module" <> display formatted)
+      formatted <- Format.format log indentation parsed
       pure (Right formatted)
 
 indentation :: Utf8Builder
