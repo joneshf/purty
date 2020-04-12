@@ -10,52 +10,31 @@ where
 
 import qualified "purs-tool-format" Annotation
 import qualified "this" Args
+import qualified "purs-tool-cst" CST
 import qualified "componentm" Control.Monad.Component
 import qualified "purs-tool-error" Error
 import qualified "purs-tool-format" Format
-import qualified "purescript-cst" Language.PureScript.CST.Errors
-import qualified "purescript-cst" Language.PureScript.CST.Parser
 import qualified "purs-tool-log" Log
 import "rio" RIO hiding (log)
 import qualified "rio" RIO.NonEmpty
 
 format :: Log.Handle -> LByteString -> IO (Either Error.Error Utf8Builder)
-format log contents' = do
-  Log.debug log "Decoding contents to `Text`."
-  case decodeUtf8' (toStrictBytes contents') of
-    Left err ->
-      pure (Left $ Error.new $ "Error decoding contents" <> displayShow err)
-    Right decoded -> do
-      Log.debug log ("Parsing contents: " <> display decoded)
-      case Language.PureScript.CST.Parser.parse decoded of
-        Left err' ->
-          pure
-            ( Left
-                $ Error.new
-                $ "Error parsing contents:"
-                  <> foldMap
-                    ( \err ->
-                        newline
-                          <> indentation
-                          <> fromString (Language.PureScript.CST.Errors.prettyPrintError err)
-                    )
-                    err'
-            )
-        Right parsed -> do
-          Log.debug log ("Parsed contents: " <> displayShow parsed)
-          Log.debug log "Annotating module"
-          annotated <- Annotation.module' log parsed
-          Log.debug log ("Annotated module" <> displayShow annotated)
-          Log.debug log "Formatting module"
-          formatted <- Format.module' log indentation annotated
-          Log.debug log ("Formatted module" <> display formatted)
-          pure (Right formatted)
+format log contents = do
+  Log.debug log ("Parsing contents: " <> displayShow contents)
+  case CST.parse contents of
+    Left err -> pure (Left (Error.new err))
+    Right parsed -> do
+      Log.debug log ("Parsed contents: " <> displayShow parsed)
+      Log.debug log "Annotating module"
+      annotated <- Annotation.module' log parsed
+      Log.debug log ("Annotated module" <> displayShow annotated)
+      Log.debug log "Formatting module"
+      formatted <- Format.module' log indentation annotated
+      Log.debug log ("Formatted module" <> display formatted)
+      pure (Right formatted)
 
 indentation :: Utf8Builder
 indentation = "  "
-
-newline :: Utf8Builder
-newline = "\n"
 
 run :: Args.Args -> IO ExitCode
 run args =

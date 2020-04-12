@@ -39,6 +39,7 @@ haskell_library(
     name = "haskell",
     package_name = "purs-tool-cst",
     srcs = [
+        "CST.hs",
         "SourceRange.hs",
     ],
 )
@@ -46,6 +47,7 @@ haskell_library(
 hlint_test(
     name = "lint-hlint",
     srcs = [
+        "CST.hs",
         "SourceRange.hs",
     ],
 )
@@ -53,6 +55,7 @@ hlint_test(
 ormolu_format(
     name = "format-ormolu",
     srcs = [
+        "CST.hs",
         "SourceRange.hs",
     ],
 )
@@ -60,6 +63,7 @@ ormolu_format(
 ormolu_test(
     name = "lint-ormolu",
     srcs = [
+        "CST.hs",
         "SourceRange.hs",
     ],
 )
