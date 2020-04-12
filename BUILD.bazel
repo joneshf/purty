@@ -33,6 +33,7 @@ test_suite(
     ],
     tests = [
         "//internal/error:lint",
+        "//internal/format:lint",
         "//internal/log:lint",
         "//internal/version:lint",
         "//lib:lint",
