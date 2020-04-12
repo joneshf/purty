@@ -69,7 +69,6 @@ haskell_binary(
     srcs = [
         "Args.hs",
         "Main.hs",
-        "Purty.hs",
     ],
 )
 
@@ -86,7 +85,6 @@ hlint_test(
     srcs = [
         "Args.hs",
         "Main.hs",
-        "Purty.hs",
     ],
 )
 
@@ -95,7 +93,6 @@ ormolu_format(
     srcs = [
         "Args.hs",
         "Main.hs",
-        "Purty.hs",
     ],
 )
 
@@ -104,7 +101,6 @@ ormolu_test(
     srcs = [
         "Args.hs",
         "Main.hs",
-        "Purty.hs",
     ],
 )
 

@@ -3,18 +3,16 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Args
-  ( Args (..),
-    Mode (..),
-    debug,
-    parse,
-    withInput,
-    withValidate,
-    writeVersion,
+  ( parse,
+    run,
   )
 where
 
+import qualified "purs-tool-cst" CST
+import qualified "componentm" Control.Monad.Component
 import qualified "bytestring" Data.ByteString.Builder
 import qualified "purs-tool-error" Error
+import qualified "purs-tool-format" Format
 import qualified "purs-tool-log" Log
 import qualified "optparse-applicative" Options.Applicative
 import "rio" RIO hiding (log)
@@ -23,6 +21,7 @@ import qualified "rio" RIO.Directory
 import qualified "rio" RIO.File
 import "rio" RIO.FilePath ((</>))
 import qualified "rio" RIO.FilePath
+import qualified "rio" RIO.NonEmpty
 import qualified "pathwalk" System.Directory.PathWalk
 import qualified "purs-tool-version" Version
 
@@ -73,6 +72,19 @@ debugVerbose :: Verbose -> Bool
 debugVerbose verbose' = case verbose' of
   NotVerbose -> False
   Verbose -> True
+
+format :: Log.Handle -> LByteString -> IO (Either Error.Error Utf8Builder)
+format log contents = do
+  Log.debug log ("Parsing contents: " <> displayShow contents)
+  case CST.parse contents of
+    Left err -> pure (Left (Error.new err))
+    Right parsed -> do
+      Log.debug log ("Parsed contents: " <> displayShow parsed)
+      formatted <- Format.format log indentation parsed
+      pure (Right formatted)
+  where
+    indentation :: Utf8Builder
+    indentation = "  "
 
 formatParser :: Options.Applicative.Parser Format
 formatParser =
@@ -133,6 +145,50 @@ output = Options.Applicative.flag STDOUT Write meta
 
 parse :: IO Args
 parse = Options.Applicative.execParser info
+
+run :: Args -> IO ExitCode
+run args' =
+  runComponent (debug args') "purty" (Log.handle config) $ \log -> do
+    result <- run' log args'
+    case RIO.NonEmpty.nonEmpty result of
+      Just errs -> do
+        for_ errs $ \err -> do
+          Log.debug log (Error.format err)
+          Log.info log (Error.message err)
+        pure (ExitFailure 1)
+      Nothing -> pure ExitSuccess
+  where
+    config :: Log.Config
+    config =
+      Log.Config
+        { Log.name = "Log - main program",
+          Log.verbose = debug args'
+        }
+    runComponent ::
+      Bool ->
+      Text ->
+      Control.Monad.Component.ComponentM a ->
+      (a -> IO ExitCode) ->
+      IO ExitCode
+    runComponent debug'
+      | debug' =
+        Control.Monad.Component.runComponentM1 (runSimpleApp . logInfo . display)
+      | otherwise =
+        Control.Monad.Component.runComponentM
+
+run' :: Log.Handle -> Args -> IO [Error.Error]
+run' log args' = case args' of
+  Args mode' _ -> case mode' of
+    Format format' -> do
+      Log.debug log "Formatting input"
+      withInput log format' (format log)
+    Validate validate' -> do
+      Log.debug log "Validating input"
+      withValidate log validate' (format log)
+    Version version' -> do
+      Log.debug log "Displaying version information"
+      writeVersion log version'
+      pure []
 
 validateFile ::
   Log.Handle ->
