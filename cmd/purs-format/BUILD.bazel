@@ -20,6 +20,14 @@ load(
     "ormolu_test",
 )
 
+package(
+    default_visibility = [
+        "//bin:__subpackages__",
+        "//ci:__subpackages__",
+        "//test:__subpackages__",
+    ],
+)
+
 haskell_binary(
     compiler_flags = [
         "-O2",
@@ -61,9 +69,6 @@ haskell_binary(
         "Args.hs",
         "Main.hs",
         "Purty.hs",
-    ],
-    visibility = [
-        "//:__subpackages__",
     ],
 )
 

@@ -15,6 +15,13 @@ load(
     "ormolu_test",
 )
 
+package(
+    default_visibility = [
+        "//cmd:__subpackages__",
+        "//internal:__subpackages__",
+    ],
+)
+
 haskell_library(
     compiler_flags = [
         "-Wall",
@@ -38,9 +45,6 @@ haskell_library(
         "Annotation.hs",
         "Format.hs",
         "Span.hs",
-    ],
-    visibility = [
-        "//:__subpackages__",
     ],
 )
 

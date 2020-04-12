@@ -14,6 +14,14 @@ load(
     "ormolu_test",
 )
 
+package(
+    default_visibility = [
+        "//cmd:__subpackages__",
+        "//internal:__subpackages__",
+        "//pkg:__subpackages__",
+    ],
+)
+
 haskell_library(
     compiler_flags = [
         "-Wall",
@@ -32,9 +40,6 @@ haskell_library(
     package_name = "purs-tool-cst",
     srcs = [
         "SourceRange.hs",
-    ],
-    visibility = [
-        "//:__subpackages__",
     ],
 )
 

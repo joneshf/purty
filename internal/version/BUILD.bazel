@@ -24,6 +24,13 @@ load(
     "ormolu_test",
 )
 
+package(
+    default_visibility = [
+        "//cmd:__subpackages__",
+        "//internal:__subpackages__",
+    ],
+)
+
 expand_template(
     name = "haskell-template",
     substitutions = {
@@ -49,9 +56,6 @@ haskell_library(
     package_name = "purs-tool-version",
     srcs = [
         ":haskell-template",
-    ],
-    visibility = [
-        "//:__subpackages__",
     ],
 )
 

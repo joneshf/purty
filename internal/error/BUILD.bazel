@@ -15,6 +15,13 @@ load(
     "ormolu_test",
 )
 
+package(
+    default_visibility = [
+        "//cmd:__subpackages__",
+        "//internal:__subpackages__",
+    ],
+)
+
 haskell_library(
     compiler_flags = [
         "-Wall",
@@ -33,9 +40,6 @@ haskell_library(
     package_name = "purs-tool-error",
     srcs = [
         "Error.hs",
-    ],
-    visibility = [
-        "//:__subpackages__",
     ],
 )
 
