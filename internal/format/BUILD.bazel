@@ -39,6 +39,10 @@ haskell_library(
         "@stackage//:purescript-cst",
         "@stackage//:rio",
     ],
+    hidden_modules = [
+        "Annotation",
+        "Span",
+    ],
     name = "haskell",
     package_name = "purs-tool-format",
     srcs = [

@@ -3,12 +3,10 @@
 module Main where
 
 import qualified "this" Args
-import qualified "this" Purty
 import qualified "base" System.Exit
 import qualified "base" System.IO
 
 main :: System.IO.IO ()
 main = do
-  args <- Args.parse
-  code <- Purty.run args
+  code <- Args.run
   System.Exit.exitWith code
