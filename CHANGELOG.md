@@ -6,7 +6,19 @@
 
 ### Changes
 
+### Deletions
+
+## 6.1.3
+
+Another small release.
+More internal project changes.
+
+### Additions
+
+### Changes
+
 * [Fix `prepack.sh` script](https://gitlab.com/joneshf/purty/issues/191)
+* [Split build into packages](https://gitlab.com/joneshf/purty/issues/192)
 
 ### Deletions
 
