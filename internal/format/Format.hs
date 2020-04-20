@@ -309,6 +309,21 @@ classHead log span indentation indent' classHead' = case classHead' of
         )
         fundeps
 
+comment ::
+  Log.Handle ->
+  Language.PureScript.CST.Types.Comment Language.PureScript.CST.Types.LineFeed ->
+  IO (Maybe Utf8Builder)
+comment log comment'' = case comment'' of
+  Language.PureScript.CST.Types.Comment comment' -> do
+    debug log "Comment" comment'' (Span.comment Span.lineFeed comment'')
+    pure (Just (display comment'))
+  Language.PureScript.CST.Types.Line _ -> do
+    Log.debug log "Not formatting `Line`"
+    pure Nothing
+  Language.PureScript.CST.Types.Space _ -> do
+    Log.debug log "Not formatting `Space`"
+    pure Nothing
+
 commentLeading ::
   Log.Handle ->
   Indent ->
@@ -372,6 +387,20 @@ commentsTrailing log f prefix commentsTrailing' = case commentsTrailing' of
   _ -> do
     debug log "trailing comments" commentsTrailing' Span.MultipleLines
     foldMap (commentTrailing log f prefix) commentsTrailing'
+
+commentsTrailingModule ::
+  Log.Handle ->
+  [Language.PureScript.CST.Types.Comment Language.PureScript.CST.Types.LineFeed] ->
+  IO Utf8Builder
+commentsTrailingModule log commentsTrailing' = do
+  comments' <- traverse (comment log) commentsTrailing'
+  case RIO.NonEmpty.nonEmpty (catMaybes comments') of
+    Nothing -> do
+      Log.debug log "No trailing comments to format"
+      pure blank
+    Just comments -> do
+      Log.debug log ("Formatting trailing comments" <> fold (RIO.NonEmpty.intersperse newline comments))
+      pure (newline <> fold (RIO.NonEmpty.intersperse newline comments) <> newline)
 
 constraint ::
   Log.Handle ->
@@ -1532,7 +1561,7 @@ module' log indentation module''' = case module''' of
       <> pure newline
       <> imports log indentation imports'
       <> declarations log indentation declarations'
-      <> commentsTrailing log Span.lineFeed blank trailing
+      <> commentsTrailingModule log trailing
 
 name ::
   Log.Handle ->
