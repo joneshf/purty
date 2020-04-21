@@ -33,6 +33,6 @@ image: Visual Studio 2019
 
 install:
   - chocolatey install make --version 4.3 --yes
-  - make bootstrap
+  - make .build\bazel.exe
 
 version: '{build}'
