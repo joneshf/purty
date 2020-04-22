@@ -8,6 +8,22 @@
 
 ### Deletions
 
+## 6.2.0
+
+This is a bug fix release to address a long standing bug.
+
+Trailing comments in a module have been formatted incorrectly since 4.0.0.
+It was largely tangled up in all trailing comments being formatted incorrectly since 4.0.0.
+We took some time to dig in further and found a way to address at least this one part.
+
+### Additions
+
+### Changes
+
+* [Fix trailing module comments](https://gitlab.com/joneshf/purty/-/issues/143)
+
+### Deletions
+
 ## 6.1.3
 
 Another small release.

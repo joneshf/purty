@@ -3,7 +3,8 @@ before_deploy:
 
 build_script:
   - ps: Set-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name LongPathsEnabled -Value 1
-  - make test BAZEL_CONFIG='--config=appveyor'
+  - .build\bazel.exe build --config appveyor //ci/appveyor/...
+  - .build\bazel.exe test --config appveyor //test/acceptance/... //test/golden/...
 
 cache:
   - '%APPVEYOR_BUILD_FOLDER%\.bazel-cache'
@@ -32,5 +33,6 @@ image: Visual Studio 2019
 
 install:
   - chocolatey install make --version 4.3 --yes
+  - make .build/bazel.exe
 
 version: '{build}'
