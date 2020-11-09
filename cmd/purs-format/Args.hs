@@ -199,11 +199,12 @@ validateFile ::
   IO (Maybe Error.Error)
 validateFile log f file = do
   Log.debug log ("Reading " <> displayShow file <> ".")
-  result' <- tryIO $ withLazyFile file $ \contents -> do
-    Log.debug log "Got the file contents. Formatting for validation"
-    result <- f contents
-    Log.debug log "Finished with the file"
-    pure (contents, result)
+  result' <- tryIO $
+    withLazyFile file $ \contents -> do
+      Log.debug log "Got the file contents. Formatting for validation"
+      result <- f contents
+      Log.debug log "Finished with the file"
+      pure (contents, result)
   case result' of
     Left err ->
       pure (Just $ Error.new $ "Error reading file: " <> displayShow err)
@@ -395,11 +396,12 @@ write ::
   IO (Maybe Error.Error)
 write log f output' file = do
   Log.debug log ("Reading " <> displayShow file <> ".")
-  result' <- tryIO $ withLazyFile file $ \contents -> do
-    Log.debug log "Got the file contents"
-    result <- f contents
-    Log.debug log "Finished with the file"
-    pure result
+  result' <- tryIO $
+    withLazyFile file $ \contents -> do
+      Log.debug log "Got the file contents"
+      result <- f contents
+      Log.debug log "Finished with the file"
+      pure result
   case result' of
     Left err ->
       pure (Just $ Error.new $ "Error reading file: " <> displayShow err)

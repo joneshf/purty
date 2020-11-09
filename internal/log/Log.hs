@@ -16,17 +16,15 @@ import qualified "componentm" Control.Monad.Component
 import qualified "base" GHC.Stack
 import "rio" RIO hiding (Handle, handle)
 
-data Config
-  = Config
-      { name :: Text,
-        verbose :: Bool
-      }
+data Config = Config
+  { name :: Text,
+    verbose :: Bool
+  }
 
-data Handle
-  = Handle
-      { debug' :: CallStack -> Utf8Builder -> IO (),
-        info' :: CallStack -> Utf8Builder -> IO ()
-      }
+data Handle = Handle
+  { debug' :: CallStack -> Utf8Builder -> IO (),
+    info' :: CallStack -> Utf8Builder -> IO ()
+  }
 
 debug :: HasCallStack => Handle -> Utf8Builder -> IO ()
 debug handle' = debug' handle' GHC.Stack.callStack
