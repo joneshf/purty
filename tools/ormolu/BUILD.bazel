@@ -1,5 +1,11 @@
 alias(
-    actual = "@ormolu//:ormolu",
+    actual = select({
+        "//:linux": "@ormolu_linux//file",
+        "//:macos": "@ormolu_macos//file",
+        "//:windows": "@ormolu_windows//file",
+    },
+        no_match_error = "No ormolu binary available for this platform",
+    ),
     name = "ormolu",
     tags = [
         "ormolu",
