@@ -138,16 +138,10 @@ stack_snapshot(
     name = "stackage",
     packages = [
         "componentm",
-        "dlist",
-        "exceptions",
-        "ghc-lib-parser",
-        "gitrev",
         "optparse-applicative",
-        "ormolu",
         "pathwalk",
         "purescript-cst",
         "rio",
-        "syb",
     ],
     tools = [
         "@alex",
