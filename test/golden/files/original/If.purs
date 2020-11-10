@@ -16,3 +16,26 @@ baz = do
 
 qux = [if true then
          1 else 2]
+
+cor = if true then
+        1
+      else if true then
+              2
+            else if true then
+                  3
+                else
+                  4
+
+gar = if true then
+        1
+      else if true then
+             ( if true then
+                 2 else if true then
+                            2 else 2)
+           else if true then
+                  if true then if true then 3
+                                            else if true then 3 else
+                                                   3
+                  else if true then 3 else 3
+                else
+                  4
