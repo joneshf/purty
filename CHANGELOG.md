@@ -6,6 +6,8 @@
 
 ### Changes
 
+* [Fix Chained if statments indent every time](https://gitlab.com/joneshf/purty/-/issues/207)
+
 ### Deletions
 
 ## 6.2.1
