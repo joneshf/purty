@@ -8,6 +8,18 @@
 
 ### Deletions
 
+## 6.2.1
+
+This is a small release with internal project changes.
+
+### Additions
+
+### Changes
+
+* [Use `ormolu` binary](https://gitlab.com/joneshf/purty/-/issues/216)
+
+### Deletions
+
 ## 6.2.0
 
 This is a bug fix release to address a long standing bug.
