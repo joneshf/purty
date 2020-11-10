@@ -1006,6 +1006,43 @@ exprPrefix log span indentation indent' expr' =
       Span.SingleLine ->
         space
 
+exprPrefixElseIf ::
+  Log.Handle ->
+  Span.Span ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.Types.Expr Span.Span ->
+  IO Utf8Builder
+exprPrefixElseIf log span indentation indent expr' =
+  case expr' of
+    Language.PureScript.CST.Types.ExprAdo {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprApp {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprArray {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprBoolean {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprCase {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprChar {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprConstructor {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprDo {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprHole {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprIdent {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprIf {} ->
+      pure space
+        <> expr log indentation indent expr'
+    Language.PureScript.CST.Types.ExprInfix {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprLambda {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprLet {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprNegate {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprNumber {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprOp {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprOpName {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprParens {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprRecord {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprRecordAccessor {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprRecordUpdate {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprSection {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprString {} -> exprPrefix log span indentation indent expr'
+    Language.PureScript.CST.Types.ExprTyped {} -> exprPrefix log span indentation indent expr'
+
 fixityFields ::
   Log.Handle ->
   Indent ->
@@ -1140,7 +1177,7 @@ ifThenElse log span indentation indent ifThenElse' = case ifThenElse' of
       <> exprPrefix log span indentation indent true
       <> pure prefix
       <> sourceToken log indent blank else'
-      <> exprPrefix log span indentation indent false
+      <> exprPrefixElseIf log span indentation indent false
 
 import' ::
   Log.Handle ->
