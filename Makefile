@@ -9,6 +9,9 @@ VERSION_BAZEL := 2.2.0
 VERSION_IBAZEL := 0.12.3
 
 PACKAGE_JSON := package.json
+STACKAGE_SNAPSHOT := snapshot.yaml
+STACKAGE_SNAPSHOT_PINNED := stackage_snapshot.json
+WORKSPACE := WORKSPACE.bazel
 
 # Based on https://stackoverflow.com/a/12099167/1549047.
 ifeq ($(OS),Windows_NT)
@@ -49,10 +52,14 @@ $(IBAZEL): | $(BUILDDIR)
 	@touch $@
 	$(IBAZEL) version
 
-$(PACKAGE_JSON): $(BAZEL)
+$(PACKAGE_JSON): $(BAZEL) $(STACKAGE_SNAPSHOT_PINNED)
 	$(info Generating $@ file)
 	$(BAZEL) build //ci/npm:package.json
 	cp $(BAZEL_BINDIR)/ci/npm/package.json $@
+
+$(STACKAGE_SNAPSHOT_PINNED): $(BAZEL) $(STACKAGE_SNAPSHOT) $(WORKSPACE)
+	$(info Generating $@ file)
+	$(BAZEL) run @stackage-unpinned//:pin
 
 .PHONY: clean
 clean:
@@ -63,7 +70,7 @@ clean:
 	@git clean -X --force $(BINDIR)/*
 
 .PHONY: coverage
-coverage: $(BAZEL)
+coverage: $(BAZEL) $(STACKAGE_SNAPSHOT_PINNED)
 	$(BAZEL) coverage $(BAZEL_CONFIG) //...
 
 .PHONY: format
@@ -76,7 +83,7 @@ format: $(BAZEL)
 	$(BAZEL) run $(BAZEL_CONFIG) //pkg/cst:format-ormolu
 
 .PHONY: lint
-lint: $(BAZEL)
+lint: $(BAZEL) $(STACKAGE_SNAPSHOT_PINNED)
 	$(BAZEL) test $(BAZEL_CONFIG) //:lint
 
 .PHONY: npm-publish
@@ -84,10 +91,13 @@ npm-publish: $(PACKAGE_JSON)
 	$(info Publishing to npm)
 	npm publish
 
+.PHONY: pin-stackage
+pin-stackage: $(STACKAGE_SNAPSHOT_PINNED)
+
 .PHONY: test
-test: $(BAZEL)
+test: $(BAZEL) $(STACKAGE_SNAPSHOT_PINNED)
 	$(BAZEL) test $(BAZEL_CONFIG) //...
 
 .PHONY: watch
-watch: $(IBAZEL)
+watch: $(IBAZEL) $(STACKAGE_SNAPSHOT_PINNED)
 	$(IBAZEL) test $(BAZEL_CONFIG) //...

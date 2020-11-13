@@ -198,6 +198,7 @@ stack_snapshot(
         "semigroups",
         "text",
     ],
+    stack_snapshot_json = "//:stackage_snapshot.json",
     tools = [
         "@alex",
         "@happy",
