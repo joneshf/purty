@@ -71,6 +71,23 @@ http_archive(
         "https://mirror.bazel.build/github.com/bazelbuild/rules_pkg/releases/download/0.2.5/rules_pkg-0.2.5.tar.gz",
     ],
 )
+
+http_archive(
+    name = "purescript_cst",
+    build_file = "//third_party/purescript-cst:purescript-cst.BUILD",
+    patch_args = [
+        "-p1",
+    ],
+    patches = [
+        "//third_party/purescript-cst:purescript-cst-cabal-file.patch",
+    ],
+    strip_prefix = "purescript-81909a9585b00bc99cc47c7959fbc5ae2e1ff285/lib/purescript-cst",
+    sha256 = "f2d685b754d93328fd2d175af0748f6f3bce7335c5d14157427876df38b566c3",
+    urls = [
+        "https://github.com/joneshf/purescript/archive/81909a9585b00bc99cc47c7959fbc5ae2e1ff285.zip",
+    ],
+)
+
 # Dependencies
 
 load(
@@ -137,14 +154,29 @@ stack_snapshot(
     local_snapshot = "//:snapshot.yaml",
     name = "stackage",
     packages = [
+        # our dependencies
         "componentm",
         "optparse-applicative",
         "pathwalk",
-        "purescript-cst",
         "rio",
+        # `purescript-cst` dependencies
+        # These have to be here so the `//third_party/purescript:purescript-cst` package can pick them up.
+        # If we ever can get rid of the `//third_party/purescript:purescript-cst` package,
+        # we can remove these dependencies
+        "array",
+        "base",
+        "containers",
+        "dlist",
+        "purescript-ast",
+        "scientific",
+        "semigroups",
+        "text",
     ],
     tools = [
         "@alex",
         "@happy",
     ],
+    vendored_packages = {
+        "purescript-cst": "@purescript_cst//:purescript-cst",
+    },
 )
