@@ -73,6 +73,22 @@ http_archive(
 )
 
 http_archive(
+    name = "purescript_ast",
+    build_file = "//third_party/purescript-ast:purescript-ast.BUILD",
+    patch_args = [
+        "-p1",
+    ],
+    patches = [
+        "//third_party/purescript-ast:purescript-ast-cabal-file.patch",
+    ],
+    strip_prefix = "purescript-81909a9585b00bc99cc47c7959fbc5ae2e1ff285/lib/purescript-ast",
+    sha256 = "f2d685b754d93328fd2d175af0748f6f3bce7335c5d14157427876df38b566c3",
+    urls = [
+        "https://github.com/joneshf/purescript/archive/81909a9585b00bc99cc47c7959fbc5ae2e1ff285.zip",
+    ],
+)
+
+http_archive(
     name = "purescript_cst",
     build_file = "//third_party/purescript-cst:purescript-cst.BUILD",
     patch_args = [
@@ -159,6 +175,23 @@ stack_snapshot(
         "optparse-applicative",
         "pathwalk",
         "rio",
+        # `purescript-ast` dependencies
+        # These have to be here so the `//third_party/purescript:purescript-ast` package can pick them up.
+        # If we ever can get rid of the `//third_party/purescript:purescript-ast` package,
+        # we can remove these dependencies
+        "aeson",
+        "base",
+        "base-compat",
+        "bytestring",
+        "containers",
+        "deepseq",
+        "filepath",
+        "microlens-platform",
+        "mtl",
+        "protolude",
+        "scientific",
+        "text",
+        "vector",
         # `purescript-cst` dependencies
         # These have to be here so the `//third_party/purescript:purescript-cst` package can pick them up.
         # If we ever can get rid of the `//third_party/purescript:purescript-cst` package,
@@ -167,7 +200,6 @@ stack_snapshot(
         "base",
         "containers",
         "dlist",
-        "purescript-ast",
         "scientific",
         "semigroups",
         "text",
@@ -177,6 +209,7 @@ stack_snapshot(
         "@happy",
     ],
     vendored_packages = {
+        "purescript-ast": "@purescript_ast//:purescript-ast",
         "purescript-cst": "@purescript_cst//:purescript-cst",
     },
 )
