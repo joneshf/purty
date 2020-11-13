@@ -42,12 +42,12 @@ $(BAZEL): | $(BUILDDIR)
 $(BUILDDIR):
 	@mkdir -p $@
 
-$(IBAZEL): | $(BUILDDIR)
+$(IBAZEL): $(BAZEL) | $(BUILDDIR)
 	$(info Downloading ibazel binary)
 	curl --location --output $@ $(IBAZEL_URI)
 	@chmod 0755 $@
 	@touch $@
-	$(IBAZEL) version
+	$(IBAZEL) -bazel_path $(BAZEL) version
 
 $(PACKAGE_JSON): $(BAZEL)
 	$(info Generating $@ file)
@@ -89,5 +89,5 @@ test: $(BAZEL)
 	$(BAZEL) test $(BAZEL_CONFIG) //...
 
 .PHONY: watch
-watch: $(IBAZEL)
-	$(IBAZEL) test $(BAZEL_CONFIG) //...
+watch: $(BAZEL) $(IBAZEL)
+	$(IBAZEL) -bazel_path $(BAZEL) test $(BAZEL_CONFIG) //...
