@@ -50,6 +50,12 @@ http_archive(
 
 http_archive(
     name = "rules_haskell",
+    patch_args = [
+        "-p1",
+    ],
+    patches = [
+        "//tools/rules_haskell:ignore-unix-on-windows.patch",
+    ],
     sha256 = "4d9e3a87ffada5e6417b7fe9ac84a80a7e817e3a044be57ca25da376edb2d0c7",
     strip_prefix = "rules_haskell-0.13",
     urls = [
