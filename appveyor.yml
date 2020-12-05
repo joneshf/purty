@@ -3,8 +3,8 @@ before_deploy:
 
 build_script:
   - ps: Set-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name LongPathsEnabled -Value 1
-  - .build\bazel.exe build --config appveyor //ci/appveyor/...
-  - .build\bazel.exe test --config appveyor //test/acceptance/... //test/golden/...
+  - .build\bazel.exe query @stackage//... --output build
+  - (cd $(.build\bazel.exe info output_base)/external/stackage && ../rules_haskell_stack/stack ls dependencies json --global-hints --external)
 
 cache:
   - '%APPVEYOR_BUILD_FOLDER%\.bazel-cache'
