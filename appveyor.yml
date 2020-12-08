@@ -6,7 +6,6 @@ build_script:
   - .build\bazel.exe query @stackage//... --output build
   - ps: |
       Set-Location $(.build\bazel.exe info output_base)\external\stackage
-      ..\rules_haskell_stack\stack ls dependencies json --global-hints --external
 
 cache:
   - '%APPVEYOR_BUILD_FOLDER%\.bazel-cache'
