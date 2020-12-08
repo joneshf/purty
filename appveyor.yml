@@ -5,7 +5,7 @@ build_script:
   - ps: Set-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name LongPathsEnabled -Value 1
   - .build\bazel.exe query @stackage//... --output build
   - ps: |
-      Set-Location $(.build\bazel.exe info output_base)\external\stackage
+      Set-Location "$(.build\bazel.exe info output_base)\external\stackage"
 
 cache:
   - '%APPVEYOR_BUILD_FOLDER%\.bazel-cache'
