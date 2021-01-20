@@ -6,7 +6,21 @@
 
 ### Changes
 
+* [Fix AppVeyor image again](https://gitlab.com/joneshf/purty/-/issues/228)
+* [Change formatting goals/non-goals to have links](https://gitlab.com/joneshf/purty/-/issues/227)
+
+### Deletions
+
+## 6.3.0
+
+This is a small release to address the formatting of nested conditionals.
+
+### Additions
+
+### Changes
+
 * [Fix Chained if statments indent every time](https://gitlab.com/joneshf/purty/-/issues/207)
+* [Fix AppVeyor image](https://gitlab.com/joneshf/purty/-/issues/219)
 
 ### Deletions
 
