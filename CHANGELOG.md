@@ -6,6 +6,8 @@
 
 ### Changes
 
+* [Fix AppVeyor image again](https://gitlab.com/joneshf/purty/-/issues/228)
+
 ### Deletions
 
 ## 6.3.0
