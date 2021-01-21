@@ -5,7 +5,7 @@ BAZEL_BINDIR := bazel-bin
 BAZEL_CONFIG :=
 BINDIR := bin
 BUILDDIR := .build
-VERSION_BAZEL := 2.2.0
+VERSION_BAZEL := 3.7.0
 VERSION_IBAZEL := 0.12.3
 
 PACKAGE_JSON := package.json
