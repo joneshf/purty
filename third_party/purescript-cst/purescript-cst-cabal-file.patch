@@ -1,0 +1,110 @@
+diff --git a/purescript-cst.cabal b/purescript-cst.cabal
+new file mode 100644
+index 00000000..dbb1ed9b
+--- /dev/null
++++ b/purescript-cst.cabal
+@@ -0,0 +1,104 @@
++cabal-version: 1.12
++
++-- This file has been generated from package.yaml by hpack version 0.31.1.
++--
++-- see: https://github.com/sol/hpack
++--
++-- hash: ff73e382fe3eaea97d6533a6b3512e14ec9eae7888720be48ae9f929e59cd733
++
++name:           purescript-cst
++version:        0.13.6
++synopsis:       PureScript Programming Language Concrete Syntax Tree
++description:    The surface syntax of the PureScript Programming Language.
++category:       Language
++stability:      experimental
++homepage:       http://www.purescript.org/
++bug-reports:    https://github.com/purescript/purescript/issues
++author:         Phil Freeman <paf31@cantab.net>
++maintainer:     Gary Burgess <gary.burgess@gmail.com>, Hardy Jones <jones3.hardy@gmail.com>, Harry Garrood <harry@garrood.me>, Christoph Hegemann <christoph.hegemann1337@gmail.com>, Liam Goodacre <goodacre.liam@gmail.com>, Nathan Faubion <nathan@n-son.com>
++
++copyright:      (c) 2013-17 Phil Freeman, (c) 2014-19 Gary Burgess, (c) other contributors (see CONTRIBUTORS.md)
++license:        BSD3
++license-file:   LICENSE
++build-type:     Simple
++extra-source-files:
++    tests/purs/layout/AdoIn.purs
++    tests/purs/layout/CaseGuards.purs
++    tests/purs/layout/CaseWhere.purs
++    tests/purs/layout/ClassHead.purs
++    tests/purs/layout/Commas.purs
++    tests/purs/layout/Delimiter.purs
++    tests/purs/layout/DoLet.purs
++    tests/purs/layout/DoOperator.purs
++    tests/purs/layout/DoWhere.purs
++    tests/purs/layout/IfThenElseDo.purs
++    tests/purs/layout/InstanceChainElse.purs
++    tests/purs/layout/LetGuards.purs
++    README.md
++
++source-repository head
++  type: git
++  location: https://github.com/purescript/purescript
++
++library
++  exposed-modules:
++      Language.PureScript.CST.Convert
++      Language.PureScript.CST.Errors
++      Language.PureScript.CST.Layout
++      Language.PureScript.CST.Lexer
++      Language.PureScript.CST.Monad
++      Language.PureScript.CST.Parser
++      Language.PureScript.CST.Positions
++      Language.PureScript.CST.Print
++      Language.PureScript.CST.Traversals
++      Language.PureScript.CST.Traversals.Type
++      Language.PureScript.CST.Types
++      Language.PureScript.CST.Utils
++  other-modules:
++      Paths_purescript_cst
++  hs-source-dirs:
++      src
++  default-extensions: ConstraintKinds DataKinds DeriveFunctor DeriveFoldable DeriveTraversable DeriveGeneric DerivingStrategies EmptyDataDecls FlexibleContexts KindSignatures LambdaCase MultiParamTypeClasses NoImplicitPrelude PatternGuards PatternSynonyms RankNTypes RecordWildCards OverloadedStrings ScopedTypeVariables TupleSections ViewPatterns
++  ghc-options: -Wall -O2
++  build-tools:
++      happy ==1.19.9
++  build-depends:
++      array
++    , base >=4.11 && <4.13
++    , containers
++    , dlist
++    , purescript-ast
++    , scientific >=0.3.4.9 && <0.4
++    , semigroups >=0.16.2 && <0.19
++    , text
++  default-language: Haskell2010
++
++test-suite tests
++  type: exitcode-stdio-1.0
++  main-is: Main.hs
++  other-modules:
++      TestCst
++      Paths_purescript_cst
++  hs-source-dirs:
++      tests
++  default-extensions: NoImplicitPrelude LambdaCase OverloadedStrings
++  ghc-options: -Wall
++  build-tools:
++      happy ==1.19.9
++  build-depends:
++      array
++    , base >=4.11 && <4.13
++    , base-compat >=0.6.0
++    , bytestring
++    , containers
++    , dlist
++    , filepath
++    , purescript-ast
++    , purescript-cst
++    , scientific >=0.3.4.9 && <0.4
++    , semigroups >=0.16.2 && <0.19
++    , tasty
++    , tasty-golden
++    , tasty-quickcheck
++    , text
++  default-language: Haskell2010

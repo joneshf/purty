@@ -1,0 +1,80 @@
+diff --git a/purescript-ast.cabal b/purescript-ast.cabal
+new file mode 100644
+index 00000000..d886259e
+--- /dev/null
++++ b/purescript-ast.cabal
+@@ -0,0 +1,74 @@
++cabal-version: 1.12
++
++-- This file has been generated from package.yaml by hpack version 0.31.1.
++--
++-- see: https://github.com/sol/hpack
++--
++-- hash: 5e936f86b1ee77d33f4a9da5d917f41ca19c69b390366da8bdff54725ad5dc18
++
++name:           purescript-ast
++version:        0.13.6
++synopsis:       PureScript Programming Language Abstract Syntax Tree
++description:    Defines the underlying syntax of the PureScript Programming Language.
++category:       Language
++stability:      experimental
++homepage:       http://www.purescript.org/
++bug-reports:    https://github.com/purescript/purescript/issues
++author:         Phil Freeman <paf31@cantab.net>
++maintainer:     Gary Burgess <gary.burgess@gmail.com>, Hardy Jones <jones3.hardy@gmail.com>, Harry Garrood <harry@garrood.me>, Christoph Hegemann <christoph.hegemann1337@gmail.com>, Liam Goodacre <goodacre.liam@gmail.com>, Nathan Faubion <nathan@n-son.com>
++
++copyright:      (c) 2013-17 Phil Freeman, (c) 2014-19 Gary Burgess, (c) other contributors (see CONTRIBUTORS.md)
++license:        BSD3
++license-file:   LICENSE
++build-type:     Simple
++extra-source-files:
++    README.md
++
++source-repository head
++  type: git
++  location: https://github.com/purescript/purescript
++
++library
++  exposed-modules:
++      Control.Monad.Supply
++      Control.Monad.Supply.Class
++      Language.PureScript.AST
++      Language.PureScript.AST.Binders
++      Language.PureScript.AST.Declarations
++      Language.PureScript.AST.Exported
++      Language.PureScript.AST.Literals
++      Language.PureScript.AST.Operators
++      Language.PureScript.AST.SourcePos
++      Language.PureScript.AST.Traversals
++      Language.PureScript.Comments
++      Language.PureScript.Constants.Prim
++      Language.PureScript.Crash
++      Language.PureScript.Environment
++      Language.PureScript.Kinds
++      Language.PureScript.Label
++      Language.PureScript.Names
++      Language.PureScript.PSString
++      Language.PureScript.Traversals
++      Language.PureScript.TypeClassDictionaries
++      Language.PureScript.Types
++  other-modules:
++      Paths_purescript_ast
++  hs-source-dirs:
++      src
++  default-extensions: ConstraintKinds DataKinds DeriveFunctor DeriveFoldable DeriveTraversable DeriveGeneric DerivingStrategies EmptyDataDecls FlexibleContexts KindSignatures LambdaCase MultiParamTypeClasses NoImplicitPrelude PatternGuards PatternSynonyms RankNTypes RecordWildCards OverloadedStrings ScopedTypeVariables TupleSections ViewPatterns
++  ghc-options: -Wall -O2
++  build-depends:
++      aeson >=1.0 && <1.5
++    , base >=4.11 && <4.13
++    , base-compat >=0.6.0
++    , bytestring
++    , containers
++    , deepseq
++    , filepath
++    , microlens-platform >=0.3.9.0 && <0.4
++    , mtl >=2.1.0 && <2.3.0
++    , protolude >=0.1.6 && <0.2.4
++    , scientific >=0.3.4.9 && <0.4
++    , text
++    , vector
++  default-language: Haskell2010

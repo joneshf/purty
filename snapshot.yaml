@@ -5,9 +5,4 @@ packages:
   - teardown-0.5.0.1@sha256:b7a6812637f79d81632bb7adebc5ad9a96fffacf3e5f655d5bf21728bd3786f9,2868
   - typed-process-0.2.6.0@sha256:c901c13d491441830eb23132ad6968243a56b98161629d260a26c0b13c735fcd,2136
   - unliftio-0.2.12@sha256:b089fbc2ff2628a963c2c4b12143f2020874e3e5144ffd6c62b25639a0ca1483,3325
-  - git: https://github.com/joneshf/purescript.git
-    commit: 81909a9585b00bc99cc47c7959fbc5ae2e1ff285
-    subdirs:
-      - lib/purescript-ast
-      - lib/purescript-cst
 resolver: lts-13.26
