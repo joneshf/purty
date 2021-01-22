@@ -6,10 +6,10 @@ load(
     "http_file",
 )
 
-_ormolu_linux_sha = "ccb3089e2c89490ca9f3e196ce0cf2cafede6d572e35bb6aa225652c62b52df4"
-_ormolu_macos_sha = "5609637a33c94309436f585e719cd5d230cdb1649d8e17b45690fbd1203c7b49"
-_ormolu_windows_sha = "8db240bc6006e7fa80e70eaa46932f4fd9de1b1a781a8689d62a9a387e323191"
-_ormolu_version = "0.1.3.0"
+_ormolu_linux_sha = "55a3a15bd536ecaa36358a40618b558f6bc3e9695fcdf64a419205206ffd6145"
+_ormolu_macos_sha = "80a475b7c107eb0deeaa50c73cc4f5467a250d0824d921bfb508581d5af2ca00"
+_ormolu_windows_sha = "9ceb7c573666fbdeb5d79324375a5a7c2c15d0672e6732670705ab7340d3e23a"
+_ormolu_version = "0.1.4.1"
 
 def ormolu_dependencies():
     """Fetch dependencies for `ormolu`.
