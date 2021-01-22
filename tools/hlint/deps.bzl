@@ -6,7 +6,10 @@ load(
     "http_archive",
 )
 
-_hlint_version = "2.2.11"
+_hlint_linux_sha = "eaf42de9986be58205d1d8ce1e518ccf41b367efed10561a19a7a454f0d1db82"
+_hlint_macos_sha = "43435624c833bce8d2ae01614d17b48724924c69f69916dd809d0683d6624069"
+_hlint_version = "3.2.7"
+_hlint_windows_sha = "8ba44ee40d169e35ea6acf017a81a289cfd311e5d8a509ff65ea8e65f2709ac6"
 
 def hlint_dependencies():
     """Fetch dependencies for `hlint`.
@@ -18,7 +21,7 @@ def hlint_dependencies():
     http_archive(
         build_file = "//tools/hlint:linux.BUILD",
         name = "hlint_linux",
-        sha256 = "21ccdd7a79b20cfad4b690296e0f30b4439efb1b47a8ee4281c89be0303bd76b",
+        sha256 = _hlint_linux_sha,
         strip_prefix = "hlint-{hlint_version}".format(
             hlint_version = _hlint_version,
         ),
@@ -32,7 +35,7 @@ def hlint_dependencies():
     http_archive(
         build_file = "//tools/hlint:macos.BUILD",
         name = "hlint_macos",
-        sha256 = "24ee6c423bf7fa491c7451b5881a3d9f2ca276c8808a5c42c0506be0842e0823",
+        sha256 = _hlint_macos_sha,
         strip_prefix = "hlint-{hlint_version}".format(
             hlint_version = _hlint_version,
         ),
@@ -46,7 +49,7 @@ def hlint_dependencies():
     http_archive(
         build_file = "//tools/hlint:windows.BUILD",
         name = "hlint_windows",
-        sha256 = "3f71983ef0c89d40f1e3cab2f4a61b44626ba60babdf3f16101c18c71fb0cf6e",
+        sha256 = _hlint_windows_sha,
         strip_prefix = "hlint-{hlint_version}".format(
             hlint_version = _hlint_version,
         ),
