@@ -6,6 +6,19 @@
 
 ### Changes
 
+### Deletions
+
+## 6.3.1
+
+This is a small release with all internal-facing changes.
+
+This is mostly updating dependencies and fixing some CI issues.
+There should be no behavioral change from the previous version.
+
+### Additions
+
+### Changes
+
 * [Fix AppVeyor image again](https://gitlab.com/joneshf/purty/-/issues/228)
 * [Change formatting goals/non-goals to have links](https://gitlab.com/joneshf/purty/-/issues/227)
 * [Update dependencies](https://gitlab.com/joneshf/purty/-/issues/218)
