@@ -335,9 +335,9 @@ export log export' = case export' of
   Language.PureScript.CST.Types.ExportClass _ class' name' -> do
     debug log "ExportClass" name' span
     pure (Language.PureScript.CST.Types.ExportClass span class' name')
-  Language.PureScript.CST.Types.ExportKind _ kind' name' -> do
+  Language.PureScript.CST.Types.ExportKind _ kind name' -> do
     debug log "ExportKind" name' span
-    pure (Language.PureScript.CST.Types.ExportKind span kind' name')
+    pure (Language.PureScript.CST.Types.ExportKind span kind name')
   Language.PureScript.CST.Types.ExportModule _ module'' name' -> do
     debug log "ExportModule" name' span
     pure (Language.PureScript.CST.Types.ExportModule span module'' name')
@@ -503,10 +503,10 @@ foreign' log foreign'' = case foreign'' of
     debug log "ForeignData" foreign'' span
     labeled' <- traverse (type' log) labeled''
     pure (Language.PureScript.CST.Types.ForeignData data' labeled')
-  Language.PureScript.CST.Types.ForeignKind kind' name' -> do
+  Language.PureScript.CST.Types.ForeignKind kind name' -> do
     let span = Span.foreign' foreign''
     debug log "ForeignKind" foreign'' span
-    pure (Language.PureScript.CST.Types.ForeignKind kind' name')
+    pure (Language.PureScript.CST.Types.ForeignKind kind name')
   Language.PureScript.CST.Types.ForeignValue labeled'' -> do
     let span = Span.foreign' foreign''
     debug log "ForeignValue" foreign'' span
@@ -566,9 +566,9 @@ import' log import'' = case import'' of
   Language.PureScript.CST.Types.ImportClass _ class' name' -> do
     debug log "ImportClass" name' span
     pure (Language.PureScript.CST.Types.ImportClass span class' name')
-  Language.PureScript.CST.Types.ImportKind _ kind' name' -> do
+  Language.PureScript.CST.Types.ImportKind _ kind name' -> do
     debug log "ImportKind" name' span
-    pure (Language.PureScript.CST.Types.ImportKind span kind' name')
+    pure (Language.PureScript.CST.Types.ImportKind span kind name')
   Language.PureScript.CST.Types.ImportOp _ name' -> do
     debug log "ImportOp" name' span
     pure (Language.PureScript.CST.Types.ImportOp span name')
@@ -887,12 +887,12 @@ type' log type'''' = case type'''' of
     let span = Span.type' type''''
     debug log "TypeHole" type'''' span
     pure (Language.PureScript.CST.Types.TypeHole span hole)
-  Language.PureScript.CST.Types.TypeKinded _ type''' colons kind'' -> do
+  Language.PureScript.CST.Types.TypeKinded _ type''' colons kind' -> do
     let span = Span.type' type''''
     debug log "TypeKinded" type'''' span
     type'' <- type' log type'''
-    kind' <- type' log kind''
-    pure (Language.PureScript.CST.Types.TypeKinded span type'' colons kind')
+    kind <- type' log kind'
+    pure (Language.PureScript.CST.Types.TypeKinded span type'' colons kind)
   Language.PureScript.CST.Types.TypeOp _ type1' op type2' -> do
     let span = Span.type' type''''
     debug log "TypeOp" type'''' span

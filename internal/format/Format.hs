@@ -748,9 +748,9 @@ export log indentation indent' export' = case export' of
     debug log "ExportClass" export' span
     sourceToken log indent' blank class'
       <> name log indent' space name'
-  Language.PureScript.CST.Types.ExportKind span kind' name' -> do
+  Language.PureScript.CST.Types.ExportKind span kind name' -> do
     debug log "ExportKind" export' span
-    sourceToken log indent' blank kind'
+    sourceToken log indent' blank kind
       <> name log indent' space name'
   Language.PureScript.CST.Types.ExportModule span module'' name' -> do
     debug log "ExportModule" export' span
@@ -1106,9 +1106,9 @@ foreign' log span indentation indent' foreign'' = case foreign'' of
     sourceToken log indent' blank data'
       <> pure space
       <> labeledNameKind log indentation indent' labeled'
-  Language.PureScript.CST.Types.ForeignKind kind' name' -> do
+  Language.PureScript.CST.Types.ForeignKind kind name' -> do
     debug log "ForeignKind" foreign'' span
-    sourceToken log indent' blank kind'
+    sourceToken log indent' blank kind
       <> name log indent' space name'
   Language.PureScript.CST.Types.ForeignValue labeled' -> do
     debug log "ForeignValue" foreign'' span
@@ -1209,9 +1209,9 @@ import' log indentation indent' import'' = case import'' of
     debug log "ImportClass" import'' span
     sourceToken log indent' blank class'
       <> name log indent' space name'
-  Language.PureScript.CST.Types.ImportKind span kind' name' -> do
+  Language.PureScript.CST.Types.ImportKind span kind name' -> do
     debug log "ImportKind" import'' span
-    sourceToken log indent' blank kind'
+    sourceToken log indent' blank kind
       <> name log indent' space name'
   Language.PureScript.CST.Types.ImportOp span name' -> do
     debug log "ImportOp" import'' span
@@ -1997,7 +1997,7 @@ type' log indentation indent' type''' = case type''' of
   Language.PureScript.CST.Types.TypeHole span hole -> do
     debug log "TypeHole" type''' span
     name log indent' blank hole
-  Language.PureScript.CST.Types.TypeKinded span type'' colons kind' -> do
+  Language.PureScript.CST.Types.TypeKinded span type'' colons kind -> do
     let (indent, prefix) = case span of
           Span.MultipleLines ->
             (indent' <> indentation, newline <> indent)
@@ -2008,7 +2008,7 @@ type' log indentation indent' type''' = case type''' of
       <> pure space
       <> sourceToken log indent' blank colons
       <> pure prefix
-      <> type' log indentation indent kind'
+      <> type' log indentation indent kind
   Language.PureScript.CST.Types.TypeOp span type1 op type2 -> do
     let (indent, prefix) = case span of
           Span.MultipleLines ->
