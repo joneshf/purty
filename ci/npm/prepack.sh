@@ -8,7 +8,7 @@ IFS=$'\n\t'
 readonly DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly THIS_SCRIPT="${0}"
 readonly SCRIPT_NAME="$(basename "${THIS_SCRIPT}")"
-readonly TEMPORARY_DIR="$(mktemp --directory -t "${SCRIPT_NAME}.XXXXXXXXXX")"
+readonly TEMPORARY_DIR="$(mktemp -d -t "${SCRIPT_NAME}.XXXXXXXXXX")"
 readonly LOG_FILE="$(mktemp -t "${SCRIPT_NAME}.log.XXXXXXXXXX")"
 
 VERBOSE=''
@@ -26,7 +26,7 @@ log() {
     if [[ 'DEBUG' = "${level}" && -z "${VERBOSE}" ]]; then
         printf '%-12s %s\n' "[${level}]" "${msg}" >> "${LOG_FILE}"
     else
-        printf '%-12s %s\n' "[${level}]" "${msg}" | tee --append "${LOG_FILE}" >&2
+        printf '%-12s %s\n' "[${level}]" "${msg}" | tee -a "${LOG_FILE}" >&2
     fi
 }
 
@@ -65,7 +65,7 @@ cleanup() {
     local exit_code="$?"
 
     debug 'Removing temp directory'
-    rm --force --recursive "${TEMPORARY_DIR}"
+    rm -f -r "${TEMPORARY_DIR}"
 
     exit "$exit_code"
 }
@@ -81,12 +81,12 @@ cd "${DIR}/../.."
 
 debug "version: ${VERSION}"
 debug 'creating directories for binaries'
-mkdir --parents bin/linux bin/osx bin/win
+mkdir -p bin/linux bin/osx bin/win
 
 info 'Packaging linux binary'
 debug "Downloading linux tar from ${LINUX_URL}"
 curl --location --output "${TEMPORARY_DIR}/linux.tar.gz" "${LINUX_URL}" 2>&1 \
-    | tee --append "${LOG_FILE}"
+    | tee -a "${LOG_FILE}"
 
 debug 'Extracting linux binary'
 tar --extract \
@@ -100,7 +100,7 @@ mv "${TEMPORARY_DIR}/purty" "bin/linux/purty"
 info 'Packaging osx binary'
 debug "Downloading osx tar from ${OSX_URL}"
 curl --location --output "${TEMPORARY_DIR}/osx.tar.gz" "${OSX_URL}" 2>&1 \
-    | tee --append "${LOG_FILE}"
+    | tee -a "${LOG_FILE}"
 
 debug 'Extracting osx binary'
 tar --extract \
@@ -114,7 +114,7 @@ mv "${TEMPORARY_DIR}/purty" "bin/osx/purty"
 info 'Packaging win binary'
 debug "Downloading win tar from ${WIN_URL}"
 curl --location --output "${TEMPORARY_DIR}/win.tar.gz" "${WIN_URL}" 2>&1 \
-    | tee --append "${LOG_FILE}"
+    | tee -a "${LOG_FILE}"
 
 debug 'Extracting win binary'
 tar --extract \

@@ -7,7 +7,7 @@ IFS=$'\n\t'
 
 readonly this_script="${0}"
 readonly script_name="$(basename "${this_script}")"
-readonly temporary_dir="$(mktemp --directory -t "${script_name}.XXXXXXXXXX")"
+readonly temporary_dir="$(mktemp -d -t "${script_name}.XXXXXXXXXX")"
 readonly log_file="$(mktemp -t "${script_name}.log.XXXXXXXXXX")"
 
 ormolu=''
@@ -21,7 +21,7 @@ log() {
     if [[ 'DEBUG' = "${level}" && -z "${verbose}" ]]; then
         printf '%-12s %s\n' "[${level}]" "${msg}" >> "${log_file}"
     else
-        printf '%-12s %s\n' "[${level}]" "${msg}" | tee --append "${log_file}" >&2
+        printf '%-12s %s\n' "[${level}]" "${msg}" | tee -a "${log_file}" >&2
     fi
 }
 
@@ -61,7 +61,7 @@ cleanup() {
     local exit_code="$?"
 
     debug 'Removing temp directory'
-    rm --force --recursive "${temporary_dir}"
+    rm -f -r "${temporary_dir}"
 
     exit "$exit_code"
 }
