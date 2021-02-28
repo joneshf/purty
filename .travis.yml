@@ -17,7 +17,6 @@ deploy:
 env:
   global:
     - BAZEL_USE_CPP_ONLY_TOOLCHAIN=1
-    - PATH=/usr/local/opt/coreutils/libexec/gnubin:${PATH}
 
 language: c
 
