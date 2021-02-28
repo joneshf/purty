@@ -575,6 +575,11 @@ declaration log indentation indent'' declaration' = case declaration' of
       (instance' log indentation indent'')
       instances
       <> pure newline
+  Language.PureScript.CST.Types.DeclKindSignature span kindOfDeclaration labeled' -> do
+    debug log "DeclKindSignature" declaration' span
+    sourceToken log indentation indent'' kindOfDeclaration
+      <> pure space
+      <> labeledNameType log indentation indent'' labeled'
   Language.PureScript.CST.Types.DeclNewtype span dataHead' equals name' type'' -> do
     let constructorSpan =
           Span.betweenSourceRanges
@@ -594,6 +599,20 @@ declaration log indentation indent'' declaration' = case declaration' of
       <> name log indent' blank name'
       <> pure prefix
       <> type' log indentation indent' type''
+      <> pure newline
+  Language.PureScript.CST.Types.DeclRole span type'' role'' name' roles -> do
+    debug log "DeclRole" declaration' span
+    sourceToken log indentation indent'' type''
+      <> pure space
+      <> sourceToken log indentation indent'' role''
+      <> pure space
+      <> name log indent'' blank name'
+      <> foldMap
+        ( \role' ->
+            pure space
+              <> role log indentation indent'' role'
+        )
+        roles
       <> pure newline
   Language.PureScript.CST.Types.DeclSignature span labeled' -> do
     debug log "DeclSignature" declaration' span
@@ -1379,41 +1398,6 @@ instanceHead log indentation indent'' instanceHead' = case instanceHead' of
         )
         types
 
-kind ::
-  Log.Handle ->
-  Indentation ->
-  Indent ->
-  Language.PureScript.CST.Types.Kind Span.Span ->
-  IO Utf8Builder
-kind log indentation indent' kind'' = case kind'' of
-  Language.PureScript.CST.Types.KindArr span k1 arrow k2 -> do
-    let prefix = case span of
-          Span.MultipleLines ->
-            newline <> indent'
-          Span.SingleLine ->
-            space
-    debug log "KindArr" kind'' span
-    kind log indentation indent' k1
-      <> sourceToken log indent' space arrow
-      <> pure prefix
-      <> kind log indentation indent' k2
-  Language.PureScript.CST.Types.KindName span name' -> do
-    debug log "KindName" kind'' span
-    qualifiedName log indent' blank name'
-  Language.PureScript.CST.Types.KindParens span wrapped' -> do
-    debug log "KindParens" kind'' span
-    parens log span indentation indent' (kind log indentation) wrapped'
-  Language.PureScript.CST.Types.KindRow span sourceToken' kind' -> do
-    let prefix = case span of
-          Span.MultipleLines ->
-            newline <> indent'
-          Span.SingleLine ->
-            space
-    debug log "KindRow" kind'' span
-    sourceToken log indent' blank sourceToken'
-      <> pure prefix
-      <> kind log indentation indent' kind'
-
 label ::
   Log.Handle ->
   Indent ->
@@ -1475,7 +1459,7 @@ labeledNameKind ::
   Indent ->
   Language.PureScript.CST.Types.Labeled
     (Language.PureScript.CST.Types.Name a)
-    (Language.PureScript.CST.Types.Kind Span.Span) ->
+    (Language.PureScript.CST.Types.Type Span.Span) ->
   IO Utf8Builder
 labeledNameKind log indentation indent =
   labeled
@@ -1484,8 +1468,8 @@ labeledNameKind log indentation indent =
     indent
     SourceRange.name
     (name log indent blank)
-    SourceRange.kind
-    (kind log indentation)
+    SourceRange.type'
+    (type' log indentation)
 
 labeledNameType ::
   (Show a) =>
@@ -1811,6 +1795,17 @@ recordUpdate log indentation indent' recordUpdate' = case recordUpdate' of
       <> pure prefix
       <> expr log indentation indent expr'
 
+role ::
+  Log.Handle ->
+  Indentation ->
+  Indent ->
+  Language.PureScript.CST.Types.Role ->
+  IO Utf8Builder
+role log indentation indent role'' = case role'' of
+  Language.PureScript.CST.Types.Role role' _ -> do
+    debug log "Role" role'' Span.SingleLine
+    sourceToken log indentation indent role'
+
 row ::
   Log.Handle ->
   Span.Span ->
@@ -2013,7 +2008,7 @@ type' log indentation indent' type''' = case type''' of
       <> pure space
       <> sourceToken log indent' blank colons
       <> pure prefix
-      <> kind log indentation indent kind'
+      <> type' log indentation indent kind'
   Language.PureScript.CST.Types.TypeOp span type1 op type2 -> do
     let (indent, prefix) = case span of
           Span.MultipleLines ->
@@ -2040,6 +2035,16 @@ type' log indentation indent' type''' = case type''' of
   Language.PureScript.CST.Types.TypeString span string _ -> do
     debug log "TypeString" type''' span
     sourceToken log indent' blank string
+  Language.PureScript.CST.Types.TypeUnaryRow span sourceToken' type'' -> do
+    let prefix = case span of
+          Span.MultipleLines ->
+            newline <> indent'
+          Span.SingleLine ->
+            space
+    debug log "TypeUnaryRow" type''' span
+    sourceToken log indent' blank sourceToken'
+      <> pure prefix
+      <> type' log indentation indent' type''
   Language.PureScript.CST.Types.TypeVar span var -> do
     debug log "TypeVar" type''' span
     name log indent' blank var

@@ -241,12 +241,21 @@ declaration log declaration' = case declaration' of
     debug log "DeclInstanceChain" declaration' span
     separated' <- traverse (instance' log) separated''
     pure (Language.PureScript.CST.Types.DeclInstanceChain span separated')
+  Language.PureScript.CST.Types.DeclKindSignature _ kindOfDeclaration labeled'' -> do
+    let span = Span.labeled SourceRange.name SourceRange.type' labeled''
+    debug log "DeclKindSignature" declaration' span
+    labeled' <- labeledNameType log labeled''
+    pure (Language.PureScript.CST.Types.DeclKindSignature span kindOfDeclaration labeled')
   Language.PureScript.CST.Types.DeclNewtype _ dataHead'' equals name' type''' -> do
     let span = Span.MultipleLines
     debug log "DeclNewtype" declaration' span
     dataHead' <- dataHead log dataHead''
     type'' <- type' log type'''
     pure (Language.PureScript.CST.Types.DeclNewtype span dataHead' equals name' type'')
+  Language.PureScript.CST.Types.DeclRole _ type'' role name' roles -> do
+    let span = Span.SingleLine
+    debug log "DeclRole" declaration' span
+    pure (Language.PureScript.CST.Types.DeclRole span type'' role name' roles)
   Language.PureScript.CST.Types.DeclSignature _ labeled'' -> do
     let span = Span.labeled SourceRange.name SourceRange.type' labeled''
     debug log "DeclSignature" declaration' span
@@ -492,7 +501,7 @@ foreign' log foreign'' = case foreign'' of
   Language.PureScript.CST.Types.ForeignData data' labeled'' -> do
     let span = Span.foreign' foreign''
     debug log "ForeignData" foreign'' span
-    labeled' <- traverse (kind log) labeled''
+    labeled' <- traverse (type' log) labeled''
     pure (Language.PureScript.CST.Types.ForeignData data' labeled')
   Language.PureScript.CST.Types.ForeignKind kind' name' -> do
     let span = Span.foreign' foreign''
@@ -641,33 +650,6 @@ instanceHead log instanceHead' = case instanceHead' of
           types
       )
 
-kind ::
-  (Show a) =>
-  Log.Handle ->
-  Language.PureScript.CST.Types.Kind a ->
-  IO (Language.PureScript.CST.Types.Kind Span.Span)
-kind log kind''' = case kind''' of
-  Language.PureScript.CST.Types.KindArr _ kind1' arrow kind2' -> do
-    let span = Span.kind kind'''
-    debug log "KindArr" kind''' span
-    kind1 <- kind log kind1'
-    kind2 <- kind log kind2'
-    pure (Language.PureScript.CST.Types.KindArr span kind1 arrow kind2)
-  Language.PureScript.CST.Types.KindName _ name' -> do
-    let span = Span.kind kind'''
-    debug log "KindName" kind''' span
-    pure (Language.PureScript.CST.Types.KindName span name')
-  Language.PureScript.CST.Types.KindParens _ wrapped'' -> do
-    let span = Span.kind kind'''
-    debug log "KindParens" kind''' span
-    wrapped' <- wrapped log (kind log) wrapped''
-    pure (Language.PureScript.CST.Types.KindParens span wrapped')
-  Language.PureScript.CST.Types.KindRow _ sourceToken kind'' -> do
-    let span = Span.kind kind'''
-    debug log "KindRow" kind''' span
-    kind' <- kind log kind''
-    pure (Language.PureScript.CST.Types.KindRow span sourceToken kind')
-
 labeled ::
   (Show a, Show b) =>
   Log.Handle ->
@@ -688,13 +670,13 @@ labeledNameKind ::
   Log.Handle ->
   Language.PureScript.CST.Types.Labeled
     (Language.PureScript.CST.Types.Name a)
-    (Language.PureScript.CST.Types.Kind b) ->
+    (Language.PureScript.CST.Types.Type b) ->
   IO
     ( Language.PureScript.CST.Types.Labeled
         (Language.PureScript.CST.Types.Name a)
-        (Language.PureScript.CST.Types.Kind Span.Span)
+        (Language.PureScript.CST.Types.Type Span.Span)
     )
-labeledNameKind log = labeled log SourceRange.name SourceRange.kind (kind log)
+labeledNameKind log = labeled log SourceRange.name SourceRange.type' (type' log)
 
 labeledNameType ::
   (Show a, Show b) =>
@@ -909,7 +891,7 @@ type' log type'''' = case type'''' of
     let span = Span.type' type''''
     debug log "TypeKinded" type'''' span
     type'' <- type' log type'''
-    kind' <- kind log kind''
+    kind' <- type' log kind''
     pure (Language.PureScript.CST.Types.TypeKinded span type'' colons kind')
   Language.PureScript.CST.Types.TypeOp _ type1' op type2' -> do
     let span = Span.type' type''''
@@ -940,6 +922,11 @@ type' log type'''' = case type'''' of
     let span = Span.type' type''''
     debug log "TypeString" type'''' span
     pure (Language.PureScript.CST.Types.TypeString span sourceToken' string)
+  Language.PureScript.CST.Types.TypeUnaryRow _ sourceToken type''' -> do
+    let span = Span.type' type''''
+    debug log "TypeUnaryRow" type'''' span
+    type'' <- type' log type'''
+    pure (Language.PureScript.CST.Types.TypeUnaryRow span sourceToken type'')
   Language.PureScript.CST.Types.TypeVar _ var -> do
     let span = Span.type' type''''
     debug log "TypeVar" type'''' span

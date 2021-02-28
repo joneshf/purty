@@ -1,19 +1,17 @@
 diff --git a/purescript-cst.cabal b/purescript-cst.cabal
 new file mode 100644
-index 00000000..dbb1ed9b
+index 00000000..7481346e
 --- /dev/null
 +++ b/purescript-cst.cabal
-@@ -0,0 +1,104 @@
+@@ -0,0 +1,115 @@
 +cabal-version: 1.12
 +
-+-- This file has been generated from package.yaml by hpack version 0.31.1.
++-- This file has been generated from package.yaml by hpack version 0.34.1.
 +--
 +-- see: https://github.com/sol/hpack
-+--
-+-- hash: ff73e382fe3eaea97d6533a6b3512e14ec9eae7888720be48ae9f929e59cd733
 +
 +name:           purescript-cst
-+version:        0.13.6
++version:        0.1.0.0
 +synopsis:       PureScript Programming Language Concrete Syntax Tree
 +description:    The surface syntax of the PureScript Programming Language.
 +category:       Language
@@ -28,6 +26,18 @@ index 00000000..dbb1ed9b
 +license-file:   LICENSE
 +build-type:     Simple
 +extra-source-files:
++    tests/purs/layout/AdoIn.out
++    tests/purs/layout/CaseGuards.out
++    tests/purs/layout/CaseWhere.out
++    tests/purs/layout/ClassHead.out
++    tests/purs/layout/Commas.out
++    tests/purs/layout/Delimiter.out
++    tests/purs/layout/DoLet.out
++    tests/purs/layout/DoOperator.out
++    tests/purs/layout/DoWhere.out
++    tests/purs/layout/IfThenElseDo.out
++    tests/purs/layout/InstanceChainElse.out
++    tests/purs/layout/LetGuards.out
 +    tests/purs/layout/AdoIn.purs
 +    tests/purs/layout/CaseGuards.purs
 +    tests/purs/layout/CaseWhere.purs
@@ -50,6 +60,7 @@ index 00000000..dbb1ed9b
 +  exposed-modules:
 +      Language.PureScript.CST.Convert
 +      Language.PureScript.CST.Errors
++      Language.PureScript.CST.Flatten
 +      Language.PureScript.CST.Layout
 +      Language.PureScript.CST.Lexer
 +      Language.PureScript.CST.Monad
@@ -61,10 +72,10 @@ index 00000000..dbb1ed9b
 +      Language.PureScript.CST.Types
 +      Language.PureScript.CST.Utils
 +  other-modules:
-+      Paths_purescript_cst
++      Data.Text.PureScript
 +  hs-source-dirs:
 +      src
-+  default-extensions: ConstraintKinds DataKinds DeriveFunctor DeriveFoldable DeriveTraversable DeriveGeneric DerivingStrategies EmptyDataDecls FlexibleContexts KindSignatures LambdaCase MultiParamTypeClasses NoImplicitPrelude PatternGuards PatternSynonyms RankNTypes RecordWildCards OverloadedStrings ScopedTypeVariables TupleSections ViewPatterns
++  default-extensions: BangPatterns ConstraintKinds DataKinds DefaultSignatures DeriveFunctor DeriveFoldable DeriveTraversable DeriveGeneric DerivingStrategies EmptyDataDecls FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving KindSignatures LambdaCase MultiParamTypeClasses NamedFieldPuns NoImplicitPrelude PatternGuards PatternSynonyms RankNTypes RecordWildCards OverloadedStrings ScopedTypeVariables TupleSections TypeFamilies ViewPatterns
 +  ghc-options: -Wall -O2
 +  build-tools:
 +      happy ==1.19.9
