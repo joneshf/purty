@@ -10,7 +10,7 @@ IFS=$'\n\t'
 
 readonly THIS_SCRIPT="${0}"
 readonly SCRIPT_NAME="$(basename "${THIS_SCRIPT}")"
-readonly TEMPORARY_DIR="$(mktemp --directory -t "${SCRIPT_NAME}.XXXXXXXXXX")"
+readonly TEMPORARY_DIR="$(mktemp -d -t "${SCRIPT_NAME}.XXXXXXXXXX")"
 readonly LOG_FILE="$(mktemp -t "${SCRIPT_NAME}.log.XXXXXXXXXX")"
 
 EXPECTED_VERSION=''
@@ -24,7 +24,7 @@ log() {
     if [[ 'DEBUG' = "${level}" && -z "${VERBOSE}" ]]; then
         printf '%-12s %s\n' "[${level}]" "${msg}" >> "${LOG_FILE}"
     else
-        printf '%-12s %s\n' "[${level}]" "${msg}" | tee --append "${LOG_FILE}" >&2
+        printf '%-12s %s\n' "[${level}]" "${msg}" | tee -a "${LOG_FILE}" >&2
     fi
 }
 
