@@ -28,7 +28,6 @@ module Span
     instance',
     instanceBinding,
     instanceHead,
-    kind,
     label,
     labeled,
     lambda,
@@ -208,12 +207,6 @@ instanceHead =
   sourceRange
     . Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.instanceHeadRange
-
-kind :: Language.PureScript.CST.Types.Kind a -> Span
-kind =
-  sourceRange
-    . Language.PureScript.CST.Positions.toSourceRange
-    . Language.PureScript.CST.Positions.kindRange
 
 label :: Language.PureScript.CST.Types.Label -> Span
 label =

@@ -14,7 +14,6 @@ module SourceRange
     ifThenElse,
     import',
     instance',
-    kind,
     label,
     labeled,
     lambda,
@@ -147,13 +146,6 @@ instance' ::
 instance' =
   Language.PureScript.CST.Positions.toSourceRange
     . Language.PureScript.CST.Positions.instanceRange
-
-kind ::
-  Language.PureScript.CST.Types.Kind a ->
-  Language.PureScript.CST.Types.SourceRange
-kind =
-  Language.PureScript.CST.Positions.toSourceRange
-    . Language.PureScript.CST.Positions.kindRange
 
 label ::
   Language.PureScript.CST.Types.Label ->

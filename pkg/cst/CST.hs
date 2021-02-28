@@ -28,7 +28,7 @@ parse contents = case decodeUtf8' (toStrictBytes contents) of
 parseText ::
   Text ->
   Either Utf8Builder (Language.PureScript.CST.Types.Module ())
-parseText decoded = case Language.PureScript.CST.Parser.parse decoded of
+parseText decoded = case snd (Language.PureScript.CST.Parser.parse decoded) of
   Left error -> Left (renderParserErrors error)
   Right parsed -> Right parsed
 
