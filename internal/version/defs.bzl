@@ -1,4 +1,4 @@
 """Helpers for building `purty`.
 """
 
-version_purty = "6.3.1"
+version_purty = "7.0.0"

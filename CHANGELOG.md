@@ -8,6 +8,29 @@
 
 ### Deletions
 
+## 7.0.0
+
+This is the first release that supports the 0.14.0 compiler and its syntactical changes.
+
+Overall, not much has changed.
+The new syntactic constructs are kind signatures and roles.
+Kind signatures are formatted like type signatures.
+Roles are are all on a single line for now.
+
+This release will likely still work for most 0.13.x code.
+Though there's no explicit support for the 0.13.x series at the moment.
+The breaking changes are for some edge cases that it doesn't seem like many would run into,
+but they're breaking for a reason.
+
+### Additions
+
+### Changes
+
+* [Support 0.14.0](https://gitlab.com/joneshf/purty/-/issues/234)
+* [Use POSIX-compatible flags in bash scripts](https://gitlab.com/joneshf/purty/-/issues/235)
+
+### Deletions
+
 ## 6.3.1
 
 This is a small release with all internal-facing changes.
